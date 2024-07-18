@@ -1,11 +1,33 @@
 "use client";
 
-import IntrendAppLayout from '../layout';
+import { useState } from 'react';
+import CustomerList from './CustomerList';
+import AddCustomerForm from './AddCustomerForm';
+import Button from '../../components/Button';
 
-const Customers = () => (
+const CustomersPage = () => {
+  const [showForm, setShowForm] = useState(false);
 
-    <h1 className="text-2xl font-bold">Customers</h1>
+  const handleAdd = () => {
+    setShowForm(false);
+  };
 
-);
+  return (
+    <div className="p-8 bg-white rounded shadow">
+      <h1 className="text-2xl font-bold mb-4">Customers</h1>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setShowForm(true)}>
+          Add Customer
+        </Button>
+      </div>
+      {showForm && (
+        <div className="mb-4">
+          <AddCustomerForm onAdd={handleAdd} />
+        </div>
+      )}
+      <CustomerList />
+    </div>
+  );
+};
 
-export default Customers;
+export default CustomersPage;

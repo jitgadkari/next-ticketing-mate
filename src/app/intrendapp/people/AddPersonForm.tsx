@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Input from '../../components/Input';
+import Button from '../../components/Button';
 
 interface AddPersonFormProps {
   onAdd: () => void;
@@ -57,7 +59,7 @@ const AddPersonForm = ({ onAdd }: AddPersonFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form Data:', formData); // Log form data for debugging
+    console.log('Form Data:', formData);
 
     try {
       const response = await fetch('http://localhost:8000/person', {
@@ -81,39 +83,30 @@ const AddPersonForm = ({ onAdd }: AddPersonFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-gray-700">Name</label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded mt-1"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700">Phone</label>
-        <input
-          type="text"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded mt-1"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700">Email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded mt-1"
-          required
-        />
-      </div>
+      <Input
+        label="Name"
+        type="text"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Phone"
+        type="text"
+        name="phone"
+        value={formData.phone}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Email"
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        required
+      />
       <div>
         <label className="block text-gray-700">Type of Employee</label>
         <select
@@ -153,7 +146,7 @@ const AddPersonForm = ({ onAdd }: AddPersonFormProps) => {
               <option value="Vendor">Vendor</option>
             </select>
           </div>
-          {formData.linked_to === 'customer' && (
+          {formData.linked_to === 'Customer' && (
             <div>
               <label className="block text-gray-700">Linked to ID</label>
               <select
@@ -171,7 +164,7 @@ const AddPersonForm = ({ onAdd }: AddPersonFormProps) => {
               </select>
             </div>
           )}
-          {formData.linked_to === 'vendor' && (
+          {formData.linked_to === 'Vendor' && (
             <div>
               <label className="block text-gray-700">Linked to ID</label>
               <select
@@ -191,9 +184,9 @@ const AddPersonForm = ({ onAdd }: AddPersonFormProps) => {
           )}
         </>
       )}
-      <button type="submit" className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-700">
+      <Button type="submit" className="w-full">
         Add Person
-      </button>
+      </Button>
     </form>
   );
 };
