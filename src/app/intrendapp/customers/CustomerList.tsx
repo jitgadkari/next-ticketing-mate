@@ -3,16 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
-import Button from '../../components/Button';
 import Table from '../../components/Table';
 
 interface Customer {
   _id: string;
-  Name: string;
-  Email: string;
-  Contact: string;
-  State: string;
-  Country: string;
+  name: string;
+  email: string;
+  contact: string;
+  state: string;
+  country: string;
 }
 
 const CustomerList = () => {
@@ -21,7 +20,7 @@ const CustomerList = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('http://localhost:8000/customers');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
         const data = await response.json();
         setCustomers(data.customers);
       } catch (error) {
@@ -31,13 +30,13 @@ const CustomerList = () => {
     fetchCustomers();
   }, []);
 
-  const handleDelete = async (customer_id: string) => {
+  const handleDelete = async (customerId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/customer/?customer_id=${customer_id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
-        setCustomers(customers.filter(customer => customer._id !== customer_id));
+        setCustomers(customers.filter(customer => customer._id !== customerId));
       } else {
         console.error('Failed to delete customer');
       }
@@ -50,12 +49,12 @@ const CustomerList = () => {
 
   const renderRow = (customer: Customer) => (
     <>
-      <td className="border p-2">{customer.Name}</td>
-      <td className="border p-2">{customer.Email}</td>
-      <td className="border p-2">{customer.Contact}</td>
-      <td className="border p-2">{customer.State}</td>
-      <td className="border p-2">{customer.Country}</td>
-      <td className="border p-2 flex space-x-2">
+      <td className="border p-2">{customer.name}</td>
+      <td className="border p-2">{customer.email}</td>
+      <td className="border p-2">{customer.contact}</td>
+      <td className="border p-2">{customer.state}</td>
+      <td className="border p-2">{customer.country}</td>
+      <td className="border p-2 flex justify-center space-x-2">
         <Link href={`customers/${customer._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">
             <FaEye />

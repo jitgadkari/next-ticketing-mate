@@ -1,92 +1,266 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { FaTrash } from 'react-icons/fa';
+import { useParams } from 'next/navigation';
+import Input from '../../../components/Input';
+import Button from '../../../components/Button';
 
 interface Customer {
   _id: string;
-  Name: string;
-  Email: string;
-  Contact: string;
-  State: string;
-  Country: string;
-  created_date?: string;
-  updated_date?: string;
+  name: string;
+  fiber: string[];
+  certifications: string[];
+  approvals: string[];
+  people: string[];
+  state: string;
+  country: string;
+  contact: string;
+  email: string;
+  gst_number: string;
+  delivery_destination: string[];
+  delivery_terms: string[];
+  pan_number: string;
+  group: string;
 }
 
-export default function CustomerDetailPage() {
+const CustomerDetailsPage = () => {
+  const { id } = useParams();
+
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const params = useParams();
-  const { id } = params;
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    fiber: '',
+    certifications: '',
+    approvals: '',
+    people: '',
+    state: '',
+    country: '',
+    contact: '',
+    email: '',
+    gst_number: '',
+    delivery_destination: '',
+    delivery_terms: '',
+    pan_number: '',
+    group: '',
+  });
 
   useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        console.log('Fetching customer with ID:', id);
-        const response = await fetch(`http://localhost:8000/customer/${id}`);
-        console.log(response);
-        if (!response.ok) {
-          throw new Error('Failed to fetch customer data');
+    if (id) {
+      const fetchCustomer = async () => {
+        try {
+          const response = await fetch(`http://localhost:8000/customer/${id}`);
+          const data = await response.json();
+          setCustomer(data.customer);
+          setFormData({
+            name: data.customer.name,
+            fiber: data.customer.fiber.join(', '),
+            certifications: data.customer.certifications.join(', '),
+            approvals: data.customer.approvals.join(', '),
+            people: data.customer.people.join(', '),
+            state: data.customer.state,
+            country: data.customer.country,
+            contact: data.customer.contact,
+            email: data.customer.email,
+            gst_number: data.customer.gst_number,
+            delivery_destination: data.customer.delivery_destination.join(', '),
+            delivery_terms: data.customer.delivery_terms.join(', '),
+            pan_number: data.customer.pan_number,
+            group: data.customer.group,
+          });
+        } catch (error) {
+          console.error('Error fetching customer:', error);
         }
-        const data = await response.json();
-        console.log('Received data:', data);
-        setCustomer(data.customer || data);
-      } catch (err) {
-        setError('An error occurred while fetching the customer data.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomer();
+      };
+      fetchCustomer();
+    }
   }, [id]);
 
-  const handleDelete = async () => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleUpdate = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/customer/?customer_id=${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`http://localhost:8000/customer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: customer?._id,
+          update_dict: {
+            ...formData,
+            fiber: formData.fiber.split(',').map(item => item.trim()),
+            certifications: formData.certifications.split(',').map(item => item.trim()),
+            approvals: formData.approvals.split(',').map(item => item.trim()),
+            people: formData.people.split(',').map(item => item.trim()),
+            delivery_destination: formData.delivery_destination.split(',').map(item => item.trim()),
+            delivery_terms: formData.delivery_terms.split(',').map(item => item.trim()),
+          },
+        }),
       });
+
       if (response.ok) {
-        router.push('/intrendapp/customers');
+        setEditMode(false);
+        const updatedCustomer = await response.json();
+        setCustomer(updatedCustomer.customer);
       } else {
-        console.error('Failed to delete customer');
+        const errorData = await response.json();
+        console.error('Failed to update customer', errorData);
       }
     } catch (error) {
-      console.error('Error deleting customer:', error);
+      console.error('Error updating customer:', error);
     }
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
-  if (!customer) return <div className="p-8">No customer found</div>;
+  if (!customer) return <div>Loading...</div>;
 
   return (
     <div className="p-8 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Customer Details</h1>
-      <div className="space-y-4">
-        <p><strong>ID:</strong> {customer._id}</p>
-        <p><strong>Name:</strong> {customer.Name}</p>
-        <p><strong>Email:</strong> {customer.Email}</p>
-        <p><strong>Contact:</strong> {customer.Contact}</p>
-        <p><strong>State:</strong> {customer.State}</p>
-        <p><strong>Country:</strong> {customer.Country}</p>
-        {customer.created_date && <p><strong>Created Date:</strong> {new Date(customer.created_date).toLocaleString()}</p>}
-        {customer.updated_date && <p><strong>Updated Date:</strong> {new Date(customer.updated_date).toLocaleString()}</p>}
-      </div>
-      <div className="mt-6 flex justify-between">
-        <Link href="/intrendapp/customers" className="p-2 bg-blue-500 text-white rounded hover:bg-blue-700">
-          Back to Customer List
-        </Link>
-        <button onClick={handleDelete} className="p-2 bg-red-500 text-white rounded hover:bg-red-700">
-          <FaTrash className="inline-block mr-2" /> Delete
-        </button>
-      </div>
+      {editMode ? (
+        <form className="space-y-4">
+          <Input
+            label="Name"
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Fiber"
+            type="text"
+            name="fiber"
+            value={formData.fiber}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Certifications"
+            type="text"
+            name="certifications"
+            value={formData.certifications}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Approvals"
+            type="text"
+            name="approvals"
+            value={formData.approvals}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="People"
+            type="text"
+            name="people"
+            value={formData.people}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="State"
+            type="text"
+            name="state"
+            value={formData.state}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Country"
+            type="text"
+            name="country"
+            value={formData.country}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Contact"
+            type="text"
+            name="contact"
+            value={formData.contact}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="GST Number"
+            type="text"
+            name="gst_number"
+            value={formData.gst_number}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Delivery Destination"
+            type="text"
+            name="delivery_destination"
+            value={formData.delivery_destination}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Delivery Terms"
+            type="text"
+            name="delivery_terms"
+            value={formData.delivery_terms}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="PAN Number"
+            type="text"
+            name="pan_number"
+            value={formData.pan_number}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Group"
+            type="text"
+            name="group"
+            value={formData.group}
+            onChange={handleChange}
+            required
+          />
+          <Button type="button" onClick={handleUpdate} className="w-full">
+            Update Customer
+          </Button>
+        </form>
+      ) : (
+        <div>
+          <p><strong>Name:</strong> {customer.name}</p>
+          <p><strong>Fiber:</strong> {customer.fiber.join(', ')}</p>
+          <p><strong>Certifications:</strong> {customer.certifications.join(', ')}</p>
+          <p><strong>Approvals:</strong> {customer.approvals.join(', ')}</p>
+          <p><strong>People:</strong> {customer.people.join(', ')}</p>
+          <p><strong>State:</strong> {customer.state}</p>
+          <p><strong>Country:</strong> {customer.country}</p>
+          <p><strong>Contact:</strong> {customer.contact}</p>
+          <p><strong>Email:</strong> {customer.email}</p>
+          <p><strong>GST Number:</strong> {customer.gst_number}</p>
+          <p><strong>Delivery Destination:</strong> {customer.delivery_destination.join(', ')}</p>
+          <p><strong>Delivery Terms:</strong> {customer.delivery_terms.join(', ')}</p>
+          <p><strong>PAN Number:</strong> {customer.pan_number}</p>
+          <p><strong>Group:</strong> {customer.group}</p>
+          <Button type="button" onClick={() => setEditMode(true)} className="mt-4">
+            Edit Customer
+          </Button>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default CustomerDetailsPage;

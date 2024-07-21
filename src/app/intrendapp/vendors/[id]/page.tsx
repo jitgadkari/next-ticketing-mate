@@ -1,92 +1,343 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { FaTrash } from 'react-icons/fa';
+import { useParams } from 'next/navigation';
+import Input from '../../../components/Input';
+import Button from '../../../components/Button';
 
 interface Vendor {
   _id: string;
-  Name: string;
-  Email: string;
-  Contact: string;
-  State: string;
-  Country: string;
-  created_date?: string;
-  updated_date?: string;
+  name: string;
+  fiber: string[];
+  width: string[];
+  content: string[];
+  type: string[];
+  certifications: string[];
+  approvals: string[];
+  weave: string[];
+  weave_type: string[];
+  designs: string[];
+  payment_terms: string;
+  delivery_destination: string[];
+  delivery_terms: string[];
+  factory_location: string;
+  state: string;
+  contact: string;
+  email: string;
+  gst_number: string;
+  pan_number: string;
+  group: string;
 }
 
-export default function VendorDetailPage() {
+const VendorDetailsPage = () => {
+  const { id } = useParams();
+
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const params = useParams();
-  const { id } = params;
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    fiber: '',
+    width: '',
+    content: '',
+    type: '',
+    certifications: '',
+    approvals: '',
+    weave: '',
+    weave_type: '',
+    designs: '',
+    payment_terms: '',
+    delivery_destination: '',
+    delivery_terms: '',
+    factory_location: '',
+    state: '',
+    contact: '',
+    email: '',
+    gst_number: '',
+    pan_number: '',
+    group: '',
+  });
 
   useEffect(() => {
-    const fetchVendor = async () => {
-      try {
-        console.log('Fetching vendor with ID:', id);
-        const response = await fetch(`http://localhost:8000/vendor/${id}`);
-        console.log(response);
-        if (!response.ok) {
-          throw new Error('Failed to fetch vendor data');
+    if (id) {
+      const fetchVendor = async () => {
+        try {
+          const response = await fetch(`http://localhost:8000/vendor/${id}`);
+          const data = await response.json();
+          setVendor(data.vendor);
+          setFormData({
+            name: data.vendor.name,
+            fiber: data.vendor.fiber.join(', '),
+            width: data.vendor.width.join(', '),
+            content: data.vendor.content.join(', '),
+            type: data.vendor.type.join(', '),
+            certifications: data.vendor.certifications.join(', '),
+            approvals: data.vendor.approvals.join(', '),
+            weave: data.vendor.weave.join(', '),
+            weave_type: data.vendor.weave_type.join(', '),
+            designs: data.vendor.designs.join(', '),
+            payment_terms: data.vendor.payment_terms,
+            delivery_destination: data.vendor.delivery_destination.join(', '),
+            delivery_terms: data.vendor.delivery_terms.join(', '),
+            factory_location: data.vendor.factory_location,
+            state: data.vendor.state,
+            contact: data.vendor.contact,
+            email: data.vendor.email,
+            gst_number: data.vendor.gst_number,
+            pan_number: data.vendor.pan_number,
+            group: data.vendor.group,
+          });
+        } catch (error) {
+          console.error('Error fetching vendor:', error);
         }
-        const data = await response.json();
-        console.log('Received data:', data);
-        setVendor(data.vendor || data);
-      } catch (err) {
-        setError('An error occurred while fetching the vendor data.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchVendor();
+      };
+      fetchVendor();
+    }
   }, [id]);
 
-  const handleDelete = async () => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleUpdate = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/vendor/?vendor_id=${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`http://localhost:8000/vendor`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: vendor?._id,
+          update_dict: {
+            ...formData,
+            fiber: formData.fiber.split(',').map(item => item.trim()),
+            width: formData.width.split(',').map(item => item.trim()),
+            content: formData.content.split(',').map(item => item.trim()),
+            type: formData.type.split(',').map(item => item.trim()),
+            certifications: formData.certifications.split(',').map(item => item.trim()),
+            approvals: formData.approvals.split(',').map(item => item.trim()),
+            weave: formData.weave.split(',').map(item => item.trim()),
+            weave_type: formData.weave_type.split(',').map(item => item.trim()),
+            designs: formData.designs.split(',').map(item => item.trim()),
+            delivery_destination: formData.delivery_destination.split(',').map(item => item.trim()),
+            delivery_terms: formData.delivery_terms.split(',').map(item => item.trim()),
+          },
+        }),
       });
+
       if (response.ok) {
-        router.push('/intrendapp/vendors');
+        setEditMode(false);
+        const updatedVendor = await response.json();
+        setVendor(updatedVendor.vendor);
       } else {
-        console.error('Failed to delete vendor');
+        const errorData = await response.json();
+        console.error('Failed to update vendor', errorData);
       }
     } catch (error) {
-      console.error('Error deleting vendor:', error);
+      console.error('Error updating vendor:', error);
     }
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
-  if (!vendor) return <div className="p-8">No vendor found</div>;
+  if (!vendor) return <div>Loading...</div>;
 
   return (
     <div className="p-8 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Vendor Details</h1>
-      <div className="space-y-4">
-        <p><strong>ID:</strong> {vendor._id}</p>
-        <p><strong>Name:</strong> {vendor.Name}</p>
-        <p><strong>Email:</strong> {vendor.Email}</p>
-        <p><strong>Contact:</strong> {vendor.Contact}</p>
-        <p><strong>State:</strong> {vendor.State}</p>
-        <p><strong>Country:</strong> {vendor.Country}</p>
-        {vendor.created_date && <p><strong>Created Date:</strong> {new Date(vendor.created_date).toLocaleString()}</p>}
-        {vendor.updated_date && <p><strong>Updated Date:</strong> {new Date(vendor.updated_date).toLocaleString()}</p>}
-      </div>
-      <div className="mt-6 flex justify-between">
-        <Link href="/intrendapp/vendors" className="p-2 bg-blue-500 text-white rounded hover:bg-blue-700">
-          Back to Vendor List
-        </Link>
-        <button onClick={handleDelete} className="p-2 bg-red-500 text-white rounded hover:bg-red-700">
-          <FaTrash className="inline-block mr-2" /> Delete
-        </button>
-      </div>
+      {editMode ? (
+        <form className="space-y-4">
+          <Input
+            label="Name"
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Fiber"
+            type="text"
+            name="fiber"
+            value={formData.fiber}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Width"
+            type="text"
+            name="width"
+            value={formData.width}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Content"
+            type="text"
+            name="content"
+            value={formData.content}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Type"
+            type="text"
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Certifications"
+            type="text"
+            name="certifications"
+            value={formData.certifications}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Approvals"
+            type="text"
+            name="approvals"
+            value={formData.approvals}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Weave"
+            type="text"
+            name="weave"
+            value={formData.weave}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Weave Type"
+            type="text"
+            name="weave_type"
+            value={formData.weave_type}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Designs"
+            type="text"
+            name="designs"
+            value={formData.designs}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Payment Terms"
+            type="text"
+            name="payment_terms"
+            value={formData.payment_terms}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Delivery Destination"
+            type="text"
+            name="delivery_destination"
+            value={formData.delivery_destination}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Delivery Terms"
+            type="text"
+            name="delivery_terms"
+            value={formData.delivery_terms}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Factory Location"
+            type="text"
+            name="factory_location"
+            value={formData.factory_location}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="State"
+            type="text"
+            name="state"
+            value={formData.state}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Contact"
+            type="text"
+            name="contact"
+            value={formData.contact}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="GST Number"
+            type="text"
+            name="gst_number"
+            value={formData.gst_number}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="PAN Number"
+            type="text"
+            name="pan_number"
+            value={formData.pan_number}
+            onChange={handleChange}
+            required
+          />
+          <Input
+            label="Group"
+            type="text"
+            name="group"
+            value={formData.group}
+            onChange={handleChange}
+            required
+          />
+          <Button type="button" onClick={handleUpdate} className="w-full">
+            Update Vendor
+          </Button>
+        </form>
+      ) : (
+        <div>
+          <p><strong>Name:</strong> {vendor.name}</p>
+          <p><strong>Fiber:</strong> {vendor.fiber.join(', ')}</p>
+          <p><strong>Width:</strong> {vendor.width.join(', ')}</p>
+          <p><strong>Content:</strong> {vendor.content.join(', ')}</p>
+          <p><strong>Type:</strong> {vendor.type.join(', ')}</p>
+          <p><strong>Certifications:</strong> {vendor.certifications.join(', ')}</p>
+          <p><strong>Approvals:</strong> {vendor.approvals.join(', ')}</p>
+          <p><strong>Weave:</strong> {vendor.weave.join(', ')}</p>
+          <p><strong>Weave Type:</strong> {vendor.weave_type.join(', ')}</p>
+          <p><strong>Designs:</strong> {vendor.designs.join(', ')}</p>
+          <p><strong>Payment Terms:</strong> {vendor.payment_terms}</p>
+          <p><strong>Delivery Destination:</strong> {vendor.delivery_destination.join(', ')}</p>
+          <p><strong>Delivery Terms:</strong> {vendor.delivery_terms.join(', ')}</p>
+          <p><strong>Factory Location:</strong> {vendor.factory_location}</p>
+          <p><strong>State:</strong> {vendor.state}</p>
+          <p><strong>Contact:</strong> {vendor.contact}</p>
+          <p><strong>Email:</strong> {vendor.email}</p>
+          <p><strong>GST Number:</strong> {vendor.gst_number}</p>
+          <p><strong>PAN Number:</strong> {vendor.pan_number}</p>
+          <p><strong>Group:</strong> {vendor.group}</p>
+          <Button type="button" onClick={() => setEditMode(true)} className="mt-4">
+            Edit Vendor
+          </Button>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default VendorDetailsPage;

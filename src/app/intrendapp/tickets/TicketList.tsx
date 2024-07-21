@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
-import Button from '../../components/Button';
 import Table from '../../components/Table';
 
 interface Ticket {
   _id: string;
   ticket_number: string;
   customer_name: string;
-  status: string;
+  current_step: string;
   created_date: string;
+  updated_date: string;
 }
 
 const TicketList = () => {
@@ -20,9 +20,17 @@ const TicketList = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetch('http://localhost:8000/tickets');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets`);
         const data = await response.json();
-        setTickets(data.tickets);
+        const parsedTickets = data.tickets.map((ticket: any) => ({
+          _id: ticket._id,
+          ticket_number: ticket.ticket_number,
+          customer_name: ticket['customer Name'],
+          current_step: ticket.current_step,
+          created_date: ticket.created_data,
+          updated_date: ticket.updated_date,
+        }));
+        setTickets(parsedTickets);
       } catch (error) {
         console.error('Error fetching tickets:', error);
       }
@@ -30,13 +38,13 @@ const TicketList = () => {
     fetchTickets();
   }, []);
 
-  const handleDelete = async (ticket_id: string) => {
+  const handleDelete = async (ticketId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/ticket/${ticket_id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
-        setTickets(tickets.filter(ticket => ticket._id !== ticket_id));
+        setTickets(tickets.filter(ticket => ticket._id !== ticketId));
       } else {
         console.error('Failed to delete ticket');
       }
@@ -45,22 +53,23 @@ const TicketList = () => {
     }
   };
 
-  const columns = ['Ticket Number', 'Customer Name', 'Status', 'Created Date', 'Actions'];
+  const columns = ['Ticket Number', 'Customer Name', 'Current Step', 'Created Date', 'Updated Date', 'Actions'];
 
   const renderRow = (ticket: Ticket) => (
     <>
       <td className="border p-2">{ticket.ticket_number}</td>
       <td className="border p-2">{ticket.customer_name}</td>
-      <td className="border p-2">{ticket.status}</td>
-      <td className="border p-2">{new Date(ticket.created_date).toLocaleString()}</td>
-      <td className="border p-2 flex space-x-2">
-        <Link href={`tickets/${ticket.ticket_number}`} passHref>
+      <td className="border p-2">{ticket.current_step}</td>
+      <td className="border p-2">{ticket.created_date}</td>
+      <td className="border p-2">{ticket.updated_date}</td>
+      <td className="border p-2 flex justify-center space-x-2">
+        <Link href={`tickets/${ticket._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">
             <FaEye />
           </span>
         </Link>
         <FaTrash
-          onClick={() => handleDelete(ticket.ticket_number)}
+          onClick={() => handleDelete(ticket._id)}
           className="text-red-500 cursor-pointer hover:text-red-700"
         />
       </td>

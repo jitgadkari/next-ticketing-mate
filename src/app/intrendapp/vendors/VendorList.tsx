@@ -3,16 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
-import Button from '../../components/Button';
 import Table from '../../components/Table';
 
 interface Vendor {
   _id: string;
-  Name: string;
-  Email: string;
-  Contact: string;
-  State: string;
-  Country: string;
+  name: string;
+  contact: string;
+  email: string;
+  state: string;
+  country: string;
 }
 
 const VendorList = () => {
@@ -21,7 +20,7 @@ const VendorList = () => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const response = await fetch('http://localhost:8000/vendors');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
         const data = await response.json();
         setVendors(data.vendors);
       } catch (error) {
@@ -31,13 +30,13 @@ const VendorList = () => {
     fetchVendors();
   }, []);
 
-  const handleDelete = async (vendor_id: string) => {
+  const handleDelete = async (vendorId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/vendor/?vendor_id=${vendor_id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
-        setVendors(vendors.filter(vendor => vendor._id !== vendor_id));
+        setVendors(vendors.filter(vendor => vendor._id !== vendorId));
       } else {
         console.error('Failed to delete vendor');
       }
@@ -46,16 +45,16 @@ const VendorList = () => {
     }
   };
 
-  const columns = ['Name', 'Email', 'Contact', 'State', 'Country', 'Actions'];
+  const columns = ['Name', 'Contact', 'Email', 'State', 'Country', 'Actions'];
 
   const renderRow = (vendor: Vendor) => (
     <>
-      <td className="border p-2">{vendor.Name}</td>
-      <td className="border p-2">{vendor.Email}</td>
-      <td className="border p-2">{vendor.Contact}</td>
-      <td className="border p-2">{vendor.State}</td>
-      <td className="border p-2">{vendor.Country}</td>
-      <td className="border p-2 flex space-x-2">
+      <td className="border p-2">{vendor.name}</td>
+      <td className="border p-2">{vendor.contact}</td>
+      <td className="border p-2">{vendor.email}</td>
+      <td className="border p-2">{vendor.state}</td>
+      <td className="border p-2">{vendor.country}</td>
+      <td className="border p-2 flex justify-center space-x-2">
         <Link href={`vendors/${vendor._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">
             <FaEye />

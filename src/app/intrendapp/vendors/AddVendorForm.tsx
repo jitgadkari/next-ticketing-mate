@@ -11,10 +11,25 @@ interface AddVendorFormProps {
 const AddVendorForm = ({ onAdd }: AddVendorFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    contact: '',
+    fiber: '',
+    width: '',
+    content: '',
+    type: '',
+    certifications: '',
+    approvals: '',
+    weave: '',
+    weave_type: '',
+    designs: '',
+    payment_terms: '',
+    delivery_destination: '',
+    delivery_terms: '',
+    factory_location: '',
     state: '',
-    country: '',
+    contact: '',
+    email: '',
+    gst_number: '',
+    pan_number: '',
+    group: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -32,7 +47,20 @@ const AddVendorForm = ({ onAdd }: AddVendorFormProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          fiber: formData.fiber.split(',').map(item => item.trim()),
+          width: formData.width.split(',').map(item => item.trim()),
+          content: formData.content.split(',').map(item => item.trim()),
+          type: formData.type.split(',').map(item => item.trim()),
+          certifications: formData.certifications.split(',').map(item => item.trim()),
+          approvals: formData.approvals.split(',').map(item => item.trim()),
+          weave: formData.weave.split(',').map(item => item.trim()),
+          weave_type: formData.weave_type.split(',').map(item => item.trim()),
+          designs: formData.designs.split(',').map(item => item.trim()),
+          delivery_destination: formData.delivery_destination.split(',').map(item => item.trim()),
+          delivery_terms: formData.delivery_terms.split(',').map(item => item.trim()),
+        }),
       });
 
       if (response.ok) {
@@ -57,18 +85,106 @@ const AddVendorForm = ({ onAdd }: AddVendorFormProps) => {
         required
       />
       <Input
-        label="Email"
-        type="email"
-        name="email"
-        value={formData.email}
+        label="Fiber"
+        type="text"
+        name="fiber"
+        value={formData.fiber}
         onChange={handleChange}
         required
       />
       <Input
-        label="Contact"
+        label="Width"
         type="text"
-        name="contact"
-        value={formData.contact}
+        name="width"
+        value={formData.width}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Content"
+        type="text"
+        name="content"
+        value={formData.content}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Type"
+        type="text"
+        name="type"
+        value={formData.type}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Certifications"
+        type="text"
+        name="certifications"
+        value={formData.certifications}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Approvals"
+        type="text"
+        name="approvals"
+        value={formData.approvals}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Weave"
+        type="text"
+        name="weave"
+        value={formData.weave}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Weave Type"
+        type="text"
+        name="weave_type"
+        value={formData.weave_type}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Designs"
+        type="text"
+        name="designs"
+        value={formData.designs}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Payment Terms"
+        type="text"
+        name="payment_terms"
+        value={formData.payment_terms}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Delivery Destination"
+        type="text"
+        name="delivery_destination"
+        value={formData.delivery_destination}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Delivery Terms"
+        type="text"
+        name="delivery_terms"
+        value={formData.delivery_terms}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Factory Location"
+        type="text"
+        name="factory_location"
+        value={formData.factory_location}
         onChange={handleChange}
         required
       />
@@ -81,10 +197,42 @@ const AddVendorForm = ({ onAdd }: AddVendorFormProps) => {
         required
       />
       <Input
-        label="Country"
+        label="Contact"
         type="text"
-        name="country"
-        value={formData.country}
+        name="contact"
+        value={formData.contact}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Email"
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="GST Number"
+        type="text"
+        name="gst_number"
+        value={formData.gst_number}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="PAN Number"
+        type="text"
+        name="pan_number"
+        value={formData.pan_number}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Group"
+        type="text"
+        name="group"
+        value={formData.group}
         onChange={handleChange}
         required
       />

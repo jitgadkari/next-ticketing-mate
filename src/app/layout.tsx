@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = () => {
     pb.authStore.clear();
-    router.push('/login');
+    router.push('/');
   };
 
   const toggleMobileMenu = () => {
@@ -113,9 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="flex flex-1">
           {pb.authStore.isValid && (
             <aside className="w-64 bg-gray-800 text-white hidden md:block">
-              <div className="p-4">
-                <h2 className="text-2xl font-bold">IntrendApp</h2>
-              </div>
+              
               <nav className="p-4">
                 <ul>
                   <li className="mb-4">

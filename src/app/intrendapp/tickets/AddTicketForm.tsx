@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
@@ -8,12 +8,30 @@ interface AddTicketFormProps {
   onAdd: () => void;
 }
 
+interface Customer {
+  _id: string;
+  name: string;
+}
+
 const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
   const [formData, setFormData] = useState({
-    ticket_number: '',
     customer_name: '',
-    status: '',
+    message: '',
   });
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+        const data = await response.json();
+        setCustomers(data.customers);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+      }
+    };
+    fetchCustomers();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -25,7 +43,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
     console.log('Form Data:', formData);
 
     try {
-      const response = await fetch('http://localhost:8000/ticket', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,27 +64,28 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <label className="block">
+        <span className="text-gray-700">Customer</span>
+        <select
+          name="customer_name"
+          value={formData.customer_name}
+          onChange={handleChange}
+          className="mt-1 block w-full"
+          required
+        >
+          <option value="" disabled>Select a customer</option>
+          {customers.map((customer) => (
+            <option key={customer._id} value={customer.name}>
+              {customer.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <Input
-        label="Ticket Number"
+        label="Message"
         type="text"
-        name="ticket_number"
-        value={formData.ticket_number}
-        onChange={handleChange}
-        required
-      />
-      <Input
-        label="Customer Name"
-        type="text"
-        name="customer_name"
-        value={formData.customer_name}
-        onChange={handleChange}
-        required
-      />
-      <Input
-        label="Status"
-        type="text"
-        name="status"
-        value={formData.status}
+        name="message"
+        value={formData.message}
         onChange={handleChange}
         required
       />
