@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
+import { useState, useEffect, ChangeEvent, KeyboardEvent, FormEvent } from 'react';
 import TagInput from '../../components/TagInput';
 import Button from '../../components/Button';
 
@@ -14,6 +14,10 @@ interface Attributes {
   weave: string[];
   weave_type: string[];
   designs: string[];
+  paymnent_terms: string[];
+  delivery_destination: string[];
+  delivery_terms: string[];
+  group: string[];
 }
 
 interface AttributeResponse {
@@ -36,6 +40,10 @@ const AttributesPage = () => {
     weave: [],
     weave_type: [],
     designs: [],
+    paymnent_terms: [],
+    delivery_destination: [],
+    delivery_terms: [],
+    group: [],
   });
   const [inputValues, setInputValues] = useState<Record<string, string>>({
     fiber: '',
@@ -47,6 +55,10 @@ const AttributesPage = () => {
     weave: '',
     weave_type: '',
     designs: '',
+    paymnent_terms: '',
+    delivery_destination: '',
+    delivery_terms: '',
+    group: '',
   });
   const [showPopup, setShowPopup] = useState(false);
 
@@ -57,6 +69,10 @@ const AttributesPage = () => {
         const data: AttributeResponse = await response.json();
         setAttributes(data.attributes.DefaultAttributes);
         setFormData(data.attributes.DefaultAttributes);
+        setInputValues(Object.keys(data.attributes.DefaultAttributes).reduce((acc, key) => {
+          acc[key] = '';
+          return acc;
+        }, {} as Record<string, string>));
       } catch (error) {
         console.error('Error fetching attributes:', error);
       }
@@ -101,11 +117,12 @@ const AttributesPage = () => {
       });
 
       if (response.ok) {
-        const updatedAttributes = await response.json();
-        setAttributes(updatedAttributes.attributes.DefaultAttributes);
+        const updatedAttributes: AttributeResponse = await response.json();
+        if (updatedAttributes.attributes && updatedAttributes.attributes.DefaultAttributes) {
+          setAttributes(updatedAttributes.attributes.DefaultAttributes);
+        }
         setEditMode(false);
         setShowPopup(true);
-        setTimeout(() => setShowPopup(false), 3000); // Hide popup after 3 seconds
       } else {
         const errorData = await response.json();
         console.error('Failed to update attributes', errorData);
@@ -115,18 +132,22 @@ const AttributesPage = () => {
     }
   };
 
+  const closePopup = () => {
+    setShowPopup(false);
+  };
+
   if (!attributes) return <div>Loading...</div>;
 
   return (
     <div className="p-8 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Attributes</h1>
       {editMode ? (
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={(e: FormEvent) => e.preventDefault()}>
           {Object.keys(formData).map((category) => (
             <div key={category}>
               <label className="block text-gray-700">{category}</label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {formData[category as keyof Attributes].map((item, index) => (
+                {(formData[category as keyof Attributes] as string[]).map((item, index) => (
                   <span key={index} className="bg-blue-200 px-2 py-1 rounded-full flex items-center">
                     {item}
                     <button
@@ -166,7 +187,7 @@ const AttributesPage = () => {
             <div key={category} className="mb-4">
               <h2 className="text-xl font-semibold mb-2">{category}</h2>
               <div className="flex flex-wrap gap-2">
-                {attributes[category as keyof Attributes].map((item, index) => (
+                {(attributes[category as keyof Attributes] as string[]).map((item, index) => (
                   <span key={index} className="bg-blue-200 px-2 py-1 rounded-full">
                     {item}
                   </span>
@@ -180,8 +201,11 @@ const AttributesPage = () => {
         </div>
       )}
       {showPopup && (
-        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-          Attributes updated successfully!
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded shadow-lg">
+            <h2 className="text-lg font-bold mb-2">Attributes updated successfully!</h2>
+            <Button onClick={closePopup}>OK</Button>
+          </div>
         </div>
       )}
     </div>
