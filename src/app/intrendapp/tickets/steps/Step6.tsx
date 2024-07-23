@@ -2,40 +2,40 @@ import React, { useState } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 
-interface Step2Props {
+interface Step6Props {
   ticketNumber: string;
-  decodedMessage: Record<string, any>;
+  decodedMessages: Record<string, any>;
   handleNext: () => void;
-  handleUpdate: (updatedMessage: Record<string, any>) => void;
+  handleUpdate: (updatedDecodedMessages: Record<string, any>) => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext, handleUpdate }) => {
+const Step6: React.FC<Step6Props> = ({ ticketNumber, decodedMessages, handleNext, handleUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(JSON.stringify(decodedMessage, null, 2));
+  const [messages, setMessages] = useState(JSON.stringify(decodedMessages, null, 2));
 
   const handleSave = async () => {
-    const updatedMessage = JSON.parse(message);
-    await handleUpdate(updatedMessage);
+    const updatedDecodedMessages = JSON.parse(messages);
+    await handleUpdate(updatedDecodedMessages);
     setIsEditing(false);
   };
 
   return (
     <div>
-      <h3>Decoded Message</h3>
+      <h3>Decoded Messages from Vendors</h3>
       {isEditing ? (
         <div>
           <TextArea
-            label="Decoded Message"
-            name="decodedMessage"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            label="Decoded Messages"
+            name="decodedMessages"
+            value={messages}
+            onChange={(e) => setMessages(e.target.value)}
           />
           <Button onClick={handleSave}>Save</Button>
           <Button onClick={() => setIsEditing(false)}>Cancel</Button>
         </div>
       ) : (
         <div>
-          <pre>{message}</pre>
+          <pre>{messages}</pre>
           <Button onClick={() => setIsEditing(true)}>Edit</Button>
         </div>
       )}
@@ -44,4 +44,4 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext,
   );
 };
 
-export default Step2;
+export default Step6;

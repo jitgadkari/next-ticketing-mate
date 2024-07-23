@@ -10,11 +10,9 @@ interface Step1Props {
 const Step1: React.FC<Step1Props> = ({ message, customerName, handleNext }) => {
   return (
     <div>
-      <p><strong>Customer Name:</strong> {customerName}</p>
-      <p><strong>Customer Message:</strong> {message}</p>
-      <Button onClick={handleNext} className="mt-4">
-        Next Step
-      </Button>
+      <h3>Customer Message from {customerName}</h3>
+      <p>{message}</p>
+      <Button onClick={handleNext}>Next Step</Button>
     </div>
   );
 };

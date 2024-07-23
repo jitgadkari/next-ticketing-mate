@@ -17,7 +17,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "^5.2.1",
-    "react-multi-select-component": "^4.3.4"
+    "react-multi-select-component": "^4.3.4",
+    "react-select": "^5.8.0"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",

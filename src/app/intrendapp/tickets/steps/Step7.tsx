@@ -2,40 +2,40 @@ import React, { useState } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 
-interface Step2Props {
+interface Step7Props {
   ticketNumber: string;
-  decodedMessage: Record<string, any>;
+  finalQuote: Record<string, any>;
   handleNext: () => void;
-  handleUpdate: (updatedMessage: Record<string, any>) => void;
+  handleUpdate: (updatedQuote: Record<string, any>) => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext, handleUpdate }) => {
+const Step7: React.FC<Step7Props> = ({ ticketNumber, finalQuote, handleNext, handleUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(JSON.stringify(decodedMessage, null, 2));
+  const [quote, setQuote] = useState(JSON.stringify(finalQuote, null, 2));
 
   const handleSave = async () => {
-    const updatedMessage = JSON.parse(message);
-    await handleUpdate(updatedMessage);
+    const updatedQuote = JSON.parse(quote);
+    await handleUpdate(updatedQuote);
     setIsEditing(false);
   };
 
   return (
     <div>
-      <h3>Decoded Message</h3>
+      <h3>Final Quote</h3>
       {isEditing ? (
         <div>
           <TextArea
-            label="Decoded Message"
-            name="decodedMessage"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            label="Final Quote"
+            name="finalQuote"
+            value={quote}
+            onChange={(e) => setQuote(e.target.value)}
           />
           <Button onClick={handleSave}>Save</Button>
           <Button onClick={() => setIsEditing(false)}>Cancel</Button>
         </div>
       ) : (
         <div>
-          <pre>{message}</pre>
+          <pre>{quote}</pre>
           <Button onClick={() => setIsEditing(true)}>Edit</Button>
         </div>
       )}
@@ -44,4 +44,4 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext,
   );
 };
 
-export default Step2;
+export default Step7;

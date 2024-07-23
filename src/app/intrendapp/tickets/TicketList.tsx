@@ -25,9 +25,9 @@ const TicketList = () => {
         const parsedTickets = data.tickets.map((ticket: any) => ({
           _id: ticket._id,
           ticket_number: ticket.ticket_number,
-          customer_name: ticket['customer Name'],
+          customer_name: ticket.customer_name,
           current_step: ticket.current_step,
-          created_date: ticket.created_data,
+          created_date: ticket.created_date,
           updated_date: ticket.updated_date,
         }));
         setTickets(parsedTickets);
@@ -53,6 +53,19 @@ const TicketList = () => {
     }
   };
 
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+    };
+    return new Intl.DateTimeFormat('en-GB', options).format(date);
+  };
+
   const columns = ['Ticket Number', 'Customer Name', 'Current Step', 'Created Date', 'Updated Date', 'Actions'];
 
   const renderRow = (ticket: Ticket) => (
@@ -60,8 +73,8 @@ const TicketList = () => {
       <td className="border p-2">{ticket.ticket_number}</td>
       <td className="border p-2">{ticket.customer_name}</td>
       <td className="border p-2">{ticket.current_step}</td>
-      <td className="border p-2">{ticket.created_date}</td>
-      <td className="border p-2">{ticket.updated_date}</td>
+      <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
+      <td className="border p-2">{formatDateTime(ticket.updated_date)}</td>
       <td className="border p-2 flex justify-center space-x-2">
         <Link href={`tickets/${ticket._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">

@@ -2,40 +2,39 @@ import React, { useState } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 
-interface Step2Props {
+interface Step8Props {
   ticketNumber: string;
-  decodedMessage: Record<string, any>;
+  customerTemplate: string;
   handleNext: () => void;
-  handleUpdate: (updatedMessage: Record<string, any>) => void;
+  handleUpdate: (updatedTemplate: string) => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext, handleUpdate }) => {
+const Step8: React.FC<Step8Props> = ({ ticketNumber, customerTemplate, handleNext, handleUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(JSON.stringify(decodedMessage, null, 2));
+  const [template, setTemplate] = useState(customerTemplate);
 
   const handleSave = async () => {
-    const updatedMessage = JSON.parse(message);
-    await handleUpdate(updatedMessage);
+    await handleUpdate(template);
     setIsEditing(false);
   };
 
   return (
     <div>
-      <h3>Decoded Message</h3>
+      <h3>Customer Message Template</h3>
       {isEditing ? (
         <div>
           <TextArea
-            label="Decoded Message"
-            name="decodedMessage"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            label="Customer Message Template"
+            name="customerMessageTemplate"
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
           />
           <Button onClick={handleSave}>Save</Button>
           <Button onClick={() => setIsEditing(false)}>Cancel</Button>
         </div>
       ) : (
         <div>
-          <pre>{message}</pre>
+          <pre>{template}</pre>
           <Button onClick={() => setIsEditing(true)}>Edit</Button>
         </div>
       )}
@@ -44,4 +43,4 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext,
   );
 };
 
-export default Step2;
+export default Step8;

@@ -2,31 +2,32 @@ import React, { useState } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 
-interface Step2Props {
+interface Step3Props {
   ticketNumber: string;
-  decodedMessage: Record<string, any>;
+  template: string;
+  customerName: string;
+  askedDetails: Record<string, any>;
   handleNext: () => void;
-  handleUpdate: (updatedMessage: Record<string, any>) => void;
+  handleUpdate: (updatedTemplate: string) => void;
 }
 
-const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext, handleUpdate }) => {
+const Step3: React.FC<Step3Props> = ({ ticketNumber, template, customerName, askedDetails, handleNext, handleUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(JSON.stringify(decodedMessage, null, 2));
+  const [message, setMessage] = useState(template);
 
   const handleSave = async () => {
-    const updatedMessage = JSON.parse(message);
-    await handleUpdate(updatedMessage);
+    await handleUpdate(message);
     setIsEditing(false);
   };
 
   return (
     <div>
-      <h3>Decoded Message</h3>
+      <h3>Vendor Message Template</h3>
       {isEditing ? (
         <div>
           <TextArea
-            label="Decoded Message"
-            name="decodedMessage"
+            label="Vendor Message Template"
+            name="vendorMessageTemplate"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
@@ -44,4 +45,4 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext,
   );
 };
 
-export default Step2;
+export default Step3;
