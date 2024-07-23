@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '../../../components/Button';
-import Input from '../../../components/Input';
-import { MultiSelect, Option } from 'react-multi-select-component';
+import Step1 from '../steps/Step1';
+import Step2 from '../steps/Step2';
 
 interface Ticket {
   _id: string;
@@ -32,8 +32,7 @@ const TicketDetailsPage = () => {
   const router = useRouter();
   const { id } = useParams();
   const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [stepData, setStepData] = useState<string>('');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [activeStep, setActiveStep] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -46,6 +45,7 @@ const TicketDetailsPage = () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`);
       const data = await response.json();
       setTicket(data.ticket);
+      setActiveStep(data.ticket.current_step);
     } catch (error) {
       console.error('Error fetching ticket:', error);
     }
@@ -53,48 +53,65 @@ const TicketDetailsPage = () => {
 
   const handleNextStep = async () => {
     if (ticket) {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/update_ticket_step`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: stepData }),
-        });
+      const nextStep = stepsOrder[stepsOrder.indexOf(ticket.current_step) + 1];
+      if (ticket.current_step === "Step 1 : Customer Message Received") {
+        // Call the API to decode the client message if Step 2 data is empty
+        if (!ticket.steps["Step 2 : Message Decoded"] || Object.keys(ticket.steps["Step 2 : Message Decoded"]).length === 0) {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode?text=${encodeURIComponent(ticket.steps["Step 1 : Customer Message Received"])}`, {
+              method: 'POST',
+              headers: {
+                'accept': 'application/json',
+              },
+              body: '',
+            });
 
-        if (response.ok) {
-          fetchTicket(ticket._id);
-          setIsEditing(false);
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to update ticket', errorData);
+            if (response.ok) {
+              const decodedMessage = await response.json();
+              // Update step 2 in the database with the decoded message
+              const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/step/`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info:decodedMessage  }),
+              });
+
+              if (updateResponse.ok) {
+                fetchTicket(ticket._id);
+                setActiveStep(nextStep);
+              } else {
+                const errorData = await updateResponse.json();
+                console.error('Failed to update ticket', errorData);
+              }
+            } else {
+              const errorData = await response.json();
+              console.error('Failed to decode message', errorData);
+            }
+          } catch (error) {
+            console.error('Error decoding message:', error);
+          }
         }
-      } catch (error) {
-        console.error('Error updating ticket:', error);
-      }
-    }
-  };
+      } else {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: ticket.steps[ticket.current_step] }),
+          });
 
-  const handleUpdateStep = async () => {
-    if (ticket) {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/update_specific_step`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info_dict: { [ticket.current_step]: stepData } }),
-        });
-
-        if (response.ok) {
-          fetchTicket(ticket._id);
-          setIsEditing(false);
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to update step', errorData);
+          if (response.ok) {
+            fetchTicket(ticket._id);
+            setActiveStep(nextStep);
+          } else {
+            const errorData = await response.json();
+            console.error('Failed to update ticket', errorData);
+          }
+        } catch (error) {
+          console.error('Error updating ticket:', error);
         }
-      } catch (error) {
-        console.error('Error updating step:', error);
       }
     }
   };
@@ -104,74 +121,27 @@ const TicketDetailsPage = () => {
 
     switch (step) {
       case "Step 1 : Customer Message Received":
-        return <p>{ticket.steps[step]}</p>;
+        return (
+          <Step1
+            message={ticket.steps[step]}
+            customerName={ticket.customer_name}
+            handleNext={handleNextStep}
+          />
+        );
 
       case "Step 2 : Message Decoded":
         return (
-          <div>
-            <p>{JSON.stringify(ticket.steps[step], null, 2)}</p>
-            {isEditing ? (
-              <div>
-                <Input
-                  label="Update Step Info"
-                  type="text"
-                  name="stepData"
-                  value={stepData}
-                  onChange={(e) => setStepData(e.target.value)}
-                />
-                <Button onClick={handleUpdateStep}>Update</Button>
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-              </div>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit</Button>
-            )}
-          </div>
+          <Step2
+            data={ticket.steps[step]}
+            handleNext={handleNextStep}
+            handleUpdate={(updatedData) => {
+              const updatedSteps = { ...ticket.steps, [step]: updatedData };
+              setTicket({ ...ticket, steps: updatedSteps });
+            }}
+          />
         );
 
-      case "Step 3 : Message Template for vendors":
-        return (
-          <div>
-            <p>{ticket.steps[step]}</p>
-            {isEditing ? (
-              <div>
-                <Input
-                  label="Update Template"
-                  type="text"
-                  name="stepData"
-                  value={stepData}
-                  onChange={(e) => setStepData(e.target.value)}
-                />
-                <Button onClick={handleUpdateStep}>Update</Button>
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-              </div>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit</Button>
-            )}
-          </div>
-        );
-
-      case "Step 4 : Vendor Selection":
-        return (
-          <div>
-            <p>{JSON.stringify(ticket.steps[step], null, 2)}</p>
-            {isEditing ? (
-              <div>
-                <MultiSelect
-                  options={[]}  // Populate with vendor options
-                  value={[]}  // Populate with selected vendor options
-                  onChange={(selected: Option[]) => setStepData(JSON.stringify(selected))}
-                  labelledBy="Select Vendors"
-                />
-                <Button onClick={handleUpdateStep}>Update</Button>
-                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-              </div>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit</Button>
-            )}
-          </div>
-        );
-
-      // Continue similar logic for other steps
+      // Add similar logic for other steps
       default:
         return <p>{ticket.steps[step]}</p>;
     }
@@ -195,7 +165,7 @@ const TicketDetailsPage = () => {
               {stepsOrder.map((step, index) => (
                 <div key={index} className="flex items-center">
                   <Button
-                    onClick={() => {}}
+                    onClick={() => setActiveStep(step)}
                     className={`px-4 py-2 rounded-full ${
                       index <= getCurrentStepIndex()
                         ? "bg-blue-500 text-white"
@@ -211,12 +181,7 @@ const TicketDetailsPage = () => {
               ))}
             </div>
           </div>
-          <div>{renderStepPanel(ticket.current_step)}</div>
-          {ticket.current_step !== "Step 9: Final Status" && (
-            <Button onClick={handleNextStep} className="mt-4">
-              Next Step
-            </Button>
-          )}
+          <div>{renderStepPanel(activeStep || ticket.current_step)}</div>
         </div>
       ) : (
         <p>Loading...</p>
