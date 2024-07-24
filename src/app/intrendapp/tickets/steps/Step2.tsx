@@ -15,6 +15,7 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, data, handleNext, handleUpd
 
   const handleSave = async () => {
     const updatedData = JSON.parse(message);
+    console.log('updatedData from save button: ', updatedData);
     await handleUpdate(updatedData);
     setIsEditing(false);
   };

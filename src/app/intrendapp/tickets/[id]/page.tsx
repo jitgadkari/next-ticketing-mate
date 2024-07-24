@@ -102,6 +102,9 @@ const TicketDetailsPage = () => {
                 body: '',
               });
               const decodedMessage = await response.json();
+
+
+
               await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
                 method: 'PUT',
                 headers: {
