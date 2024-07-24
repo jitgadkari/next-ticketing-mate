@@ -1,7 +1,7 @@
 import React from 'react';
 import Select, { MultiValue } from 'react-select';
 
-interface MultiSelectOption {
+export interface MultiSelectOption {
   label: string;
   value: string;
 }

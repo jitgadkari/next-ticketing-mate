@@ -1,57 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Button from '../../../components/Button';
-import TextArea from '../../../components/TextArea';
 
 interface Step5Props {
   ticketNumber: string;
-  vendorMessages: { label: string; value: string; }[];
+  vendorMessages: { [key: string]: string };
   selectedVendors: string[];
-  handleNext: () => void;
-  handleUpdate: (updatedMessages: { label: string; value: string; }[]) => void;
+  handleNext: () => Promise<void>;
+  handleUpdate: (updatedMessages: { [key: string]: string }) => Promise<void>;
 }
 
 const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVendors, handleNext, handleUpdate }) => {
-  const [messages, setMessages] = useState<{ label: string; value: string; }[]>(vendorMessages);
+  const [messages, setMessages] = useState(vendorMessages);
 
-  const handleSave = () => {
-    handleUpdate(messages);
+  const handleSave = async () => {
+    await handleUpdate(messages);
+  };
+
+  const handleChange = (vendor: string, value: string) => {
+    setMessages(prev => ({
+      ...prev,
+      [vendor]: value,
+    }));
   };
 
   const handleNextStep = async () => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-        method: 'PUT',
+    const vendorDecodedMessages: Record<string, any> = {};
+    for (const vendor of selectedVendors) {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ticket_number: ticketNumber, step_info: { list: messages }, step_number: "Step 6 : Vendor Message Decoded" }),
+        body: JSON.stringify({ text: messages[vendor] || '' }),
       });
-      handleNext();
-    } catch (error) {
-      console.error('Error updating ticket:', error);
+      vendorDecodedMessages[vendor] = await response.json();
     }
+    await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ticket_number: ticketNumber, step_info: vendorDecodedMessages, step_number: "Step 6 : Vendor Message Decoded" }),
+    });
+    handleNext();
   };
 
   return (
     <div>
       <h3>Messages from Vendors</h3>
-      {selectedVendors.map((vendor, index) => (
-        <div key={vendor}>
-          <h4>{vendor}</h4>
-          <TextArea
-            label={`Message from ${vendor}`}
-            name={vendor}
-            value={messages[index]?.value || ''}
-            onChange={(e) => {
-              const newMessages = [...messages];
-              newMessages[index] = { label: vendor, value: e.target.value };
-              setMessages(newMessages);
-            }}
+      {selectedVendors.map((vendor) => (
+        <div key={vendor} className="mb-4">
+          <label className="block text-gray-700">{vendor}</label>
+          <textarea
+            value={messages[vendor] || ''}
+            onChange={(e) => handleChange(vendor, e.target.value)}
+            className="mt-1 block w-full"
           />
         </div>
       ))}
-      <Button onClick={handleSave} className="mt-4">Save</Button>
-      <Button onClick={handleNextStep} className="mt-4">Next Step</Button>
+      <div className="flex justify-end">
+        <Button onClick={handleSave} className="mt-4">Save</Button>
+        <Button onClick={handleNextStep} className="mt-4 ml-2">Next</Button>
+      </div>
     </div>
   );
 };

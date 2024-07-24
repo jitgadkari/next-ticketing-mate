@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { MultiSelect, Option } from 'react-multi-select-component';
 import Button from '../../../components/Button';
+import MultiSelect, { MultiSelectOption } from '../../../components/MultiSelect';
+import { MultiValue } from 'react-select';
 
 interface Step4Props {
   ticketNumber: string;
   selectedVendors: string[];
   template: string;
-  handleNext: () => Promise<void>;
+  handleNext: (updatedVendors: string[]) => Promise<void>;
   handleUpdate: (updatedVendors: string[]) => Promise<void>;
 }
 
-const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors = [], template, handleNext, handleUpdate }) => {
-  const [vendors, setVendors] = useState<Option[]>([]);
-  const [selectedOptions, setSelectedOptions] = useState<Option[]>(selectedVendors.map(vendor => ({ label: vendor, value: vendor })));
+const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, handleNext, handleUpdate }) => {
+  const [vendors, setVendors] = useState<MultiSelectOption[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<MultiSelectOption[]>(selectedVendors.map(vendor => ({ label: vendor, value: vendor })));
 
   useEffect(() => {
     const fetchVendors = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
         const data = await response.json();
-        setVendors(data.vendors.map((vendor: string) => ({ label: vendor, value: vendor })));
+        if (Array.isArray(data.vendors)) {
+          setVendors(data.vendors.map((vendor: any) => ({ label: vendor.name, value: vendor.name })));
+        } else {
+          console.error('Unexpected response format:', data);
+        }
       } catch (error) {
         console.error('Error fetching vendors:', error);
       }
@@ -27,9 +32,33 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors = [], templ
     fetchVendors();
   }, []);
 
-  const handleVendorSelection = (selected: Option[]) => {
-    setSelectedOptions(selected);
-    handleUpdate(selected.map(option => option.value));
+  const handleVendorChange = (selected: MultiValue<MultiSelectOption>) => {
+    setSelectedOptions(selected as MultiSelectOption[]);
+  };
+
+  const handleSave = async () => {
+    const updatedVendors = selectedOptions.map(option => option.value);
+    await handleUpdate(updatedVendors);
+  };
+
+  const handleNextStep = async () => {
+    const updatedVendors = selectedOptions.map(option => option.value);
+    const vendorMessages = updatedVendors.reduce((acc, vendor) => {
+      acc[vendor] = '';
+      return acc;
+    }, {} as Record<string, string>);
+    await handleNext(updatedVendors);
+    await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ticket_number: ticketNumber,
+        step_info: vendorMessages,
+        step_number: "Step 5: Messages from Vendors"
+      }),
+    });
   };
 
   return (
@@ -38,10 +67,16 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors = [], templ
       <MultiSelect
         options={vendors}
         value={selectedOptions}
-        onChange={handleVendorSelection}
-        labelledBy="Select Vendors"
+        onChange={handleVendorChange}
       />
-      <Button onClick={handleNext}>Next and Send</Button>
+      <div className="flex justify-end">
+        <Button onClick={handleSave} className="mt-4">
+          Save
+        </Button>
+        <Button onClick={handleNextStep} className="mt-4 ml-2">
+          Next
+        </Button>
+      </div>
     </div>
   );
 };

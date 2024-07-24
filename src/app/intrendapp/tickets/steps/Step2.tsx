@@ -14,7 +14,8 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, data, handleNext, handleUpd
   const [message, setMessage] = useState(JSON.stringify(data, null, 2));
 
   const handleSave = async () => {
-    await handleUpdate(JSON.parse(message));
+    const updatedData = JSON.parse(message);
+    await handleUpdate(updatedData);
     setIsEditing(false);
   };
 
@@ -38,7 +39,9 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, data, handleNext, handleUpd
           <Button onClick={() => setIsEditing(true)}>Edit</Button>
         </div>
       )}
-      <Button onClick={handleNext} className="mt-4">Next Step</Button>
+      <Button onClick={handleNext} className="mt-4">
+        Next Step
+      </Button>
     </div>
   );
 };
