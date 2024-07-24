@@ -1,32 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 
-interface VendorMessage {
-  label: string;
-  value: string;
-}
-
 interface Step5Props {
   ticketNumber: string;
-  vendorMessages: VendorMessage[];
+  vendorMessages: { label: string; value: string; }[];
   selectedVendors: string[];
-  askedDetails: Record<string, any>;
   handleNext: () => void;
-  handleUpdate: (updatedMessages: VendorMessage[]) => void;
+  handleUpdate: (updatedMessages: { label: string; value: string; }[]) => void;
 }
 
-const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVendors, askedDetails, handleNext, handleUpdate }) => {
-  const [messages, setMessages] = useState<VendorMessage[]>(vendorMessages);
+const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVendors, handleNext, handleUpdate }) => {
+  const [messages, setMessages] = useState<{ label: string; value: string; }[]>(vendorMessages);
 
-  const handleChange = (index: number, value: string) => {
-    const newMessages = [...messages];
-    newMessages[index].value = value;
-    setMessages(newMessages);
+  const handleSave = () => {
+    handleUpdate(messages);
   };
 
-  const handleSave = async () => {
-    await handleUpdate(messages);
+  const handleNextStep = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticket_number: ticketNumber, step_info: { list: messages }, step_number: "Step 6 : Vendor Message Decoded" }),
+      });
+      handleNext();
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+    }
   };
 
   return (
@@ -37,14 +40,18 @@ const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVen
           <h4>{vendor}</h4>
           <TextArea
             label={`Message from ${vendor}`}
-            name={`message_${vendor}`}
-            value={messages[index]?.value || ""}
-            onChange={(e) => handleChange(index, e.target.value)}
+            name={vendor}
+            value={messages[index]?.value || ''}
+            onChange={(e) => {
+              const newMessages = [...messages];
+              newMessages[index] = { label: vendor, value: e.target.value };
+              setMessages(newMessages);
+            }}
           />
         </div>
       ))}
-      <Button onClick={handleSave}>Save</Button>
-      <Button onClick={handleNext}>Next Step</Button>
+      <Button onClick={handleSave} className="mt-4">Save</Button>
+      <Button onClick={handleNextStep} className="mt-4">Next Step</Button>
     </div>
   );
 };

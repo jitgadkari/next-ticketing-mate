@@ -1,37 +1,25 @@
 import React, { useState } from 'react';
 import Button from '../../../components/Button';
-import Select from '../../../components/Select';
 
 interface Step9Props {
   ticketNumber: string;
-  finalStatus: string;
-  handleNext: () => void;
-  handleUpdate: (updatedStatus: string) => void;
+  finalStatus: any;
+  handleUpdate: (updatedStatus: Record<string, any>) => Promise<void>;
 }
 
-const Step9: React.FC<Step9Props> = ({ ticketNumber, finalStatus, handleNext, handleUpdate }) => {
+const Step9: React.FC<Step9Props> = ({ ticketNumber, finalStatus, handleUpdate }) => {
   const [status, setStatus] = useState(finalStatus);
 
-  const handleSave = async () => {
+  const handleFinish = async () => {
     await handleUpdate(status);
+    alert('Ticket process completed.');
   };
 
   return (
     <div>
       <h3>Final Status</h3>
-      <Select
-        label="Final Status"
-        name="finalStatus"
-        value={status}
-        options={[
-          { label: 'Pending', value: 'pending' },
-          { label: 'Approved', value: 'approved' },
-          { label: 'Not Approved', value: 'not approved' },
-        ]}
-        onChange={(e) => setStatus(e.target.value)}
-      />
-      <Button onClick={handleSave}>Save</Button>
-      <Button onClick={handleNext}>Finish</Button>
+      <textarea value={status.text} onChange={(e) => setStatus({ ...status, text: e.target.value })} />
+      <Button onClick={handleFinish}>Finish</Button>
     </div>
   );
 };

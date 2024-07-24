@@ -4,18 +4,17 @@ import TextArea from '../../../components/TextArea';
 
 interface Step2Props {
   ticketNumber: string;
-  decodedMessage: Record<string, any>;
-  handleNext: () => void;
-  handleUpdate: (updatedMessage: Record<string, any>) => void;
+  data: Record<string, any>;
+  handleNext: () => Promise<void>;
+  handleUpdate: (updatedData: Record<string, any>) => Promise<void>;
 }
 
-const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext, handleUpdate }) => {
+const Step2: React.FC<Step2Props> = ({ ticketNumber, data, handleNext, handleUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(JSON.stringify(decodedMessage, null, 2));
+  const [message, setMessage] = useState(JSON.stringify(data, null, 2));
 
   const handleSave = async () => {
-    const updatedMessage = JSON.parse(message);
-    await handleUpdate(updatedMessage);
+    await handleUpdate(JSON.parse(message));
     setIsEditing(false);
   };
 
@@ -39,7 +38,7 @@ const Step2: React.FC<Step2Props> = ({ ticketNumber, decodedMessage, handleNext,
           <Button onClick={() => setIsEditing(true)}>Edit</Button>
         </div>
       )}
-      <Button onClick={handleNext}>Next Step</Button>
+      <Button onClick={handleNext} className="mt-4">Next Step</Button>
     </div>
   );
 };

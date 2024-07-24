@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { MultiSelect, Option } from 'react-multi-select-component';
 import Button from '../../../components/Button';
-import TextArea from '../../../components/TextArea';
 
 interface Step6Props {
   ticketNumber: string;
@@ -10,36 +10,40 @@ interface Step6Props {
 }
 
 const Step6: React.FC<Step6Props> = ({ ticketNumber, decodedMessages, handleNext, handleUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [messages, setMessages] = useState(JSON.stringify(decodedMessages, null, 2));
+  const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
 
-  const handleSave = async () => {
-    const updatedDecodedMessages = JSON.parse(messages);
-    await handleUpdate(updatedDecodedMessages);
-    setIsEditing(false);
+  const handleNextStep = async () => {
+    try {
+      const updatedDecodedMessages = selectedOptions.reduce((acc: Record<string, any>, option: Option) => {
+        acc[option.label] = decodedMessages[option.label];
+        return acc;
+      }, {});
+
+      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticket_number: ticketNumber, step_info: updatedDecodedMessages, step_number: "Step 7 : Final Quote" }),
+      });
+
+      handleUpdate(updatedDecodedMessages);
+      handleNext();
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+    }
   };
 
   return (
     <div>
       <h3>Decoded Messages from Vendors</h3>
-      {isEditing ? (
-        <div>
-          <TextArea
-            label="Decoded Messages"
-            name="decodedMessages"
-            value={messages}
-            onChange={(e) => setMessages(e.target.value)}
-          />
-          <Button onClick={handleSave}>Save</Button>
-          <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-        </div>
-      ) : (
-        <div>
-          <pre>{messages}</pre>
-          <Button onClick={() => setIsEditing(true)}>Edit</Button>
-        </div>
-      )}
-      <Button onClick={handleNext}>Next Step</Button>
+      <MultiSelect
+        options={Object.keys(decodedMessages).map(key => ({ label: key, value: key }))}
+        value={selectedOptions}
+        onChange={setSelectedOptions}
+        labelledBy="Select Decoded Messages"
+      />
+      <Button onClick={handleNextStep} className="mt-4">Next Step</Button>
     </div>
   );
 };
