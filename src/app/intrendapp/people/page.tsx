@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import PeopleList from './PeopleList';
 import AddPersonForm from './AddPersonForm';
 import Button from '../../components/Button';
 
-const PeoplePage = () => {
-  const [showForm, setShowForm] = useState(false);
+const PeoplePage: React.FC = () => {
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
-  const handleAdd = () => {
+  const handleAdd = (): void => {
     setShowForm(false);
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -25,7 +27,7 @@ const PeoplePage = () => {
           <AddPersonForm onAdd={handleAdd} />
         </div>
       )}
-      <PeopleList />
+      <PeopleList key={refreshTrigger} />
     </div>
   );
 };

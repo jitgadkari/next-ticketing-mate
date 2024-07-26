@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
@@ -13,11 +13,11 @@ interface Person {
   type_employee: string;
 }
 
-const PeopleList = () => {
+const PeopleList: React.FC = () => {
   const [people, setPeople] = useState<Person[]>([]);
 
   useEffect(() => {
-    const fetchPeople = async () => {
+    const fetchPeople = async (): Promise<void> => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people`);
         const data = await response.json();
@@ -29,7 +29,7 @@ const PeopleList = () => {
     fetchPeople();
   }, []);
 
-  const handleDelete = async (personId: string) => {
+  const handleDelete = async (personId: string): Promise<void> => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/${personId}`, {
         method: 'DELETE',
@@ -44,9 +44,9 @@ const PeopleList = () => {
     }
   };
 
-  const columns = ['Name', 'Phone', 'Email', 'Type Employee', 'Actions'];
+  const columns: string[] = ['Name', 'Phone', 'Email', 'Type Employee', 'Actions'];
 
-  const renderRow = (person: Person) => (
+  const renderRow = (person: Person): JSX.Element => (
     <>
       <td className="border p-2">{person.name}</td>
       <td className="border p-2">{person.phone}</td>
