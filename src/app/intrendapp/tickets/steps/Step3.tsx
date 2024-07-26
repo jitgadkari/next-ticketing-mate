@@ -43,7 +43,10 @@ const Step3: React.FC<Step3Props> = ({ ticketNumber, template, customerName, ask
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ticket_number: ticketNumber, step_info: { text: message }, step_number: "Step 4 : Vendor Selection" }),
+        body: JSON.stringify({ 
+          ticket_number: ticketNumber, 
+          step_info: { list: [] }, 
+          step_number: "Step 4 : Vendor Selection" }),
       });
 
       handleNext();

@@ -43,22 +43,17 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, 
 
   const handleNextStep = async () => {
     const updatedVendors = selectedOptions.map(option => option.value);
+    
+    // First, save the selected vendors
+    await handleUpdate(updatedVendors);
+
+    // Then, prepare vendor messages and move to next step
     const vendorMessages = updatedVendors.reduce((acc, vendor) => {
       acc[vendor] = '';
       return acc;
     }, {} as Record<string, string>);
+    
     await handleNext(updatedVendors);
-    await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ticket_number: ticketNumber,
-        step_info: vendorMessages,
-        step_number: "Step 5: Messages from Vendors"
-      }),
-    });
   };
 
   return (

@@ -131,6 +131,8 @@ const CustomerDetailsPage = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (customer) {
+      // logging the form data
+      
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer`, {
           method: 'PUT',
