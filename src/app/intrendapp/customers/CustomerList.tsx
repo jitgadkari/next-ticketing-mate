@@ -9,7 +9,7 @@ interface Customer {
   _id: string;
   name: string;
   email: string;
-  contact: string;
+  phone: string;
   state: string;
   country: string;
 }
@@ -51,7 +51,7 @@ const CustomerList = () => {
     <>
       <td className="border p-2">{customer.name}</td>
       <td className="border p-2">{customer.email}</td>
-      <td className="border p-2">{customer.contact}</td>
+      <td className="border p-2">{customer.phone}</td>
       <td className="border p-2">{customer.state}</td>
       <td className="border p-2">{customer.country}</td>
       <td className="border p-2 flex justify-center space-x-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
@@ -9,7 +9,7 @@ import { MultiSelect, Option } from 'react-multi-select-component';
 interface Vendor {
   _id: string;
   name: string;
-  fiber: string[];
+  fabric_type: string[];
   width: string[];
   content: string[];
   type: string[];
@@ -20,11 +20,11 @@ interface Vendor {
   designs: string[];
   people: string[];
   payment_terms: string;
-  delivery_destination: string[];
+  delivery_destination: string;
   delivery_terms: string[];
   factory_location: string;
   state: string;
-  contact: string;
+  phone: string;
   email: string;
   gst_number: string;
   pan_number: string;
@@ -32,7 +32,7 @@ interface Vendor {
 }
 
 interface Attributes {
-  fiber: string[];
+  fabric_type: string[];
   width: string[];
   content: string[];
   type: string[];
@@ -42,12 +42,12 @@ interface Attributes {
   weave_type: string[];
   designs: string[];
   payment_terms: string[];
-  delivery_destination: string[];
   delivery_terms: string[];
   group: string[];
 }
 
 interface Person {
+  _id: string;
   name: string;
   phone: string;
   email: string;
@@ -57,14 +57,14 @@ interface Person {
   linked_to_id: string | null;
 }
 
-const VendorDetailsPage = () => {
+const VendorDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
-    fiber: [],
+    fabric_type: [],
     width: [],
     content: [],
     type: [],
@@ -73,7 +73,6 @@ const VendorDetailsPage = () => {
     weave: [],
     weave_type: [],
     designs: [],
-    delivery_destination: [],
     delivery_terms: [],
     people: [],
     group: []
@@ -94,7 +93,7 @@ const VendorDetailsPage = () => {
       const data = await response.json();
       setVendor(data.vendor);
       setSelectedAttributes({
-        fiber: data.vendor.fiber,
+        fabric_type: data.vendor.fabric_type,
         width: data.vendor.width,
         content: data.vendor.content,
         type: data.vendor.type,
@@ -103,7 +102,6 @@ const VendorDetailsPage = () => {
         weave: data.vendor.weave,
         weave_type: data.vendor.weave_type,
         designs: data.vendor.designs,
-        delivery_destination: data.vendor.delivery_destination,
         delivery_terms: data.vendor.delivery_terms,
         people: data.vendor.people,
         group: [data.vendor.group]
@@ -125,7 +123,7 @@ const VendorDetailsPage = () => {
 
   const fetchUnlinkedPeople = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people/?linked=No`);
       const data = await response.json();
       setUnlinkedPeople(data.people);
     } catch (error) {
@@ -163,7 +161,15 @@ const VendorDetailsPage = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name: vendor.name, update_dict: { ...vendor, ...selectedAttributes, group: selectedAttributes.group[0] } }),
+          body: JSON.stringify({
+            name: vendor.name,
+            update_dict: {
+              ...vendor,
+              ...selectedAttributes,
+              group: selectedAttributes.group[0],
+              delivery_destination: vendor.delivery_destination
+            }
+          }),
         });
 
         if (response.ok) {
@@ -181,20 +187,21 @@ const VendorDetailsPage = () => {
 
   if (!vendor || !defaultAttributes) return <div>Loading...</div>;
 
-  const attributeOptions = (attribute: string) =>
-    defaultAttributes[attribute as keyof Attributes]?.map((value) => ({
+  const attributeOptions = (attribute: string) => {
+    if (attribute === 'people') {
+      return unlinkedPeople.map((person) => ({
+        label: `${person.name} (${person.email})`,
+        value: person.name,
+      }));
+    }
+    return defaultAttributes[attribute as keyof Attributes]?.map((value) => ({
       label: value,
       value,
     })) || [];
-
-  const peopleOptions = unlinkedPeople.map(person => ({
-    label: person.name,
-    value: person.name,
-  }));
+  };
 
   return (
-    <div className="p-8 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Vendor Details</h1>
+    <div className="p-4">
       {isEditing ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -207,9 +214,9 @@ const VendorDetailsPage = () => {
           />
           <Input
             label="Phone"
-            type="text"
-            name="contact"
-            value={vendor.contact}
+            type="tel"
+            name="phone"
+            value={vendor.phone}
             onChange={handleInputChange}
             required
           />
@@ -227,7 +234,6 @@ const VendorDetailsPage = () => {
             name="factory_location"
             value={vendor.factory_location}
             onChange={handleInputChange}
-            required
           />
           <Input
             label="State"
@@ -235,7 +241,6 @@ const VendorDetailsPage = () => {
             name="state"
             value={vendor.state}
             onChange={handleInputChange}
-            required
           />
           <Input
             label="GST Number"
@@ -243,7 +248,6 @@ const VendorDetailsPage = () => {
             name="gst_number"
             value={vendor.gst_number}
             onChange={handleInputChange}
-            required
           />
           <Input
             label="PAN Number"
@@ -251,363 +255,81 @@ const VendorDetailsPage = () => {
             name="pan_number"
             value={vendor.pan_number}
             onChange={handleInputChange}
-            required
           />
-          <div>
-            <label className="block text-gray-700">Group</label>
-            <MultiSelect
-              options={attributeOptions('group')}
-              value={selectedAttributes.group.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('group', selected)}
-              labelledBy="Select Group"
-              hasSelectAll={false}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Fiber</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.fiber.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('fiber', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
+          <Input
+            label="Delivery Destination"
+            type="text"
+            name="delivery_destination"
+            value={vendor.delivery_destination}
+            onChange={handleInputChange}
+          />
+          <Input
+            label="Group"
+            type="text"
+            name="group"
+            value={vendor.group}
+            onChange={handleInputChange}
+          />
+          {Object.entries(selectedAttributes).map(([key, values]) => (
+            <div key={key}>
+              <label className="block text-gray-700">{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {values.map(value => (
+                  <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
+                    <span>{value}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBubble(key, value)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <MultiSelect
+                options={attributeOptions(key)}
+                value={values.map(value => ({ 
+                  label: key === 'people' 
+                    ? unlinkedPeople.find(p => p.name === value)?.name || value 
+                    : value, 
+                  value 
+                }))}
+                onChange={(selected: Option[]) => handleMultiSelectChange(key, selected)}
+                labelledBy={`Select ${key.replace('_', ' ')}`}
+              />
             </div>
-            <MultiSelect
-              options={attributeOptions('fiber')}
-              value={selectedAttributes.fiber.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('fiber', selected)}
-              labelledBy="Select Fiber"
-            />
+          ))}
+          <div className="flex justify-end space-x-4">
+            <Button type="button" onClick={() => setIsEditing(false)} className="bg-gray-300 text-gray-800 hover:bg-gray-400">Cancel</Button>
+            <Button type="submit" className="bg-blue-500 text-white hover:bg-blue-600">Save</Button>
           </div>
-          <div>
-            <label className="block text-gray-700">Width</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.width.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('width', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('width')}
-              value={selectedAttributes.width.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('width', selected)}
-              labelledBy="Select Width"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Content</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.content.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('content', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('content')}
-              value={selectedAttributes.content.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('content', selected)}
-              labelledBy="Select Content"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Type</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.type.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('type', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('type')}
-              value={selectedAttributes.type.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('type', selected)}
-              labelledBy="Select Type"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Certifications</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.certifications.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('certifications', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('certifications')}
-              value={selectedAttributes.certifications.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('certifications', selected)}
-              labelledBy="Select Certifications"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Approvals</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.approvals.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('approvals', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('approvals')}
-              value={selectedAttributes.approvals.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('approvals', selected)}
-              labelledBy="Select Approvals"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Weave</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.weave.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('weave', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('weave')}
-              value={selectedAttributes.weave.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('weave', selected)}
-              labelledBy="Select Weave"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Weave Type</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.weave_type.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('weave_type', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('weave_type')}
-              value={selectedAttributes.weave_type.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('weave_type', selected)}
-              labelledBy="Select Weave Type"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Designs</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.designs.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('designs', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('designs')}
-              value={selectedAttributes.designs.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('designs', selected)}
-              labelledBy="Select Designs"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Delivery Destination</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.delivery_destination.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('delivery_destination', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('delivery_destination')}
-              value={selectedAttributes.delivery_destination.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('delivery_destination', selected)}
-              labelledBy="Select Delivery Destination"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Delivery Terms</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.delivery_terms.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('delivery_terms', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('delivery_terms')}
-              value={selectedAttributes.delivery_terms.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('delivery_terms', selected)}
-              labelledBy="Select Delivery Terms"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">People</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.people.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('people', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={peopleOptions}
-              value={selectedAttributes.people.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('people', selected)}
-              labelledBy="Select People"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Update Vendor
-          </Button>
         </form>
       ) : (
-        <div className="space-y-4">
-          <div>
-            <strong>Name:</strong> {vendor.name}
+        <div>
+          <p><strong>Name:</strong> {vendor.name}</p>
+          <p><strong>Phone:</strong> {vendor.phone}</p>
+          <p><strong>Email:</strong> {vendor.email}</p>
+          <p><strong>Factory Location:</strong> {vendor.factory_location}</p>
+          <p><strong>State:</strong> {vendor.state}</p>
+          <p><strong>GST Number:</strong> {vendor.gst_number}</p>
+          <p><strong>PAN Number:</strong> {vendor.pan_number}</p>
+          <p><strong>Delivery Destination:</strong> {vendor.delivery_destination}</p>
+          <p><strong>Group:</strong> {vendor.group}</p>
+          {Object.entries(selectedAttributes).map(([key, values]) => (
+            <p key={key}>
+              <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>
+              {key === 'people'
+                ? values.map(value => {
+                    const person = unlinkedPeople.find(p => p.name === value);
+                    return person ? `${person.name} (${person.email})` : value;
+                  }).join(', ')
+                : values.join(', ')}
+            </p>
+          ))}
+          <div className="flex justify-end">
+            <Button onClick={() => setIsEditing(true)} className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
           </div>
-          <div>
-            <strong>Phone:</strong> {vendor.contact}
-          </div>
-          <div>
-            <strong>Email:</strong> {vendor.email}
-          </div>
-          <div>
-            <strong>Factory Location:</strong> {vendor.factory_location}
-          </div>
-          <div>
-            <strong>State:</strong> {vendor.state}
-          </div>
-          <div>
-            <strong>GST Number:</strong> {vendor.gst_number}
-          </div>
-          <div>
-            <strong>PAN Number:</strong> {vendor.pan_number}
-          </div>
-          <div>
-            <strong>Group:</strong> {vendor.group}
-          </div>
-          <div>
-            <strong>Fiber:</strong> {vendor.fiber.join(', ')}
-          </div>
-          <div>
-            <strong>Width:</strong> {vendor.width.join(', ')}
-          </div>
-          <div>
-            <strong>Content:</strong> {vendor.content.join(', ')}
-          </div>
-          <div>
-            <strong>Type:</strong> {vendor.type.join(', ')}
-          </div>
-          <div>
-            <strong>Certifications:</strong> {vendor.certifications.join(', ')}
-          </div>
-          <div>
-            <strong>Approvals:</strong> {vendor.approvals.join(', ')}
-          </div>
-          <div>
-            <strong>Weave:</strong> {vendor.weave.join(', ')}
-          </div>
-          <div>
-            <strong>Weave Type:</strong> {vendor.weave_type.join(', ')}
-          </div>
-          <div>
-            <strong>Designs:</strong> {vendor.designs.join(', ')}
-          </div>
-          <div>
-            <strong>Delivery Destination:</strong> {vendor.delivery_destination.join(', ')}
-          </div>
-          <div>
-            <strong>Delivery Terms:</strong> {vendor.delivery_terms.join(', ')}
-          </div>
-          <div>
-            <strong>People:</strong> {vendor.people.join(', ')}
-          </div>
-          <Button onClick={() => setIsEditing(true)} className="w-full">
-            Edit Vendor
-          </Button>
         </div>
       )}
     </div>

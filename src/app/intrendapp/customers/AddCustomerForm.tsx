@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
@@ -8,35 +8,59 @@ interface AddCustomerFormProps {
   onAdd: () => void;
 }
 
-const AddCustomerForm = ({ onAdd }: AddCustomerFormProps) => {
+const AddCustomerForm: React.FC<AddCustomerFormProps> = ({ onAdd }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    contact: '',
-    state: '',
-    country: '',
+    phone: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-  };
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form Data:', formData);
 
+    // Prepare the data to send to the server
+    const customerData = {
+      ...formData,
+      fabric_type: [],
+      certifications: [],
+      approvals: [],
+      people: [],
+      state: '',
+      country: '',
+      gst_number: '',
+      delivery_destination: '',
+      delivery_terms: [],
+      payment_terms: [],
+      pan_number: '',
+      group: '',
+      address: '',
+      remarks: '',
+      additional_info: ''
+    };
+
     try {
-      const response = await fetch('http://localhost:8000/customer', {
+      const response = await fetch('http://localhost:8000/customer/new/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(customerData),
       });
 
       if (response.ok) {
         onAdd();
+        // Clear form after successful submission
+        setFormData({
+          name: '',
+          email: '',
+          phone: ''
+        });
       } else {
         const errorData = await response.json();
         console.error('Failed to add customer', errorData);
@@ -65,26 +89,10 @@ const AddCustomerForm = ({ onAdd }: AddCustomerFormProps) => {
         required
       />
       <Input
-        label="Contact"
-        type="text"
-        name="contact"
-        value={formData.contact}
-        onChange={handleChange}
-        required
-      />
-      <Input
-        label="State"
-        type="text"
-        name="state"
-        value={formData.state}
-        onChange={handleChange}
-        required
-      />
-      <Input
-        label="Country"
-        type="text"
-        name="country"
-        value={formData.country}
+        label="Phone"
+        type="tel"
+        name="phone"
+        value={formData.phone}
         onChange={handleChange}
         required
       />

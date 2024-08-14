@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
@@ -9,31 +9,34 @@ import { MultiSelect, Option } from 'react-multi-select-component';
 interface Customer {
   _id: string;
   name: string;
-  fiber: string[];
+  email: string;
+  phone: string;
+  fabric_type: string[];
   certifications: string[];
   approvals: string[];
   people: string[];
   state: string;
   country: string;
-  contact: string;
-  email: string;
   gst_number: string;
-  delivery_destination: string[];
+  delivery_destination: string;
   delivery_terms: string[];
   pan_number: string;
   group: string;
+  address: string;
+  remarks: string;
+  additional_info: string;
 }
 
 interface Attributes {
-  fiber: string[];
+  fabric_type: string[];
   certifications: string[];
   approvals: string[];
-  delivery_destination: string[];
   delivery_terms: string[];
   group: string[];
 }
 
 interface Person {
+  _id: string;
   name: string;
   phone: string;
   email: string;
@@ -43,17 +46,16 @@ interface Person {
   linked_to_id: string | null;
 }
 
-const CustomerDetailsPage = () => {
+const CustomerDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
-    fiber: [],
+    fabric_type: [],
     certifications: [],
     approvals: [],
-    delivery_destination: [],
     delivery_terms: [],
     people: [],
     group: []
@@ -74,10 +76,9 @@ const CustomerDetailsPage = () => {
       const data = await response.json();
       setCustomer(data.customer);
       setSelectedAttributes({
-        fiber: data.customer.fiber,
+        fabric_type: data.customer.fabric_type,
         certifications: data.customer.certifications,
         approvals: data.customer.approvals,
-        delivery_destination: data.customer.delivery_destination,
         delivery_terms: data.customer.delivery_terms,
         people: data.customer.people,
         group: [data.customer.group]
@@ -99,7 +100,7 @@ const CustomerDetailsPage = () => {
 
   const fetchUnlinkedPeople = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people/?linked=No`);
       const data = await response.json();
       setUnlinkedPeople(data.people);
     } catch (error) {
@@ -131,15 +132,20 @@ const CustomerDetailsPage = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (customer) {
-      // logging the form data
-      
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ name: customer.name, update_dict: { ...customer, ...selectedAttributes, group: selectedAttributes.group[0] } }),
+          body: JSON.stringify({
+            name: customer.name,
+            update_dict: {
+              ...customer,
+              ...selectedAttributes,
+              group: selectedAttributes.group[0]
+            }
+          }),
         });
 
         if (response.ok) {
@@ -157,279 +163,103 @@ const CustomerDetailsPage = () => {
 
   if (!customer || !defaultAttributes) return <div>Loading...</div>;
 
-  const attributeOptions = (attribute: string) =>
-    defaultAttributes[attribute as keyof Attributes]?.map((value) => ({
+  const attributeOptions = (attribute: string) => {
+    if (attribute === 'people') {
+      return unlinkedPeople.map((person) => ({
+        label: `${person.name} (${person.email})`,
+        value: person.name,
+      }));
+    }
+    return defaultAttributes[attribute as keyof Attributes]?.map((value) => ({
       label: value,
       value,
     })) || [];
+  };
 
-  const peopleOptions = unlinkedPeople.map(person => ({
-    label: person.name,
-    value: person.name,
-  }));
+  const renderForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input label="Name" type="text" name="name" value={customer.name} onChange={handleInputChange} required />
+      <Input label="Email" type="email" name="email" value={customer.email} onChange={handleInputChange} required />
+      <Input label="Phone" type="tel" name="phone" value={customer.phone} onChange={handleInputChange} required />
+      <Input label="State" type="text" name="state" value={customer.state} onChange={handleInputChange} />
+      <Input label="Country" type="text" name="country" value={customer.country} onChange={handleInputChange} />
+      <Input label="GST Number" type="text" name="gst_number" value={customer.gst_number} onChange={handleInputChange} />
+      <Input label="PAN Number" type="text" name="pan_number" value={customer.pan_number} onChange={handleInputChange} />
+      <Input label="Delivery Destination" type="text" name="delivery_destination" value={customer.delivery_destination} onChange={handleInputChange} />
+      <Input label="Address" type="text" name="address" value={customer.address} onChange={handleInputChange} />
+      <Input label="Remarks" type="text" name="remarks" value={customer.remarks} onChange={handleInputChange} />
+      <Input label="Additional Info" type="text" name="additional_info" value={customer.additional_info} onChange={handleInputChange} />
+      {Object.entries(selectedAttributes).map(([key, values]) => (
+        <div key={key}>
+          <label className="block text-gray-700">{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {values.map(value => (
+              <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
+                <span>{value}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveBubble(key, value)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+          <MultiSelect
+            options={attributeOptions(key)}
+            value={values.map(value => ({ 
+              label: key === 'people' 
+                ? unlinkedPeople.find(p => p.name === value)?.name || value 
+                : value, 
+              value 
+            }))}
+            onChange={(selected: Option[]) => handleMultiSelectChange(key, selected)}
+            labelledBy={`Select ${key.replace('_', ' ')}`}
+          />
+        </div>
+      ))}
+      <div className="flex justify-end space-x-4">
+        <Button type="button" onClick={() => setIsEditing(false)} className="bg-gray-300 text-gray-800 hover:bg-gray-400">Cancel</Button>
+        <Button type="submit" className="bg-blue-500 text-white hover:bg-blue-600">Save</Button>
+      </div>
+    </form>
+  );
+
+  const renderDetails = () => (
+    <div className="space-y-4">
+      <p><strong>Name:</strong> {customer.name}</p>
+      <p><strong>Email:</strong> {customer.email}</p>
+      <p><strong>Phone:</strong> {customer.phone}</p>
+      <p><strong>State:</strong> {customer.state}</p>
+      <p><strong>Country:</strong> {customer.country}</p>
+      <p><strong>GST Number:</strong> {customer.gst_number}</p>
+      <p><strong>PAN Number:</strong> {customer.pan_number}</p>
+      <p><strong>Delivery Destination:</strong> {customer.delivery_destination}</p>
+      <p><strong>Address:</strong> {customer.address}</p>
+      <p><strong>Remarks:</strong> {customer.remarks}</p>
+      <p><strong>Additional Info:</strong> {customer.additional_info}</p>
+      {Object.entries(selectedAttributes).map(([key, values]) => (
+        <p key={key}>
+          <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>
+          {key === 'people'
+            ? values.map(value => {
+                const person = unlinkedPeople.find(p => p.name === value);
+                return person ? `${person.name} (${person.email})` : value;
+              }).join(', ')
+            : values.join(', ')}
+        </p>
+      ))}
+      <div className="flex justify-end">
+        <Button onClick={() => setIsEditing(true)} className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-8 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Customer Details</h1>
-      {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Name"
-            type="text"
-            name="name"
-            value={customer.name}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Phone"
-            type="text"
-            name="contact"
-            value={customer.contact}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            name="email"
-            value={customer.email}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="State"
-            type="text"
-            name="state"
-            value={customer.state}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Country"
-            type="text"
-            name="country"
-            value={customer.country}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="GST Number"
-            type="text"
-            name="gst_number"
-            value={customer.gst_number}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="PAN Number"
-            type="text"
-            name="pan_number"
-            value={customer.pan_number}
-            onChange={handleInputChange}
-            required
-          />
-          <div>
-            <label className="block text-gray-700">Group</label>
-            <MultiSelect
-              options={attributeOptions('group')}
-              value={selectedAttributes.group.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('group', selected)}
-              labelledBy="Select Group"
-              hasSelectAll={false}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Fiber</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.fiber.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('fiber', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('fiber')}
-              value={selectedAttributes.fiber.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('fiber', selected)}
-              labelledBy="Select Fiber"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Certifications</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.certifications.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('certifications', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('certifications')}
-              value={selectedAttributes.certifications.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('certifications', selected)}
-              labelledBy="Select Certifications"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Approvals</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.approvals.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('approvals', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('approvals')}
-              value={selectedAttributes.approvals.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('approvals', selected)}
-              labelledBy="Select Approvals"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Delivery Destination</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.delivery_destination.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('delivery_destination', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('delivery_destination')}
-              value={selectedAttributes.delivery_destination.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('delivery_destination', selected)}
-              labelledBy="Select Delivery Destination"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Delivery Terms</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.delivery_terms.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('delivery_terms', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={attributeOptions('delivery_terms')}
-              value={selectedAttributes.delivery_terms.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('delivery_terms', selected)}
-              labelledBy="Select Delivery Terms"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">People</label>
-            <div className="flex flex-wrap gap-2">
-              {selectedAttributes.people.map(value => (
-                <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble('people', value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-            </div>
-            <MultiSelect
-              options={peopleOptions}
-              value={selectedAttributes.people.map(value => ({ label: value, value }))}
-              onChange={(selected: Option[]) => handleMultiSelectChange('people', selected)}
-              labelledBy="Select People"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Update Customer
-          </Button>
-        </form>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <strong>Name:</strong> {customer.name}
-          </div>
-          <div>
-            <strong>Phone:</strong> {customer.contact}
-          </div>
-          <div>
-            <strong>Email:</strong> {customer.email}
-          </div>
-          <div>
-            <strong>State:</strong> {customer.state}
-          </div>
-          <div>
-            <strong>Country:</strong> {customer.country}
-          </div>
-          <div>
-            <strong>GST Number:</strong> {customer.gst_number}
-          </div>
-          <div>
-            <strong>PAN Number:</strong> {customer.pan_number}
-          </div>
-          <div>
-            <strong>Group:</strong> {customer.group}
-          </div>
-          <div>
-            <strong>Fiber:</strong> {customer.fiber.join(', ')}
-          </div>
-          <div>
-            <strong>Certifications:</strong> {customer.certifications.join(', ')}
-          </div>
-          <div>
-            <strong>Approvals:</strong> {customer.approvals.join(', ')}
-          </div>
-          <div>
-            <strong>Delivery Destination:</strong> {customer.delivery_destination.join(', ')}
-          </div>
-          <div>
-            <strong>Delivery Terms:</strong> {customer.delivery_terms.join(', ')}
-          </div>
-          <div>
-            <strong>People:</strong> {customer.people.join(', ')}
-          </div>
-          <Button onClick={() => setIsEditing(true)} className="w-full">
-            Edit Customer
-          </Button>
-        </div>
-      )}
+      {isEditing ? renderForm() : renderDetails()}
     </div>
   );
 };

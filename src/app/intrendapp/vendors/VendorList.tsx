@@ -8,7 +8,7 @@ import Table from '../../components/Table';
 interface Vendor {
   _id: string;
   name: string;
-  contact: string;
+  phone: string;
   email: string;
   state: string;
   country: string;
@@ -50,7 +50,7 @@ const VendorList = () => {
   const renderRow = (vendor: Vendor) => (
     <>
       <td className="border p-2">{vendor.name}</td>
-      <td className="border p-2">{vendor.contact}</td>
+      <td className="border p-2">{vendor.phone}</td>
       <td className="border p-2">{vendor.email}</td>
       <td className="border p-2">{vendor.state}</td>
       <td className="border p-2">{vendor.country}</td>
