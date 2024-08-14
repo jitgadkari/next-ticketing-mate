@@ -1,25 +1,23 @@
+// Step5.tsx
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 
 interface Step5Props {
   ticketNumber: string;
-  vendorMessages: { [key: string]: string };
+  vendorMessages: Record<string, string>;
   selectedVendors: string[];
   handleNext: () => Promise<void>;
-  handleUpdate: (updatedMessages: { [key: string]: string }) => Promise<void>;
+  handleUpdate: (updatedMessages: Record<string, string>) => Promise<void>;
 }
 
 const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVendors, handleNext, handleUpdate }) => {
-  const [messages, setMessages] = useState<{ [key: string]: string }>(vendorMessages);
+  const [messages, setMessages] = useState<Record<string, string>>(vendorMessages);
 
   useEffect(() => {
-    // Initialize messages with empty strings for each selected vendor if not already present
     const initialMessages = selectedVendors.reduce((acc, vendor) => {
-      if (!acc[vendor]) {
-        acc[vendor] = '';
-      }
+      acc[vendor] = vendorMessages[vendor] || '';
       return acc;
-    }, { ...vendorMessages });
+    }, {} as Record<string, string>);
     setMessages(initialMessages);
   }, [selectedVendors, vendorMessages]);
 
@@ -36,10 +34,7 @@ const Step5: React.FC<Step5Props> = ({ ticketNumber, vendorMessages, selectedVen
   };
 
   const handleNextStep = async () => {
-    // First, save the current messages
-    await handleUpdate(messages);
-
-    // Then, proceed with moving to the next step
+    await handleSave();
     await handleNext();
   };
 

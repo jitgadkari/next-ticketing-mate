@@ -22,10 +22,11 @@ const Step7: React.FC<Step7Props> = ({
 }) => {
   const [quote, setQuote] = useState(finalQuote);
   const [customerTemplate, setCustomerTemplate] = useState('');
+  const [showVendorNames, setShowVendorNames] = useState(true);
 
   useEffect(() => {
     fetchCustomerTemplate();
-  }, []);
+  }, [showVendorNames]);
 
   const fetchCustomerTemplate = async () => {
     try {
@@ -38,6 +39,7 @@ const Step7: React.FC<Step7Props> = ({
           client_name: customerName,
           askedDetails_json: JSON.stringify(askedDetails),
           vendor_delivery_info_json: JSON.stringify(vendorDecodedMessages),
+          show_vendor_names: showVendorNames,
         }),
       });
       const data = await response.json();
@@ -55,6 +57,10 @@ const Step7: React.FC<Step7Props> = ({
     await handleNext(customerTemplate);
   };
 
+  const toggleVendorNames = () => {
+    setShowVendorNames(!showVendorNames);
+  };
+
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Final Quote</h3>
@@ -64,6 +70,14 @@ const Step7: React.FC<Step7Props> = ({
         className="w-full h-64 p-2 border rounded"
       />
       <h3 className="text-xl font-bold my-4">Customer Message Template</h3>
+      <div className="mb-2">
+        <Button 
+          onClick={toggleVendorNames} 
+          className={`${showVendorNames ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white font-bold py-2 px-4 rounded`}
+        >
+          {showVendorNames ? 'Hide Vendor Names' : 'Show Vendor Names'}
+        </Button>
+      </div>
       <textarea
         value={customerTemplate}
         onChange={(e) => setCustomerTemplate(e.target.value)}
