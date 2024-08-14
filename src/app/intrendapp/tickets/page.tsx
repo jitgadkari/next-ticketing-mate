@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import TicketList from './TicketList';
 import AddTicketForm from './AddTicketForm';
 import Button from '../../components/Button';
 
 const TicketsPage = () => {
   const [showForm, setShowForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAdd = () => {
     setShowForm(false);
+    setRefreshKey(prevKey => prevKey + 1);
   };
+
+  const refreshList = useCallback(() => {
+    setRefreshKey(prevKey => prevKey + 1);
+  }, []);
 
   return (
     <div className="p-8 bg-white rounded shadow">
@@ -25,7 +31,7 @@ const TicketsPage = () => {
           <AddTicketForm onAdd={handleAdd} />
         </div>
       )}
-      <TicketList />
+      <TicketList key={refreshKey} refreshList={refreshList} />
     </div>
   );
 };

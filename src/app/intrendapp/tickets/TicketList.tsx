@@ -12,9 +12,15 @@ interface Ticket {
   current_step: string;
   created_date: string;
   updated_date: string;
+  status: string;
+  final_decision: string;
 }
 
-const TicketList = () => {
+interface TicketListProps {
+  refreshList: () => void;
+}
+
+const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
@@ -29,6 +35,8 @@ const TicketList = () => {
           current_step: ticket.current_step,
           created_date: ticket.created_date,
           updated_date: ticket.updated_date,
+          status: ticket.steps["Step 9: Final Status"]?.status || 'open',
+          final_decision: ticket.steps["Step 9: Final Status"]?.final_decision || 'pending',
         }));
         setTickets(parsedTickets);
       } catch (error) {
@@ -36,7 +44,7 @@ const TicketList = () => {
       }
     };
     fetchTickets();
-  }, []);
+  }, [refreshList]);
 
   const handleDelete = async (ticketId: string) => {
     try {
@@ -66,13 +74,27 @@ const TicketList = () => {
     return new Intl.DateTimeFormat('en-GB', options).format(date);
   };
 
-  const columns = ['Ticket Number', 'Customer Name', 'Current Step', 'Created Date', 'Updated Date', 'Actions'];
+  const columns = ['Ticket Number', 'Customer Name', 'Current Step', 'Status', 'Decision', 'Created Date', 'Updated Date', 'Actions'];
 
   const renderRow = (ticket: Ticket) => (
     <>
       <td className="border p-2">{ticket.ticket_number}</td>
       <td className="border p-2">{ticket.customer_name}</td>
       <td className="border p-2">{ticket.current_step}</td>
+      <td className="border p-2">
+        <span className={`px-2 py-1 rounded ${ticket.status === 'closed' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>
+          {ticket.status}
+        </span>
+      </td>
+      <td className="border p-2">
+        <span className={`px-2 py-1 rounded ${
+          ticket.final_decision === 'approved' ? 'bg-green-200 text-green-800' :
+          ticket.final_decision === 'denied' ? 'bg-red-200 text-red-800' :
+          'bg-yellow-200 text-yellow-800'
+        }`}>
+          {ticket.final_decision}
+        </span>
+      </td>
       <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
       <td className="border p-2">{formatDateTime(ticket.updated_date)}</td>
       <td className="border p-2 flex justify-center space-x-2">

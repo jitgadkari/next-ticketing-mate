@@ -6,14 +6,40 @@ interface Step1Props {
   message: string;
   customerName: string;
   handleNext: () => Promise<void>;
+  isCurrentStep: boolean;
 }
 
-const Step1: React.FC<Step1Props> = ({ ticketNumber, message, customerName, handleNext }) => {
+const Step1: React.FC<Step1Props> = ({ ticketNumber, message, customerName, handleNext, isCurrentStep }) => {
   return (
-    <div>
-      <h3>Customer Name: {customerName}</h3>
-      <p>Message: {message}</p>
-      <Button onClick={handleNext}>Next</Button>
+    <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <h3 className="text-xl font-bold mb-4">Step 1: Customer Message Received</h3>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Customer Name:
+        </label>
+        <p className="text-gray-800">{customerName}</p>
+      </div>
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Message:
+        </label>
+        <div className="bg-gray-100 p-4 rounded-lg whitespace-pre-wrap">
+          {message}
+        </div>
+      </div>
+      <div className="flex items-center justify-end">
+        <Button 
+          onClick={handleNext} 
+          className={`font-bold py-2 px-4 rounded ${
+            isCurrentStep 
+              ? 'bg-blue-500 hover:bg-blue-700 text-white' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          disabled={!isCurrentStep}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 };

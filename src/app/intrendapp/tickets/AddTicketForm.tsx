@@ -33,7 +33,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
     fetchCustomers();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -53,6 +53,11 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
       if (response.ok) {
         onAdd();
+        // Reset form after successful submission
+        setFormData({
+          customer_name: '',
+          message: '',
+        });
       } else {
         const errorData = await response.json();
         console.error('Failed to add ticket', errorData);
@@ -64,13 +69,16 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <label className="block">
-        <span className="text-gray-700">Customer</span>
+      <div className="mb-4">
+        <label htmlFor="customer_name" className="block text-gray-700 text-sm font-bold mb-2">
+          Customer
+        </label>
         <select
+          id="customer_name"
           name="customer_name"
           value={formData.customer_name}
           onChange={handleChange}
-          className="mt-1 block w-full"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           required
         >
           <option value="" disabled>Select a customer</option>
@@ -80,10 +88,10 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
             </option>
           ))}
         </select>
-      </label>
+      </div>
       <Input
         label="Message"
-        type="text"
+        type="textarea"
         name="message"
         value={formData.message}
         onChange={handleChange}

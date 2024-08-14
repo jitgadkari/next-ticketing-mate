@@ -30,8 +30,8 @@ const stepsOrder = [
   "Step 4 : Vendor Selection",
   "Step 5: Messages from Vendors",
   "Step 6 : Vendor Message Decoded",
-  "Step 7 : Final Quote",
-  "Step 8 : Customer Message Template",
+  "Step 7 : Customer Message Template",
+  "Step 8 : Customer Response",
   "Step 9: Final Status"
 ];
 
@@ -87,75 +87,61 @@ const TicketDetailsPage = () => {
 
     switch (step) {
       case "Step 1 : Customer Message Received":
-        return (
-          <Step1
-            ticketNumber={ticket.ticket_number}
-            message={ticket.steps[step].text}
-            customerName={ticket.customer_name}
-            handleNext={async () => {
-              console.log('Handling next for Step 1');
-              const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode?text=${encodeURIComponent(ticket.steps["Step 1 : Customer Message Received"].text)}`, {
-                method: 'POST',
-                headers: {
-                  'accept': 'application/json',
-                },
-                body: '',
-              });
-              const decodedMessage = await response.json();
+  return (
+    <Step1
+      ticketNumber={ticket.ticket_number}
+      message={ticket.steps[step].text}
+      customerName={ticket.customer_name}
+      handleNext={async () => {
+        console.log('Handling next for Step 1');
+        try {
+          // Decode the message
+          const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: ticket.steps[step].text }),
+          });
 
+          if (!response.ok) {
+            throw new Error('Failed to decode message');
+          }
 
+          const decodedMessage = await response.json();
 
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: decodedMessage, step_number: "Step 2 : Message Decoded" }),
-              });
-              fetchTicket(ticket._id);
-              setActiveStep("Step 2 : Message Decoded");
-            }}
-          />
-        );
+          // Update Step 2 with the decoded message
+          await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              ticket_number: ticket.ticket_number, 
+              step_info: decodedMessage, 
+              step_number: "Step 2 : Message Decoded" 
+            }),
+          });
+
+          // Fetch the updated ticket and move to the next step
+          await fetchTicket(ticket._id);
+          setActiveStep("Step 2 : Message Decoded");
+        } catch (error) {
+          console.error('Error in Step 1 next handler:', error);
+        }
+      }}
+      isCurrentStep={step === ticket.current_step}
+    />
+  );
 
       case "Step 2 : Message Decoded":
         return (
           <Step2
             ticketNumber={ticket.ticket_number}
             data={ticket.steps[step]}
+            originalMessage={ticket.steps["Step 1 : Customer Message Received"]?.text || ''}
             handleNext={async () => {
               console.log('Handling next for Step 2');
-              const requestPayload = {
-                vendor_name: "{VENDOR}",
-                askedDetails_json: JSON.stringify(ticket.steps[step])
-              };
-              console.log("Data sent for post_message:", requestPayload);
-              
-              const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestPayload),
-              });
-
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error('Failed to fetch vendor message template');
-              }
-
-              const vendorMessageTemplate = await response.json();
-              console.log('Vendor message template:', vendorMessageTemplate);
-
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: { text: vendorMessageTemplate.vendor_message_template }, step_number: "Step 3 : Message Template for vendors" }),
-              });
-
               fetchTicket(ticket._id);
               setActiveStep("Step 3 : Message Template for vendors");
             }}
@@ -171,60 +157,60 @@ const TicketDetailsPage = () => {
 
               try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-              });
-              if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Update failed:', errorData);
-              } else {
-                const responseData = await response.json();
-                console.log('Update successful:', responseData);
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  console.error('Update failed:', errorData);
+                } else {
+                  const responseData = await response.json();
+                  console.log('Update successful:', responseData);
+                }
+              } catch (error) {
+                console.error('Error during fetch:', error);
               }
-            } catch (error) {
-              console.error('Error during fetch:', error);
-            }
               fetchTicket(ticket._id);
             }}
+            isCurrentStep={step === ticket.current_step}
           />
         );
 
       case "Step 3 : Message Template for vendors":
         return (
           <Step3
-            ticketNumber={ticket.ticket_number}
-            template={ticket.steps[step].text}
-            customerName={ticket.customer_name}
-            askedDetails={ticket.steps["Step 2 : Message Decoded"]}
-            handleNext={async () => {
-              console.log('Handling next for Step 3');
-              console.log('Step 3 template:', ticket.steps[step].text);
-              
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: { list: [] }, step_number: "Step 4 : Vendor Selection" }),
-              });
-              fetchTicket(ticket._id);
-              setActiveStep("Step 4 : Vendor Selection");
-            }}
-            handleUpdate={async (updatedTemplate) => {
-              console.log('Updating Step 3 template:', updatedTemplate);
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: { text: updatedTemplate }, step_number: "Step 3 : Message Template for vendors" }),
-              });
-              fetchTicket(ticket._id);
-            }}
-          />
+          ticketNumber={ticket.ticket_number}
+          template={ticket.steps[step]?.text || ''}
+          customerName={ticket.customer_name}
+          originalMessage={ticket.steps["Step 1 : Customer Message Received"]?.text || ''}
+          handleNext={async () => {
+            console.log('Handling next for Step 3');
+            await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: { list: [] }, step_number: "Step 4 : Vendor Selection" }),
+            });
+            fetchTicket(ticket._id);
+            setActiveStep("Step 4 : Vendor Selection");
+          }}
+          handleUpdate={async (updatedTemplate) => {
+            console.log('Updating Step 3 template:', updatedTemplate);
+            await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: { text: updatedTemplate }, step_number: "Step 3 : Message Template for vendors" }),
+            });
+            fetchTicket(ticket._id);
+          }}
+          isCurrentStep={step === ticket.current_step}
+        />
         );
 
         case "Step 4 : Vendor Selection":
@@ -232,86 +218,94 @@ const TicketDetailsPage = () => {
     <Step4
       ticketNumber={ticket.ticket_number}
       selectedVendors={ticket.steps[step]?.list || []}
-      template={ticket.steps["Step 3 : Message Template for vendors"].text}
+      template={ticket.steps["Step 3 : Message Template for vendors"]?.text || ''}
       handleNext={async (updatedVendors) => {
         console.log('Handling next for Step 4');
         console.log('Step 4 updated vendors:', updatedVendors);
 
-        // Save Step 4 data
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ticket_number: ticket.ticket_number,
-            step_number: "Step 4 : Vendor Selection",
-            step_info: updatedVendors  // This now saves the vendor messages
-          }),
-        });
+        try {
+          // Save Step 4 data
+          await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ticket_number: ticket.ticket_number,
+              step_number: "Step 4 : Vendor Selection",
+              step_info: { list: Object.keys(updatedVendors) }
+            }),
+          });
 
-        // Initialize Step 5 with empty messages
-        const emptyVendorMessages = Object.keys(updatedVendors).reduce((acc, vendor) => {
-          acc[vendor] = '';
-          return acc;
-        }, {} as Record<string, string>);
-        
-        console.log('Step 5 initial vendor messages:', emptyVendorMessages);
+          // Initialize Step 5 with empty messages
+          const emptyVendorMessages = Object.keys(updatedVendors).reduce((acc, vendor) => {
+            acc[vendor] = '';
+            return acc;
+          }, {} as Record<string, string>);
+          
+          console.log('Step 5 initial vendor messages:', emptyVendorMessages);
 
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ticket_number: ticket.ticket_number,
-            step_info: emptyVendorMessages,
-            step_number: "Step 5: Messages from Vendors"
-          }),
-        });
+          await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ticket_number: ticket.ticket_number,
+              step_info: emptyVendorMessages,
+              step_number: "Step 5: Messages from Vendors"
+            }),
+          });
 
-        fetchTicket(ticket._id);
-        setActiveStep("Step 5: Messages from Vendors");
+          await fetchTicket(ticket._id);
+          setActiveStep("Step 5: Messages from Vendors");
+        } catch (error) {
+          console.error('Error updating steps:', error);
+        }
       }}
       handleUpdate={async (updatedVendors) => {
         console.log('Updating Step 4 vendors:', updatedVendors);
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ticket_number: ticket.ticket_number,
-            step_number: "Step 4 : Vendor Selection",
-            step_info: updatedVendors  // This now saves the vendor messages
-          }),
-        });
-        fetchTicket(ticket._id);
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ticket_number: ticket.ticket_number,
+              step_number: "Step 4 : Vendor Selection",
+              step_info: { list: updatedVendors }
+            }),
+          });
+          await fetchTicket(ticket._id);
+        } catch (error) {
+          console.error('Error updating Step 4:', error);
+        }
       }}
+      isCurrentStep={step === ticket.current_step}
     />
   );
 
-case "Step 5: Messages from Vendors":
+
+  case "Step 5: Messages from Vendors":
   return (
     <Step5
       ticketNumber={ticket.ticket_number}
-      vendorMessages={ticket.steps[step] || {}}
-      selectedVendors={Object.keys(ticket.steps["Step 4 : Vendor Selection"] || {})}
+      vendorMessages={ticket.steps[step] as Record<string, string>}
       handleNext={async () => {
         console.log('Handling next for Step 5');
         const vendorDecodedMessages: Record<string, any> = {};
-        for (const vendor of Object.keys(ticket.steps["Step 4 : Vendor Selection"] || {})) {
+        for (const [vendor, message] of Object.entries(ticket.steps[step] as Record<string, string>)) {
           const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text: ticket.steps[step]?.[vendor] || '' }),
+            body: JSON.stringify({ text: message }),
           });
           vendorDecodedMessages[vendor] = await response.json();
         }
         
-        // Save decoded messages to Step 6
         await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
           method: 'PUT',
           headers: {
@@ -342,7 +336,9 @@ case "Step 5: Messages from Vendors":
         });
         fetchTicket(ticket._id);
       }}
+      isCurrentStep={step === ticket.current_step}
     />
+  
   );
 
         // case "Step 4 : Vendor Selection":
@@ -446,147 +442,18 @@ case "Step 5: Messages from Vendors":
           //     />
           //   );
 
-      case "Step 6 : Vendor Message Decoded":
-        return (
-          <Step6
-            ticketNumber={ticket.ticket_number}
-            decodedMessages={ticket.steps[step]}
-            handleNext={async () => {
-              console.log('Handling next for Step 6');
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_info: ticket.steps[step], step_number: "Step 7 : Final Quote" }),
-              });
-              fetchTicket(ticket._id);
-              setActiveStep("Step 7 : Final Quote");
-            }}
-            handleUpdate={async (updatedDecodedMessages) => {
-              console.log('Updating Step 6 messages:', updatedDecodedMessages);
-              await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ticket_number: ticket.ticket_number, step_number: "Step 6 : Vendor Message Decoded" , step_info: updatedDecodedMessages }),
-              });
-              fetchTicket(ticket._id);
-            }}
-          />
-        );
-
-      
-
-        case "Step 7 : Final Quote":
-          return (
-            <Step7
-              ticketNumber={ticket.ticket_number}
-              finalQuote={ticket.steps[step]}
-              customerName={ticket.customer_name}
-              askedDetails={ticket.steps["Step 2 : Message Decoded"]}
-              vendorDecodedMessages={ticket.steps["Step 6 : Vendor Message Decoded"]}
-              handleNext={async (customerTemplate) => {
-                console.log('Handling next for Step 7');
-                await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ 
-                    ticket_number: ticket.ticket_number, 
-                    step_info: { text: customerTemplate }, 
-                    step_number: "Step 8 : Customer Message Template" 
-                  }),
-                });
-                fetchTicket(ticket._id);
-                setActiveStep("Step 8 : Customer Message Template");
-              }}
-              handleUpdate={async (updatedQuote) => {
-                console.log('Updating Step 7 quote:', updatedQuote);
-                await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ 
-                    ticket_number: ticket.ticket_number, 
-                    step_info: updatedQuote, 
-                    step_number: "Step 7 : Final Quote" 
-                  }),
-                });
-                fetchTicket(ticket._id);
-              }}
-            />
-          );
-        
-        case "Step 8 : Customer Message Template":
-          return (
-            <Step8
-              ticketNumber={ticket.ticket_number}
-              customerTemplate={ticket.steps[step].text}
-              handleNext={async () => {
-                console.log('Handling next for Step 8');
-                await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ 
-                    ticket_number: ticket.ticket_number, 
-                    step_info: { status: "open", final_decision: "" }, 
-                    step_number: "Step 9: Final Status" 
-                  }),
-                });
-                fetchTicket(ticket._id);
-                setActiveStep("Step 9: Final Status");
-              }}
-              handleUpdate={async (updatedTemplate) => {
-                console.log('Updating Step 8 template:', updatedTemplate);
-                await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ 
-                    ticket_number: ticket.ticket_number, 
-                    step_info: { text: updatedTemplate }, 
-                    step_number: "Step 8 : Customer Message Template" 
-                  }),
-                });
-                fetchTicket(ticket._id);
-              }}
-            />
-          );
-
-          case "Step 9: Final Status":
-  return (
-    <Step9
+          case "Step 6 : Vendor Message Decoded":
+            return (
+              <Step6
       ticketNumber={ticket.ticket_number}
-      finalStatus={ticket.steps[step]}
-      handleClose={async () => {
-        console.log('Handling close for Step 9');
-        const finalStatus = {
-          status: "closed",
-          final_decision: ticket.steps[step].final_decision
-        };
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            ticket_number: ticket.ticket_number, 
-            step_info: finalStatus, 
-            step_number: "Step 9: Final Status" 
-          }),
-        });
-        alert('Ticket process completed and closed.');
-        router.push('/intrendapp/tickets');
+      decodedMessages={ticket.steps[step] || {}}
+      handleNext={async () => {
+        console.log('Handling next for Step 6');
+        fetchTicket(ticket._id);
+        setActiveStep("Step 7 : Customer Message Template");
       }}
-      handleUpdate={async (updatedStatus) => {
-        console.log('Updating Step 9 status:', updatedStatus);
+      handleUpdate={async (updatedDecodedMessages) => {
+        console.log('Updating Step 6 messages:', updatedDecodedMessages);
         await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
           method: 'PUT',
           headers: {
@@ -594,14 +461,160 @@ case "Step 5: Messages from Vendors":
           },
           body: JSON.stringify({ 
             ticket_number: ticket.ticket_number, 
-            step_info: updatedStatus, 
-            step_number: "Step 9: Final Status" 
+            step_number: "Step 6 : Vendor Message Decoded", 
+            step_info: updatedDecodedMessages 
           }),
         });
         fetchTicket(ticket._id);
       }}
+      isCurrentStep={step === ticket.current_step}
+      customerName={ticket.customer_name}
+      originalMessage={ticket.steps["Step 1 : Customer Message Received"]?.text || ''}
     />
-  );
+            );
+          
+          case "Step 7 : Customer Message Template":
+            console.log('Step 7 data:', ticket.steps[step]);  // Debug log
+            
+            let customerTemplate = ticket.steps[step]?.text || '';
+            
+            // Ensure customerTemplate is a string
+            if (typeof customerTemplate === 'object') {
+              try {
+                customerTemplate = JSON.stringify(customerTemplate, null, 2);
+              } catch (error) {
+                console.error('Error stringifying customerTemplate:', error);
+                customerTemplate = 'Error: Unable to display template';
+              }
+            } else if (typeof customerTemplate !== 'string') {
+              customerTemplate = String(customerTemplate);
+            }
+          
+            return (
+              <Step7
+                ticketNumber={ticket.ticket_number}
+                customerTemplate={customerTemplate}
+                handleNext={async () => {
+                  console.log('Handling next for Step 7');
+                  // Update Step 8 with an empty string from client
+                  await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                      ticket_number: ticket.ticket_number, 
+                      step_info: { text: '' }, 
+                      step_number: "Step 8 : Customer Response" 
+                    }),
+                  });
+                  fetchTicket(ticket._id);
+                  setActiveStep("Step 8 : Customer Response");
+                }}
+                handleUpdate={async (updatedTemplate) => {
+                  console.log('Updating Step 7 template:', updatedTemplate);
+                  await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                      ticket_number: ticket.ticket_number, 
+                      step_info: { text: updatedTemplate }, 
+                      step_number: "Step 7 : Customer Message Template" 
+                    }),
+                  });
+                  fetchTicket(ticket._id);
+                }}
+                isCurrentStep={step === ticket.current_step}
+              />
+            );
+
+
+        
+            case "Step 8 : Customer Response":
+              return (
+                <Step8
+                  ticketNumber={ticket.ticket_number}
+                  customerTemplate={ticket.steps["Step 7 : Customer Message Template"]?.text || ''}
+                  customerResponse={ticket.steps[step]?.text || ''}
+                  handleNext={async () => {
+                    console.log('Handling next for Step 8');
+                    await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ 
+                        ticket_number: ticket.ticket_number, 
+                        step_info: { status: "open", final_decision: "pending" }, 
+                        step_number: "Step 9: Final Status" 
+                      }),
+                    });
+                    fetchTicket(ticket._id);
+                    setActiveStep("Step 9: Final Status");
+                  }}
+                  handleUpdate={async (updatedResponse) => {
+                    console.log('Updating Step 8 response:', updatedResponse);
+                    await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ 
+                        ticket_number: ticket.ticket_number, 
+                        step_info: { text: updatedResponse }, 
+                        step_number: "Step 8 : Customer Response" 
+                      }),
+                    });
+                    fetchTicket(ticket._id);
+                  }}
+                  isCurrentStep={step === ticket.current_step}
+                />
+              );
+
+              case "Step 9: Final Status":
+                console.log('Rendering Step 9. Current step data:', ticket.steps[step]);
+                return (
+                  <Step9
+                    ticketNumber={ticket.ticket_number}
+                    finalStatus={ticket.steps[step] as { status: string; final_decision: string }}
+                    handleClose={async (finalStatus) => {
+                      console.log('Handling close for Step 9');
+                      console.log('Closing ticket with status:', finalStatus);
+                      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                          ticket_number: ticket.ticket_number, 
+                          step_info: finalStatus, 
+                          step_number: "Step 9: Final Status" 
+                        }),
+                      });
+                      alert('Ticket process completed and closed.');
+                      router.push('/intrendapp/tickets');
+                    }}
+                    handleUpdate={async (updatedStatus) => {
+                      console.log('Updating Step 9 status:', updatedStatus);
+                      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                          ticket_number: ticket.ticket_number, 
+                          step_info: updatedStatus, 
+                          step_number: "Step 9: Final Status" 
+                        }),
+                      });
+                      await fetchTicket(ticket._id);
+                      console.log('Ticket fetched after update');
+                    }}
+                    isCurrentStep={step === ticket.current_step}
+                  />
+                );
 
       default:
         return <p>{ticket.steps[step]}</p>;
@@ -643,15 +656,17 @@ case "Step 5: Messages from Vendors":
               ))}
             </div>
           </div>
-          <div className="flex justify-end mb-4">
-            <Button
-              onClick={() => handleRefresh(activeStep || ticket.current_step)}
-              className="bg-red-500 text-white"
-            >
-              Refresh Step
-            </Button>
-          </div>
-          <div>{renderStepPanel( activeStep || ticket.current_step )}</div>
+          {ticket.current_step !== "Step 1 : Customer Message Received" && (
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => handleRefresh(activeStep || ticket.current_step)}
+                className="bg-red-500 text-white"
+              >
+                Refresh Step
+              </Button>
+            </div>
+          )}
+          <div>{renderStepPanel(activeStep || ticket.current_step)}</div>
         </div>
       ) : (
         <p>Loading...</p>

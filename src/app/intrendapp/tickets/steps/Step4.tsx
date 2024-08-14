@@ -1,4 +1,3 @@
-// Step4.tsx
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import MultiSelect, { MultiSelectOption } from '../../../components/MultiSelect';
@@ -10,14 +9,23 @@ interface Step4Props {
   template: string;
   handleNext: (updatedVendors: Record<string, string>) => Promise<void>;
   handleUpdate: (updatedVendors: string[]) => Promise<void>;
+  isCurrentStep: boolean;
 }
 
-const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, handleNext, handleUpdate }) => {
+const Step4: React.FC<Step4Props> = ({ 
+  ticketNumber, 
+  selectedVendors, 
+  template, 
+  handleNext, 
+  handleUpdate,
+  isCurrentStep
+}) => {
   const [vendors, setVendors] = useState<MultiSelectOption[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<MultiSelectOption[]>(
     selectedVendors.map(vendor => ({ label: vendor, value: vendor }))
   );
   const [vendorMessages, setVendorMessages] = useState<Record<string, string>>({});
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     fetchVendors();
@@ -46,18 +54,23 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, 
   const generateVendorMessages = async () => {
     const messages: Record<string, string> = {};
     for (const option of selectedOptions) {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/replace_vendor_with_name`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message_template: template,
-          vendor_name: option.value,
-        }),
-      });
-      const data = await response.json();
-      messages[option.value] = data.message;
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/replace_vendor_with_name`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message_template: template,
+            vendor_name: option.value,
+          }),
+        });
+        const data = await response.json();
+        messages[option.value] = data.message;
+      } catch (error) {
+        console.error(`Error generating message for vendor ${option.value}:`, error);
+        messages[option.value] = 'Error generating message';
+      }
     }
     setVendorMessages(messages);
   };
@@ -76,9 +89,20 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, 
     await handleNext(vendorMessages);
   };
 
+  const handleSendMessage = () => {
+    setShowPopup(true);
+  };
+
+  const handlePopupConfirm = () => {
+    // Implement the logic to send messages here
+    console.log('Sending messages:', vendorMessages);
+    setShowPopup(false);
+    // You might want to call an API to send the messages here
+  };
+
   return (
-    <div>
-      <h3 className="text-xl font-bold mb-4">Select Vendors</h3>
+    <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <h3 className="text-xl font-bold mb-4">Step 4: Select Vendors</h3>
       <MultiSelect
         options={vendors}
         value={selectedOptions}
@@ -99,14 +123,52 @@ const Step4: React.FC<Step4Props> = ({ ticketNumber, selectedVendors, template, 
           ))}
         </div>
       )}
-      <div className="flex justify-end mt-4">
-        <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+      <div className="flex justify-between mt-4">
+        <Button 
+          onClick={handleSave} 
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          disabled={!isCurrentStep}
+        >
           Save
         </Button>
-        <Button onClick={handleNextStep} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-          Next
+        <Button 
+          onClick={handleSendMessage} 
+          className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
+            !isCurrentStep && 'opacity-50 cursor-not-allowed'
+          }`}
+          disabled={!isCurrentStep || selectedOptions.length === 0}
+        >
+          Send Messages
+        </Button>
+        <Button 
+          onClick={handleNextStep} 
+          className={`font-bold py-2 px-4 rounded ${
+            isCurrentStep 
+              ? 'bg-blue-500 hover:bg-blue-700 text-white' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          disabled={!isCurrentStep || selectedOptions.length === 0}
+        >
+          Next Step
         </Button>
       </div>
+
+      {showPopup && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Sending Messages...</h2>
+            <p className="mb-4">Are you sure you want to send messages to the selected vendors?</p>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowPopup(false)} className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">
+                Cancel
+              </Button>
+              <Button onClick={handlePopupConfirm} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

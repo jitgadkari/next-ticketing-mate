@@ -3,94 +3,94 @@ import Button from '../../../components/Button';
 
 interface Step7Props {
   ticketNumber: string;
-  finalQuote: any;
-  customerName: string;
-  askedDetails: any;
-  vendorDecodedMessages: any;
-  handleNext: (customerTemplate: string) => Promise<void>;
-  handleUpdate: (updatedQuote: any) => Promise<void>;
+  customerTemplate: string;
+  handleNext: () => Promise<void>;
+  handleUpdate: (updatedTemplate: string) => Promise<void>;
+  isCurrentStep: boolean;
 }
 
 const Step7: React.FC<Step7Props> = ({ 
   ticketNumber, 
-  finalQuote, 
-  customerName, 
-  askedDetails, 
-  vendorDecodedMessages,
+  customerTemplate,
   handleNext, 
-  handleUpdate 
+  handleUpdate,
+  isCurrentStep
 }) => {
-  const [quote, setQuote] = useState(finalQuote);
-  const [customerTemplate, setCustomerTemplate] = useState('');
-  const [showVendorNames, setShowVendorNames] = useState(true);
+  const [template, setTemplate] = useState(customerTemplate);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
-    fetchCustomerTemplate();
-  }, [showVendorNames]);
-
-  const fetchCustomerTemplate = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_name: customerName,
-          askedDetails_json: JSON.stringify(askedDetails),
-          vendor_delivery_info_json: JSON.stringify(vendorDecodedMessages),
-          show_vendor_names: showVendorNames,
-        }),
-      });
-      const data = await response.json();
-      setCustomerTemplate(data.client_message_template);
-    } catch (error) {
-      console.error('Error fetching customer template:', error);
-    }
-  };
+    setTemplate(customerTemplate);
+  }, [customerTemplate]);
 
   const handleSave = async () => {
-    await handleUpdate(quote);
+    await handleUpdate(template);
   };
 
   const handleNextStep = async () => {
-    await handleNext(customerTemplate);
+    await handleSave();
+    await handleNext();
   };
 
-  const toggleVendorNames = () => {
-    setShowVendorNames(!showVendorNames);
+  const handleSendMessage = () => {
+    setShowPopup(true);
+  };
+
+  const handlePopupConfirm = () => {
+    console.log('Sending messages...');
+    setShowPopup(false);
   };
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Final Quote</h3>
-      <textarea
-        value={JSON.stringify(quote, null, 2)}
-        onChange={(e) => setQuote(JSON.parse(e.target.value))}
-        className="w-full h-64 p-2 border rounded"
-      />
       <h3 className="text-xl font-bold my-4">Customer Message Template</h3>
-      <div className="mb-2">
-        <Button 
-          onClick={toggleVendorNames} 
-          className={`${showVendorNames ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white font-bold py-2 px-4 rounded`}
-        >
-          {showVendorNames ? 'Hide Vendor Names' : 'Show Vendor Names'}
-        </Button>
-      </div>
       <textarea
-        value={customerTemplate}
-        onChange={(e) => setCustomerTemplate(e.target.value)}
+        value={template}
+        onChange={(e) => setTemplate(e.target.value)}
         className="w-full h-64 p-2 border rounded"
       />
-      <div className="flex justify-end space-x-4 mt-4">
+      <div className="flex justify-between mt-4">
         <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Save Quote
+          Save Template
         </Button>
-        <Button onClick={handleNextStep} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        <Button 
+          onClick={handleSendMessage} 
+          className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
+            !isCurrentStep && 'opacity-50 cursor-not-allowed'
+          }`}
+          disabled={!isCurrentStep}
+        >
+          Send Message
+        </Button>
+        <Button 
+          onClick={handleNextStep} 
+          className={`font-bold py-2 px-4 rounded ${
+            isCurrentStep 
+              ? 'bg-blue-500 hover:bg-blue-700 text-white' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          disabled={!isCurrentStep}
+        >
           Next
         </Button>
       </div>
+
+      {showPopup && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Sending Message...</h2>
+            <p className="mb-4">Are you sure you want to send this message to the customer?</p>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowPopup(false)} className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">
+                Cancel
+              </Button>
+              <Button onClick={handlePopupConfirm} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
