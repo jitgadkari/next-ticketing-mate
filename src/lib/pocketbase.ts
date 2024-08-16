@@ -1,7 +1,7 @@
 import PocketBase from 'pocketbase';
 import Cookies from 'js-cookie';
 
-const pb = new PocketBase('https://completely-area.pockethost.io');
+const pb = new PocketBase('https://irony-name.pockethost.io');
 
 // Load auth data from cookies on startup
 pb.authStore.loadFromCookie(Cookies.get('pb_auth') || '');

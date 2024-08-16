@@ -21,7 +21,7 @@ interface Customer {
   delivery_destination: string;
   delivery_terms: string[];
   pan_number: string;
-  group: string;
+  group: Record<string, string>;
   address: string;
   remarks: string;
   additional_info: string;
@@ -32,7 +32,7 @@ interface Attributes {
   certifications: string[];
   approvals: string[];
   delivery_terms: string[];
-  group: string[];
+  group: Record<string, string>;
 }
 
 interface Person {
@@ -52,13 +52,13 @@ const CustomerDetailsPage: React.FC = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[] | Record<string, string>>>({
     fabric_type: [],
     certifications: [],
     approvals: [],
     delivery_terms: [],
     people: [],
-    group: []
+    group: {}
   });
   const [isEditing, setIsEditing] = useState(false);
 
@@ -81,7 +81,7 @@ const CustomerDetailsPage: React.FC = () => {
         approvals: data.customer.approvals,
         delivery_terms: data.customer.delivery_terms,
         people: data.customer.people,
-        group: [data.customer.group]
+        group: data.customer.group
       });
     } catch (error) {
       console.error('Error fetching customer:', error);
@@ -108,7 +108,7 @@ const CustomerDetailsPage: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (customer) {
       setCustomer({ ...customer, [name]: value });
@@ -122,11 +122,26 @@ const CustomerDetailsPage: React.FC = () => {
     }));
   };
 
-  const handleRemoveBubble = (name: string, value: string) => {
+  const handleGroupChange = (key: string, value: string) => {
     setSelectedAttributes(prevState => ({
       ...prevState,
-      [name]: prevState[name].filter(item => item !== value),
+      group: { ...(prevState.group as Record<string, string>), [key]: value }
     }));
+  };
+
+  const handleRemoveBubble = (name: string, value: string) => {
+    if (name === 'group') {
+      setSelectedAttributes(prevState => {
+        const newGroup = { ...(prevState.group as Record<string, string>) };
+        delete newGroup[value];
+        return { ...prevState, group: newGroup };
+      });
+    } else {
+      setSelectedAttributes(prevState => ({
+        ...prevState,
+        [name]: (prevState[name] as string[]).filter(item => item !== value),
+      }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -143,7 +158,6 @@ const CustomerDetailsPage: React.FC = () => {
             update_dict: {
               ...customer,
               ...selectedAttributes,
-              group: selectedAttributes.group[0]
             }
           }),
         });
@@ -163,17 +177,23 @@ const CustomerDetailsPage: React.FC = () => {
 
   if (!customer || !defaultAttributes) return <div>Loading...</div>;
 
-  const attributeOptions = (attribute: string) => {
+  const attributeOptions = (attribute: string): Option[] => {
     if (attribute === 'people') {
       return unlinkedPeople.map((person) => ({
         label: `${person.name} (${person.email})`,
         value: person.name,
       }));
     }
-    return defaultAttributes[attribute as keyof Attributes]?.map((value) => ({
+    if (attribute === 'group') {
+      return Object.entries(defaultAttributes.group).map(([key, value]) => ({
+        label: `${key}: ${value}`,
+        value: key,
+      }));
+    }
+    return (defaultAttributes[attribute as keyof Attributes] as string[] || []).map((value) => ({
       label: value,
       value,
-    })) || [];
+    }));
   };
 
   const renderForm = () => (
@@ -193,30 +213,63 @@ const CustomerDetailsPage: React.FC = () => {
         <div key={key}>
           <label className="block text-gray-700">{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}</label>
           <div className="flex flex-wrap gap-2 mb-2">
-            {values.map(value => (
-              <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
-                <span>{value}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveBubble(key, value)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  &times;
-                </button>
-              </div>
-            ))}
+            {key === 'group' 
+              ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => (
+                  <div key={groupKey} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
+                    <span>{groupKey}: {groupValue}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBubble(key, groupKey)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))
+              : (values as string[]).map((value: string) => (
+                  <div key={value} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2">
+                    <span>{value}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBubble(key, value)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))
+            }
           </div>
-          <MultiSelect
-            options={attributeOptions(key)}
-            value={values.map(value => ({ 
-              label: key === 'people' 
-                ? unlinkedPeople.find(p => p.name === value)?.name || value 
-                : value, 
-              value 
-            }))}
-            onChange={(selected: Option[]) => handleMultiSelectChange(key, selected)}
-            labelledBy={`Select ${key.replace('_', ' ')}`}
-          />
+          {key === 'group' ? (
+            <div>
+              <select
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const [selectedKey, selectedValue] = e.target.value.split(':');
+                  handleGroupChange(selectedKey.trim(), selectedValue.trim());
+                }}
+                className="w-full p-2 border border-gray-300 rounded mt-1"
+              >
+                <option value="">Select a group</option>
+                {Object.entries(defaultAttributes.group).map(([groupKey, groupValue]) => (
+                  <option key={groupKey} value={`${groupKey}:${groupValue}`}>
+                    {groupKey}: {groupValue}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <MultiSelect
+              options={attributeOptions(key)}
+              value={(values as string[]).map((value: string) => ({ 
+                label: key === 'people' 
+                  ? unlinkedPeople.find(p => p.name === value)?.name || value 
+                  : value, 
+                value 
+              }))}
+              onChange={(selected: Option[]) => handleMultiSelectChange(key, selected)}
+              labelledBy={`Select ${key.replace('_', ' ')}`}
+            />
+          )}
         </div>
       ))}
       <div className="flex justify-end space-x-4">
@@ -241,13 +294,15 @@ const CustomerDetailsPage: React.FC = () => {
       <p><strong>Additional Info:</strong> {customer.additional_info}</p>
       {Object.entries(selectedAttributes).map(([key, values]) => (
         <p key={key}>
-          <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>
-          {key === 'people'
-            ? values.map(value => {
-                const person = unlinkedPeople.find(p => p.name === value);
-                return person ? `${person.name} (${person.email})` : value;
-              }).join(', ')
-            : values.join(', ')}
+          <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>{' '}
+          {key === 'group'
+            ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`).join(', ')
+            : key === 'people'
+              ? (values as string[]).map(value => {
+                  const person = unlinkedPeople.find(p => p.name === value);
+                  return person ? `${person.name} (${person.email})` : value;
+                }).join(', ')
+              : (values as string[]).join(', ')}
         </p>
       ))}
       <div className="flex justify-end">
