@@ -19,6 +19,8 @@ const PeopleList: React.FC = () => {
   useEffect(() => {
     const fetchPeople = async (): Promise<void> => {
       try {
+        const api = process.env.NEXT_PUBLIC_ENDPOINT_URL;
+        console.log('api', api);
         const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people`);
         const data = await response.json();
         setPeople(data.people);
@@ -31,6 +33,7 @@ const PeopleList: React.FC = () => {
 
   const handleDelete = async (personId: string): Promise<void> => {
     try {
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/${personId}`, {
         method: 'DELETE',
       });

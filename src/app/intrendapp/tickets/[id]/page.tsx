@@ -16,6 +16,7 @@ import Step9 from '../steps/Step9';
 interface Ticket {
   _id: string;
   ticket_number: string;
+  person_name: string;  // Add this line
   customer_name: string;
   current_step: string;
   steps: Record<string, any>;
@@ -89,49 +90,50 @@ const TicketDetailsPage = () => {
       case "Step 1 : Customer Message Received":
   return (
     <Step1
-      ticketNumber={ticket.ticket_number}
-      message={ticket.steps[step].text}
-      customerName={ticket.customer_name}
-      handleNext={async () => {
-        console.log('Handling next for Step 1');
-        try {
-          // Decode the message
-          const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: ticket.steps[step].text }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to decode message');
-          }
-
-          const decodedMessage = await response.json();
-
-          // Update Step 2 with the decoded message
-          await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              ticket_number: ticket.ticket_number, 
-              step_info: decodedMessage, 
-              step_number: "Step 2 : Message Decoded" 
-            }),
-          });
-
-          // Fetch the updated ticket and move to the next step
-          await fetchTicket(ticket._id);
-          setActiveStep("Step 2 : Message Decoded");
-        } catch (error) {
-          console.error('Error in Step 1 next handler:', error);
+    ticketNumber={ticket.ticket_number}
+    message={ticket.steps[step].text}
+    customerName={ticket.customer_name}
+    personName={ticket.person_name}  // Add this line
+    handleNext={async () => {
+      console.log('Handling next for Step 1');
+      try {
+        // Decode the message
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: ticket.steps[step].text }),
+        });
+  
+        if (!response.ok) {
+          throw new Error('Failed to decode message');
         }
-      }}
-      isCurrentStep={step === ticket.current_step}
-    />
+  
+        const decodedMessage = await response.json();
+  
+        // Update Step 2 with the decoded message
+        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            ticket_number: ticket.ticket_number, 
+            step_info: decodedMessage, 
+            step_number: "Step 2 : Message Decoded" 
+          }),
+        });
+  
+        // Fetch the updated ticket and move to the next step
+        await fetchTicket(ticket._id);
+        setActiveStep("Step 2 : Message Decoded");
+      } catch (error) {
+        console.error('Error in Step 1 next handler:', error);
+      }
+    }}
+    isCurrentStep={step === ticket.current_step}
+  />
   );
 
       case "Step 2 : Message Decoded":

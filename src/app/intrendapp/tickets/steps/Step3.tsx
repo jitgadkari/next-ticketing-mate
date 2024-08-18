@@ -44,6 +44,7 @@ const Step3: React.FC<Step3Props> = ({
       });
       const data = await response.json();
       setMessage(data.vendor_message_template);
+      handleUpdate(data.vendor_message_template);  // Update the backend immediately
     } catch (error) {
       console.error('Error fetching vendor template:', error);
     }
@@ -51,18 +52,7 @@ const Step3: React.FC<Step3Props> = ({
 
   const handleNextStep = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          ticket_number: ticketNumber, 
-          step_info: { list: [] }, 
-          step_number: "Step 4 : Vendor Selection" 
-        }),
-      });
-
+      await handleUpdate(message);  // Ensure the latest message is saved before moving to next step
       handleNext();
     } catch (error) {
       console.error('Error updating ticket:', error);
@@ -75,11 +65,14 @@ const Step3: React.FC<Step3Props> = ({
 
   const toggleCustomerName = () => {
     setIncludeCustomerName(!includeCustomerName);
+    let updatedMessage;
     if (!includeCustomerName) {
-      setMessage(prevMessage => `${prevMessage}\n\nCustomer Name: ${customerName}`);
+      updatedMessage = `${message}\n\nCustomer Name: ${customerName}`;
     } else {
-      setMessage(prevMessage => prevMessage.replace(`\n\nCustomer Name: ${customerName}`, ''));
+      updatedMessage = message.replace(`\n\nCustomer Name: ${customerName}`, '');
     }
+    setMessage(updatedMessage);
+    handleUpdate(updatedMessage);  // Update the backend immediately
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

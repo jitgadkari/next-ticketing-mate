@@ -13,12 +13,21 @@ interface Customer {
   name: string;
 }
 
+interface Person {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
   const [formData, setFormData] = useState({
     customer_name: '',
+    person_name: '',
     message: '',
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [people, setPeople] = useState<Person[]>([]); // Initialize as an empty array
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -32,6 +41,25 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
     };
     fetchCustomers();
   }, []);
+
+  useEffect(() => {
+    if (formData.customer_name) {
+      fetchPeople(formData.customer_name);
+    } else {
+      setPeople([]); // Reset people when no customer is selected
+    }
+  }, [formData.customer_name]);
+
+  const fetchPeople = async (customerName: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/customer/?customer=${encodeURIComponent(customerName)}`);
+      const data = await response.json();
+      setPeople(data.person || []); // Use an empty array if data.person is undefined
+    } catch (error) {
+      console.error('Error fetching people:', error);
+      setPeople([]); // Set to empty array in case of error
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -56,6 +84,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
         // Reset form after successful submission
         setFormData({
           customer_name: '',
+          person_name: '',
           message: '',
         });
       } else {
@@ -89,6 +118,32 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
           ))}
         </select>
       </div>
+      {formData.customer_name && (
+        <div className="mb-4">
+          <label htmlFor="person_name" className="block text-gray-700 text-sm font-bold mb-2">
+            Person
+          </label>
+          <select
+            id="person_name"
+            name="person_name"
+            value={formData.person_name}
+            onChange={handleChange}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            required
+          >
+            <option value="" disabled>Select a person</option>
+            {people.length > 0 ? (
+              people.map((person) => (
+                <option key={person._id} value={person.name}>
+                  {person.name}
+                </option>
+              ))
+            ) : (
+              <option disabled>No people available for this customer</option>
+            )}
+          </select>
+        </div>
+      )}
       <Input
         label="Message"
         type="textarea"
@@ -97,7 +152,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
         onChange={handleChange}
         required
       />
-      <Button type="submit" className="w-full">
+      <Button type="submit" className="w-full" disabled={!formData.customer_name || !formData.person_name}>
         Add Ticket
       </Button>
     </form>
