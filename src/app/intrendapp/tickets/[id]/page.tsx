@@ -296,51 +296,85 @@ const TicketDetailsPage = () => {
       vendorMessages={ticket.steps[step] as Record<string, string>}
       handleNext={async () => {
         console.log('Handling next for Step 5');
+        const currentMessages = ticket.steps[step] as Record<string, string>;
         const vendorDecodedMessages: Record<string, any> = {};
-        for (const [vendor, message] of Object.entries(ticket.steps[step] as Record<string, string>)) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: message }),
-          });
-          vendorDecodedMessages[vendor] = await response.json();
+
+        for (const [vendor, message] of Object.entries(currentMessages)) {
+          if (message.trim() !== '') {  // Only decode non-empty messages
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: message }),
+              });
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              const decodedMessage = await response.json();
+              vendorDecodedMessages[vendor] = decodedMessage;
+            } catch (error) {
+              console.error(`Error decoding message for ${vendor}:`, error);
+              vendorDecodedMessages[vendor] = { error: 'Failed to decode message' };
+            }
+          } else {
+            console.log(`Skipping empty message for ${vendor}`);
+          }
         }
         
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            ticket_number: ticket.ticket_number, 
-            step_info: vendorDecodedMessages, 
-            step_number: "Step 6 : Vendor Message Decoded" 
-          }),
-        });
-        
-        fetchTicket(ticket._id);
-        setActiveStep("Step 6 : Vendor Message Decoded");
+        console.log('Decoded vendor messages:', vendorDecodedMessages);
+
+        if (Object.keys(vendorDecodedMessages).length > 0) {
+          try {
+            const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                ticket_number: ticket.ticket_number, 
+                step_info: vendorDecodedMessages, 
+                step_number: "Step 6 : Vendor Message Decoded" 
+              }),
+            });
+            if (!updateResponse.ok) {
+              throw new Error(`HTTP error! status: ${updateResponse.status}`);
+            }
+          } catch (error) {
+            console.error('Error updating next step:', error);
+          }
+          
+          await fetchTicket(ticket._id);
+          setActiveStep("Step 6 : Vendor Message Decoded");
+        } else {
+          console.error('No messages to decode. Please enter messages for vendors.');
+        }
       }}
       handleUpdate={async (updatedMessages) => {
         console.log('Updating Step 5 messages:', updatedMessages);
-        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            ticket_number: ticket.ticket_number, 
-            step_number: "Step 5: Messages from Vendors",
-            step_info: updatedMessages
-          }),
-        });
-        fetchTicket(ticket._id);
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              ticket_number: ticket.ticket_number, 
+              step_number: "Step 5: Messages from Vendors",
+              step_info: updatedMessages
+            }),
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Error updating Step 5:', error);
+        }
+        await fetchTicket(ticket._id);
       }}
       isCurrentStep={step === ticket.current_step}
     />
-  
   );
 
         // case "Step 4 : Vendor Selection":
@@ -475,62 +509,120 @@ const TicketDetailsPage = () => {
     />
             );
           
-          case "Step 7 : Customer Message Template":
-            console.log('Step 7 data:', ticket.steps[step]);  // Debug log
+          // case "Step 7 : Customer Message Template":
+          //   console.log('Step 7 data:', ticket.steps[step]);  // Debug log
             
-            let customerTemplate = ticket.steps[step]?.text || '';
+          //   let customerTemplate = ticket.steps[step]?.text || '';
             
-            // Ensure customerTemplate is a string
-            if (typeof customerTemplate === 'object') {
-              try {
-                customerTemplate = JSON.stringify(customerTemplate, null, 2);
-              } catch (error) {
-                console.error('Error stringifying customerTemplate:', error);
-                customerTemplate = 'Error: Unable to display template';
-              }
-            } else if (typeof customerTemplate !== 'string') {
-              customerTemplate = String(customerTemplate);
-            }
+          //   // Ensure customerTemplate is a string
+          //   if (typeof customerTemplate === 'object') {
+          //     try {
+          //       customerTemplate = JSON.stringify(customerTemplate, null, 2);
+          //     } catch (error) {
+          //       console.error('Error stringifying customerTemplate:', error);
+          //       customerTemplate = 'Error: Unable to display template';
+          //     }
+          //   } else if (typeof customerTemplate !== 'string') {
+          //     customerTemplate = String(customerTemplate);
+          //   }
           
-            return (
-              <Step7
-                ticketNumber={ticket.ticket_number}
-                customerTemplate={customerTemplate}
-                handleNext={async () => {
-                  console.log('Handling next for Step 7');
-                  // Update Step 8 with an empty string from client
-                  await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                      ticket_number: ticket.ticket_number, 
-                      step_info: { text: '' }, 
-                      step_number: "Step 8 : Customer Response" 
-                    }),
-                  });
-                  fetchTicket(ticket._id);
-                  setActiveStep("Step 8 : Customer Response");
-                }}
-                handleUpdate={async (updatedTemplate) => {
-                  console.log('Updating Step 7 template:', updatedTemplate);
-                  await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                      ticket_number: ticket.ticket_number, 
-                      step_info: { text: updatedTemplate }, 
-                      step_number: "Step 7 : Customer Message Template" 
-                    }),
-                  });
-                  fetchTicket(ticket._id);
-                }}
-                isCurrentStep={step === ticket.current_step}
-              />
-            );
+          //   return (
+          //     <Step7
+          //       ticketNumber={ticket.ticket_number}
+          //       customerTemplate={customerTemplate}
+          //       handleNext={async () => {
+          //         console.log('Handling next for Step 7');
+          //         // Update Step 8 with an empty string from client
+          //         await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+          //           method: 'PUT',
+          //           headers: {
+          //             'Content-Type': 'application/json',
+          //           },
+          //           body: JSON.stringify({ 
+          //             ticket_number: ticket.ticket_number, 
+          //             step_info: { text: '' }, 
+          //             step_number: "Step 8 : Customer Response" 
+          //           }),
+          //         });
+          //         fetchTicket(ticket._id);
+          //         setActiveStep("Step 8 : Customer Response");
+          //       }}
+          //       handleUpdate={async (updatedTemplate) => {
+          //         console.log('Updating Step 7 template:', updatedTemplate);
+          //         await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+          //           method: 'PUT',
+          //           headers: {
+          //             'Content-Type': 'application/json',
+          //           },
+          //           body: JSON.stringify({ 
+          //             ticket_number: ticket.ticket_number, 
+          //             step_info: { text: updatedTemplate }, 
+          //             step_number: "Step 7 : Customer Message Template" 
+          //           }),
+          //         });
+          //         fetchTicket(ticket._id);
+          //       }}
+          //       isCurrentStep={step === ticket.current_step}
+          //     />
+          //   );
+
+          case "Step 7 : Customer Message Template":
+  console.log('Step 7 data:', ticket.steps[step]);  // Debug log
+  
+  let customerTemplate = ticket.steps[step]?.text || '';
+  
+  // Ensure customerTemplate is a string
+  if (typeof customerTemplate === 'object') {
+    try {
+      customerTemplate = JSON.stringify(customerTemplate, null, 2);
+    } catch (error) {
+      console.error('Error stringifying customerTemplate:', error);
+      customerTemplate = 'Error: Unable to display template';
+    }
+  } else if (typeof customerTemplate !== 'string') {
+    customerTemplate = String(customerTemplate);
+  }
+
+  return (
+    <Step7
+      ticketNumber={ticket.ticket_number}
+      customerTemplate={customerTemplate}
+      personName={ticket.person_name}  // Add this line
+      handleNext={async () => {
+        console.log('Handling next for Step 7');
+        // Update Step 8 with an empty string from client
+        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            ticket_number: ticket.ticket_number, 
+            step_info: { text: '' }, 
+            step_number: "Step 8 : Customer Response" 
+          }),
+        });
+        fetchTicket(ticket._id);
+        setActiveStep("Step 8 : Customer Response");
+      }}
+      handleUpdate={async (updatedTemplate) => {
+        console.log('Updating Step 7 template:', updatedTemplate);
+        await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            ticket_number: ticket.ticket_number, 
+            step_info: { text: updatedTemplate }, 
+            step_number: "Step 7 : Customer Message Template" 
+          }),
+        });
+        fetchTicket(ticket._id);
+      }}
+      isCurrentStep={step === ticket.current_step}
+    />
+  );
 
 
         

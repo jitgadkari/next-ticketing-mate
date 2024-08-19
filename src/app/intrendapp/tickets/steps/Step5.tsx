@@ -16,10 +16,14 @@ const Step5: React.FC<Step5Props> = ({
   handleUpdate,
   isCurrentStep 
 }) => {
-  const [messages, setMessages] = useState<Record<string, string>>(vendorMessages);
+  const [messages, setMessages] = useState<Record<string, string>>({});
+  const [isDecoding, setIsDecoding] = useState(false);
 
   useEffect(() => {
-    setMessages(vendorMessages);
+    // Ensure we're setting the initial messages correctly
+    if (Object.keys(vendorMessages).length > 0) {
+      setMessages(vendorMessages);
+    }
   }, [vendorMessages]);
 
   const handleChange = (vendor: string, value: string) => {
@@ -35,8 +39,15 @@ const Step5: React.FC<Step5Props> = ({
   };
 
   const handleNextStep = async () => {
-    await handleSave();
-    await handleNext();
+    setIsDecoding(true);
+    try {
+      // First, save the current messages
+      await handleSave();
+      // Then proceed to the next step
+      await handleNext();
+    } finally {
+      setIsDecoding(false);
+    }
   };
 
   return (
@@ -68,9 +79,9 @@ const Step5: React.FC<Step5Props> = ({
               ? 'bg-green-500 hover:bg-green-700 text-white' 
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
-          disabled={!isCurrentStep}
+          disabled={!isCurrentStep || isDecoding}
         >
-          Next
+          {isDecoding ? 'Decoding...' : 'Next'}
         </Button>
       </div>
     </div>

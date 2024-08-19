@@ -4,7 +4,6 @@ import Button from '../../../components/Button';
 interface Step7Props {
   ticketNumber: string;
   customerTemplate: string;
-  personName: string;  // Add this prop
   handleNext: () => Promise<void>;
   handleUpdate: (updatedTemplate: string) => Promise<void>;
   isCurrentStep: boolean;
@@ -13,15 +12,12 @@ interface Step7Props {
 const Step7: React.FC<Step7Props> = ({ 
   ticketNumber, 
   customerTemplate,
-  personName,  // Add this prop
   handleNext, 
   handleUpdate,
   isCurrentStep
 }) => {
   const [template, setTemplate] = useState(customerTemplate);
   const [showPopup, setShowPopup] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [sendingStatus, setSendingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setTemplate(customerTemplate);
@@ -40,48 +36,9 @@ const Step7: React.FC<Step7Props> = ({
     setShowPopup(true);
   };
 
-  const handlePopupConfirm = async () => {
+  const handlePopupConfirm = () => {
+    console.log('Sending messages...');
     setShowPopup(false);
-    setIsSending(true);
-    setSendingStatus(null);
-
-    try {
-      // Fetch person details
-      const personResponse = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/name/?person=${encodeURIComponent(personName)}`);
-      const personData = await personResponse.json();
-      
-      if (!personData.person || !personData.person.phone) {
-        throw new Error('Person details or phone number not found');
-      }
-
-      // Format the phone number
-      let phoneNumber = personData.person.phone.replace(/\D/g, '');
-      if (phoneNumber.length === 10) {
-        phoneNumber = '91' + phoneNumber;
-      }
-      phoneNumber += '@c.us';
-
-      // Send the message
-      const sendMessageResponse = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: phoneNumber,
-          message: template,
-        }),
-      });
-
-      const sendMessageData = await sendMessageResponse.json();
-      console.log('Message sent:', sendMessageData);
-      setSendingStatus('Message sent successfully');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setSendingStatus('Failed to send message');
-    } finally {
-      setIsSending(false);
-    }
   };
 
   return (
@@ -99,11 +56,11 @@ const Step7: React.FC<Step7Props> = ({
         <Button 
           onClick={handleSendMessage} 
           className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
-            (!isCurrentStep || isSending) && 'opacity-50 cursor-not-allowed'
+            !isCurrentStep && 'opacity-50 cursor-not-allowed'
           }`}
-          disabled={!isCurrentStep || isSending}
+          disabled={!isCurrentStep}
         >
-          {isSending ? 'Sending...' : 'Send Message'}
+          Send Message
         </Button>
         <Button 
           onClick={handleNextStep} 
@@ -117,12 +74,6 @@ const Step7: React.FC<Step7Props> = ({
           Next
         </Button>
       </div>
-
-      {sendingStatus && (
-        <p className={`mt-2 ${sendingStatus.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-          {sendingStatus}
-        </p>
-      )}
 
       {showPopup && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
