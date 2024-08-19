@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
-import TextArea from '../../../components/TextArea';
 import { FaEdit } from 'react-icons/fa';
-import EditDecodedMessage from '@/app/components/EditDecodedMessage';
+import EditDecodedMessage from '@/app/components/step2/EditDecodedMessage';
 
 interface Step2Props {
   ticketNumber: string;

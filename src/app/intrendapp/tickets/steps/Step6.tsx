@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Button from '../../../components/Button';
+import VendorDecodedMessage from '@/app/components/step6/VendorDecodedMessage';
 
 interface Step6Props {
   ticketNumber: string;
@@ -82,10 +83,12 @@ const Step6: React.FC<Step6Props> = ({
   return (
     <div>
       <h3>Decoded Messages from Vendors</h3>
-      {Object.keys(decodedMessages).map((vendor) => (
+      {Object.keys(decodedMessages).map((vendor) => {
+           let decodedMessage = JSON.stringify(decodedMessages[vendor])
+        return(
         <div key={vendor} className="mb-4">
           <label className="block text-gray-700">{vendor}</label>
-          <pre className="bg-gray-100 p-2 rounded">{JSON.stringify(decodedMessages[vendor], null, 2)}</pre>
+          <VendorDecodedMessage message={decodedMessage} />
           <input
             type="checkbox"
             onChange={(e) => handleSelectChange(vendor, e.target.checked)}
@@ -93,7 +96,7 @@ const Step6: React.FC<Step6Props> = ({
           />
           <label className="ml-2">Select this quote</label>
         </div>
-      ))}
+      )})}
       <div className="flex justify-end">
         <Button 
           onClick={handleNextStep} 
