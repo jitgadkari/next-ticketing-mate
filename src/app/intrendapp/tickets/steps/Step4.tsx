@@ -3,6 +3,12 @@ import Button from '../../../components/Button';
 import MultiSelect, { MultiSelectOption } from '../../../components/MultiSelect';
 import { MultiValue } from 'react-select';
 
+interface Vendor {
+  _id: string;
+  name: string;
+  group: { [key: string]: string } | string;
+}
+
 interface Step4Props {
   ticketNumber: string;
   selectedVendors: string[];
@@ -26,6 +32,9 @@ const Step4: React.FC<Step4Props> = ({
   );
   const [vendorMessages, setVendorMessages] = useState<Record<string, string>>({});
   const [showPopup, setShowPopup] = useState(false);
+  const [vendorDetails, setVendorDetails] = useState<Vendor[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendingStatus, setSendingStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchVendors();
@@ -42,7 +51,8 @@ const Step4: React.FC<Step4Props> = ({
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
       const data = await response.json();
       if (Array.isArray(data.vendors)) {
-        setVendors(data.vendors.map((vendor: any) => ({ label: vendor.name, value: vendor.name })));
+        setVendors(data.vendors.map((vendor: Vendor) => ({ label: vendor.name, value: vendor.name })));
+        setVendorDetails(data.vendors);
       } else {
         console.error('Unexpected response format:', data);
       }
@@ -93,11 +103,45 @@ const Step4: React.FC<Step4Props> = ({
     setShowPopup(true);
   };
 
-  const handlePopupConfirm = () => {
-    // Implement the logic to send messages here
-    console.log('Sending messages:', vendorMessages);
+  const handlePopupConfirm = async () => {
     setShowPopup(false);
-    // You might want to call an API to send the messages here
+    setIsSending(true);
+    setSendingStatus({});
+
+    for (const option of selectedOptions) {
+      const vendor = vendorDetails.find(v => v.name === option.value);
+      if (vendor && vendor.group) {
+        const groupId = typeof vendor.group === 'string' ? vendor.group : Object.values(vendor.group)[0];
+        if (groupId) {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                to: groupId,
+                message: vendorMessages[option.value],
+              }),
+            });
+            const data = await response.json();
+            console.log(`Message sent to ${option.value}:`, data);
+            setSendingStatus(prev => ({ ...prev, [option.value]: 'Sent' }));
+          } catch (error) {
+            console.error(`Error sending message to ${option.value}:`, error);
+            setSendingStatus(prev => ({ ...prev, [option.value]: 'Failed' }));
+          }
+        } else {
+          console.error(`No group ID found for vendor ${option.value}`);
+          setSendingStatus(prev => ({ ...prev, [option.value]: 'No group ID' }));
+        }
+      } else {
+        console.error(`Vendor details not found for ${option.value}`);
+        setSendingStatus(prev => ({ ...prev, [option.value]: 'Vendor details not found' }));
+      }
+    }
+
+    setIsSending(false);
   };
 
   return (
@@ -119,6 +163,11 @@ const Step4: React.FC<Step4Props> = ({
                 readOnly
                 className="w-full h-32 p-2 border rounded"
               />
+              {sendingStatus[option.value] && (
+                <p className={`mt-1 ${sendingStatus[option.value] === 'Sent' ? 'text-green-600' : 'text-red-600'}`}>
+                  Status: {sendingStatus[option.value]}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -134,11 +183,11 @@ const Step4: React.FC<Step4Props> = ({
         <Button 
           onClick={handleSendMessage} 
           className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
-            !isCurrentStep && 'opacity-50 cursor-not-allowed'
+            (!isCurrentStep || selectedOptions.length === 0 || isSending) && 'opacity-50 cursor-not-allowed'
           }`}
-          disabled={!isCurrentStep || selectedOptions.length === 0}
+          disabled={!isCurrentStep || selectedOptions.length === 0 || isSending}
         >
-          Send Messages
+          {isSending ? 'Sending...' : 'Send Messages'}
         </Button>
         <Button 
           onClick={handleNextStep} 
