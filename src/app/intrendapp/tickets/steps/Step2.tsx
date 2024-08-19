@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
 import { FaEdit } from 'react-icons/fa';
+import EditDecodedMessage from '@/app/components/EditDecodedMessage';
 
 interface Step2Props {
   ticketNumber: string;
@@ -87,19 +88,14 @@ const Step2: React.FC<Step2Props> = ({
           <div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-black text-2xl' /></div>
           </div> 
         ):  (<div className='flex justify-between items-center'>
-            <h3 className="text-xl font-bold mb-4">Step 2: Decoded Message</h3>
-        <Button onClick={() => setIsEditing(false)} className="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</Button>
+            <h3 className="text-xl font-bold ">Step 2: Decoded Message</h3>
+        <Button onClick={() => setIsEditing(false)} className=" bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</Button>
         </div>)}
       {isEditing ? (
-        <div>
-          <TextArea
-            label="Decoded Message"
-            name="decodedMessage"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <Button onClick={handleSave} className="mt-4 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</Button>
-        </div>
+       <div className='text-black'>
+       <EditDecodedMessage message={message} setMessage={setMessage} />
+       <Button onClick={handleSave} className="mt-4 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</Button>
+     </div>
       ) : (
         <div className=" bg-white rounded-md shadow-md">
             <div className="overflow-x-auto">
