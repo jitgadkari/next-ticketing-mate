@@ -81,7 +81,7 @@ const PersonDetailsPage: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     if (person) {
       const { name, value } = e.target;
       setPerson(prevPerson => {
@@ -168,8 +168,9 @@ const PersonDetailsPage: React.FC = () => {
             type="text"
             name="name"
             value={person.name}
-            onChange={handleChange}
+            onChange={() => {}} // No-op function
             required
+            
           />
           <Input
             label="Phone"

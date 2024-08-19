@@ -4,7 +4,7 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
-interface AddVendorFormProps {
+interface AddcustomerFormProps {
   onAdd: () => void;
 }
 
@@ -23,12 +23,26 @@ interface Attributes {
   delivery_terms: string[];
 }
 
-const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
+const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    group: '' // This will store the selected group key
+    group: '',
+    fabric_type: [],
+    certifications: [],
+    approvals: [],
+    people: [],
+    state: '',
+    country: '',
+    gst_number: '',
+    delivery_destination: '',
+    delivery_terms: [],
+    payment_terms: [],
+    pan_number: '',
+    address: '',
+    remarks: '',
+    additional_info: ''
   });
 
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
@@ -66,39 +80,13 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
       return;
     }
 
-    // Prepare the data to send to the server
-    const vendorData = {
-      ...formData,
-      fabric_type: [],
-      width: [],
-      content: [],
-      type: [],
-      certifications: [],
-      approvals: [],
-      weave: [],
-      weave_type: [],
-      designs: [],
-      people: [],
-      payment_terms: [],
-      delivery_destination: '',
-      delivery_terms: [],
-      factory_location: "",
-      state: '',
-      gst_number: '',
-      pan_number: '',
-      group: formData.group ? { [formData.group]: defaultAttributes?.group[formData.group] || '' } : {},
-      address: '',
-      remarks: '',
-      additional_info: ''
-    };
-
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/new/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/new/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(vendorData),
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -108,15 +96,29 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
           name: '',
           email: '',
           phone: '',
-          group: ''
+          group: '',
+          fabric_type: [],
+          certifications: [],
+          approvals: [],
+          people: [],
+          state: '',
+          country: '',
+          gst_number: '',
+          delivery_destination: '',
+          delivery_terms: [],
+          payment_terms: [],
+          pan_number: '',
+          address: '',
+          remarks: '',
+          additional_info: ''
         });
       } else {
         const errorData = await response.json();
-        console.error('Failed to add vendor', errorData);
-        setError('Failed to add vendor. Please try again.');
+        console.error('Failed to add customer', errorData);
+        setError('Failed to add customer. Please try again.');
       }
     } catch (error) {
-      console.error('Error adding vendor:', error);
+      console.error('Error adding customer:', error);
       setError('An unexpected error occurred. Please try again.');
     }
   };
@@ -173,10 +175,10 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
         </select>
       </div>
       <Button type="submit" className="w-full">
-        Add Vendor
+        Add customer
       </Button>
     </form>
   );
 };
 
-export default AddVendorForm;
+export default AddcustomerForm;
