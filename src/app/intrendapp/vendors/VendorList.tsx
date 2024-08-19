@@ -54,22 +54,24 @@ const VendorList = () => {
       <td className="border p-2">{vendor.email}</td>
       <td className="border p-2">{vendor.state}</td>
       <td className="border p-2">{vendor.country}</td>
-      <td className="border p-2 flex justify-center space-x-2">
-        <Link href={`vendors/${vendor._id}`} passHref>
-          <span className="text-blue-500 hover:text-blue-700">
-            <FaEye />
-          </span>
-        </Link>
-        <FaTrash
-          onClick={() => handleDelete(vendor._id)}
-          className="text-red-500 cursor-pointer hover:text-red-700"
-        />
+      <td className="border p-2">
+        <div className="h-full flex justify-center space-x-2">
+          <Link href={`vendors/${vendor._id}`} passHref>
+            <span className="text-blue-500 hover:text-blue-700">
+              <FaEye />
+            </span>
+          </Link>
+          <FaTrash
+            onClick={() => handleDelete(vendor._id)}
+            className="text-red-500 cursor-pointer hover:text-red-700"
+          />
+        </div>
       </td>
     </>
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Vendors List</h1>
       <Table columns={columns} data={vendors} renderRow={renderRow} />
     </div>

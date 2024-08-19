@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import { MultiSelect, Option } from 'react-multi-select-component';
+import { FaEdit } from 'react-icons/fa';
 
 interface Customer {
   _id: string;
@@ -280,7 +281,8 @@ const CustomerDetailsPage: React.FC = () => {
   );
 
   const renderDetails = () => (
-    <div className="space-y-4">
+    <div className="space-y-4 text-black">
+      <div className="grid grid-cols-2 gap-4">
       <p><strong>Name:</strong> {customer.name}</p>
       <p><strong>Email:</strong> {customer.email}</p>
       <p><strong>Phone:</strong> {customer.phone}</p>
@@ -298,22 +300,21 @@ const CustomerDetailsPage: React.FC = () => {
           {key === 'group'
             ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`).join(', ')
             : key === 'people'
-              ? (values as string[]).map(value => {
-                  const person = unlinkedPeople.find(p => p.name === value);
-                  return person ? `${person.name} (${person.email})` : value;
-                }).join(', ')
-              : (values as string[]).join(', ')}
+            ? (values as string[]).map(value => {
+              const person = unlinkedPeople.find(p => p.name === value);
+              return person ? `${person.name} (${person.email})` : value;
+            }).join(', ')
+            : (values as string[]).join(', ')}
         </p>
       ))}
-      <div className="flex justify-end">
-        <Button onClick={() => setIsEditing(true)} className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
       </div>
     </div>
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Customer Details</h1>
+      { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {isEditing ? renderForm() : renderDetails()}
     </div>
   );

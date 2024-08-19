@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import { FaEdit } from 'react-icons/fa';
 
 interface Person {
   _id: string;
@@ -140,11 +141,13 @@ const PersonDetailsPage: React.FC = () => {
   if (!person) return <div>Loading...</div>;
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Person Details</h1>
+      { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {!isEditing ? (
         <>
-          <div className="space-y-4">
+          <div className="space-y-4 text-black">
+          <div className="grid grid-cols-2 gap-4">
             <p><strong>Name:</strong> {person.name}</p>
             <p><strong>Phone:</strong> {person.phone}</p>
             <p><strong>Email:</strong> {person.email}</p>
@@ -157,9 +160,7 @@ const PersonDetailsPage: React.FC = () => {
               </>
             )}
           </div>
-          <Button onClick={() => setIsEditing(true)} className="mt-4">
-            Edit
-          </Button>
+          </div>
         </>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">

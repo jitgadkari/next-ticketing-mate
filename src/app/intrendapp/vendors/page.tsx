@@ -13,12 +13,14 @@ const VendorsPage = () => {
   };
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Vendors</h1>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowForm(true)}>
+      {!showForm?<Button onClick={() => setShowForm(true)}>
           Add Vendor
-        </Button>
+        </Button>:<Button onClick={() => setShowForm(false)}>
+          Cancel
+        </Button>}
       </div>
       {showForm && (
         <div className="mb-4">

@@ -19,12 +19,14 @@ const TicketsPage = () => {
   }, []);
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Tickets</h1>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowForm(true)}>
-          Add Ticket
-        </Button>
+        {!showForm?<Button onClick={() => setShowForm(true)}>
+        Add Ticket
+        </Button>:<Button onClick={() => setShowForm(false)}>
+          Cancel
+        </Button>}
       </div>
       {showForm && (
         <div className="mb-4">

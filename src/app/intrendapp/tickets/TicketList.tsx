@@ -97,7 +97,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       </td>
       <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
       <td className="border p-2">{formatDateTime(ticket.updated_date)}</td>
-      <td className="border p-2 flex justify-center space-x-2">
+      <td className="border p-2 ">
+      <ul className='h-full flex justify-center space-x-2'>
         <Link href={`tickets/${ticket._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">
             <FaEye />
@@ -106,13 +107,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         <FaTrash
           onClick={() => handleDelete(ticket._id)}
           className="text-red-500 cursor-pointer hover:text-red-700"
-        />
+          />
+          </ul>
       </td>
     </>
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Tickets List</h1>
       <Table columns={columns} data={tickets} renderRow={renderRow} />
     </div>

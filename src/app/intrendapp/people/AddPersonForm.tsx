@@ -70,7 +70,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-black">
       <Input
         label="Name"
         type="text"

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import { MultiSelect, Option } from 'react-multi-select-component';
+import { FaEdit } from 'react-icons/fa';
 
 interface Vendor {
   _id: string;
@@ -221,9 +222,11 @@ const VendorDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 text-black">
+          <h1 className="text-2xl font-bold mb-4">Vendor Details</h1>
+       { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-black">
           <Input
             label="Name"
             type="text"
@@ -352,7 +355,7 @@ const VendorDetailsPage: React.FC = () => {
           </div>
         </form>
       ) : (
-        <div>
+        <div  className="grid grid-cols-2 gap-4">
           <p><strong>Name:</strong> {vendor.name}</p>
           <p><strong>Phone:</strong> {vendor.phone}</p>
           <p><strong>Email:</strong> {vendor.email}</p>
@@ -374,9 +377,6 @@ const VendorDetailsPage: React.FC = () => {
                   : (values as string[]).join(', ')}
             </p>
           ))}
-          <div className="flex justify-end">
-            <Button onClick={() => setIsEditing(true)} className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
-          </div>
         </div>
       )}
     </div>

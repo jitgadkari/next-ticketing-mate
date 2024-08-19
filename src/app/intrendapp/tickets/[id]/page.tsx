@@ -720,7 +720,7 @@ const TicketDetailsPage = () => {
   };
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Ticket Details</h1>
       {ticket ? (
         <div>
