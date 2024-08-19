@@ -1,5 +1,3 @@
-"use client";
-
 import './globals.css';
 import TopNavBar from './components/navbar/TopNavBar';
 import SideNav from './components/navbar/SideNavBar';

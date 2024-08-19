@@ -7,13 +7,18 @@ import pb from '@/lib/pocketbase';
 export default function TopNavBar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
     const router = useRouter();
 
     useEffect(() => {
-        // Set the mounted state to true after the component has mounted
         setIsMounted(true);
-    }, []);
+        const unsubscribe = pb.authStore.onChange(() => {
+            setIsAuthValid(pb.authStore.isValid);
+        });
 
+        // Cleanup the listener on component unmount
+        return () => unsubscribe();
+    }, []);
     const handleLogout = () => {
         pb.authStore.clear();
         router.push('/');
@@ -50,7 +55,7 @@ export default function TopNavBar() {
 
                 {isMounted && (
                     <div className="hidden md:flex items-center space-x-6">
-                        {pb.authStore.isValid ? (
+                        {authValid ? (
                             <button
                                 onClick={handleLogout}
                                 className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors"
@@ -81,7 +86,7 @@ export default function TopNavBar() {
             {isMounted && (
                 <div className={`md:hidden ${isMobileMenuOpen ? 'block fixed w-full' : 'hidden'} bg-gray-700 text-white`}>
                     <ul className="flex flex-col p-4 space-y-2">
-                        {pb.authStore.isValid ? (
+                        {authValid ? (
                             <>
                                 <li>
                                     <Link href="/" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>

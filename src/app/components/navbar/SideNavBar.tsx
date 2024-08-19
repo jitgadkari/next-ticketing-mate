@@ -1,19 +1,27 @@
+'use client'
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import pb from '@/lib/pocketbase';
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
     const [isMounted, setIsMounted] = useState(false);
+    const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
 
     useEffect(() => {
         setIsMounted(true);
+        const unsubscribe = pb.authStore.onChange(() => {
+            setIsAuthValid(pb.authStore.isValid);
+        });
+
+        // Cleanup the listener on component unmount
+        return () => unsubscribe();
     }, []);
 
     if (!isMounted) return null;
 
     return (
         <div className="flex h-full">
-            {pb.authStore.isValid && (
+            {authValid && (
                 <aside className="w-64 bg-gray-800 text-white hidden md:block sticky top-16 h-[calc(100vh-4rem)]">
                     <nav className="p-4">
                         <ul className="space-y-4">
