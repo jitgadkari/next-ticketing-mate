@@ -720,7 +720,7 @@ const TicketDetailsPage = () => {
   };
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded shadow text-black max-w-full">
       <h1 className="text-2xl font-bold mb-4">Ticket Details</h1>
       {ticket ? (
         <div>
@@ -729,7 +729,7 @@ const TicketDetailsPage = () => {
             <p className="text-lg">Customer: {ticket.customer_name}</p>
           </div>
           <div className="mb-4">
-            <div className="flex items-center">
+            <div className="flex items-center flex-wrap gap-y-2">
               {stepsOrder.map((step, index) => (
                 <div key={index} className="flex items-center">
                   <Button
