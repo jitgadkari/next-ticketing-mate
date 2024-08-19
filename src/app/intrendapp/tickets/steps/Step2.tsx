@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import TextArea from '../../../components/TextArea';
+import { FaEdit } from 'react-icons/fa';
 
 interface Step2Props {
   ticketNumber: string;
@@ -78,10 +79,17 @@ const Step2: React.FC<Step2Props> = ({
       console.error('Error preparing for next step:', error);
     }
   };
-
+  const parsedMessage: Record<string, string> = JSON.parse(message);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-      <h3 className="text-xl font-bold mb-4">Step 2: Message Decoded</h3>
+        { !isEditing ?(<div className='flex justify-between items-center'>
+          <h3 className="text-xl font-bold mb-4">Step 2: Decoded Message</h3>
+          <div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-black text-2xl' /></div>
+          </div> 
+        ):  (<div className='flex justify-between items-center'>
+            <h3 className="text-xl font-bold mb-4">Step 2: Decoded Message</h3>
+        <Button onClick={() => setIsEditing(false)} className="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</Button>
+        </div>)}
       {isEditing ? (
         <div>
           <TextArea
@@ -91,12 +99,23 @@ const Step2: React.FC<Step2Props> = ({
             onChange={(e) => setMessage(e.target.value)}
           />
           <Button onClick={handleSave} className="mt-4 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</Button>
-          <Button onClick={() => setIsEditing(false)} className="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</Button>
         </div>
       ) : (
-        <div>
-          <pre className="bg-gray-100 p-4 rounded-lg whitespace-pre-wrap mb-4">{message}</pre>
-          <Button onClick={() => setIsEditing(true)} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Edit</Button>
+        <div className=" bg-white rounded-md shadow-md">
+            <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border border-gray-200">
+                    <tbody>
+                        {Object.entries(parsedMessage).map(([key, value]) => (
+                            <tr key={key} className="border-b">
+                                <td className="px-4 py-2 font-medium text-gray-700 bg-gray-50">
+                                    {key.replace(/_/g, ' ')}
+                                </td>
+                                <td className="px-4 py-2 text-gray-800">{String(value !== 'Null' ? value : 'N/A')}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
       )}
       <Button 

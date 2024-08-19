@@ -35,6 +35,7 @@ const Table = <T extends { [key: string]: any }>({ columns, data, renderRow }: T
     setSortConfig({ key, direction });
   };
 
+  const hideSpecificColumns=['State','Country','Contact','Phone', 'Type Employee', 'Decision', 'Created Date', 'Updated Date', 'Current Step','Status']
   return (
     <table className="min-w-full bg-white">
       <thead>
@@ -43,7 +44,9 @@ const Table = <T extends { [key: string]: any }>({ columns, data, renderRow }: T
             <th
               key={column}
               onClick={() => requestSort(column.toLowerCase())}
-              className="px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+              className={`px-6 py-4 border-b border-gray-200 bg-gray-50 text-left text-sm leading-4 font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-200 ${
+                hideSpecificColumns.includes(column) ? 'hidden sm:table-cell' : 'table-cell'
+              }`}
             >
               {column}
             </th>

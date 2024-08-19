@@ -51,9 +51,9 @@ const CustomerList = () => {
     <>
       <td className="border p-2">{customer.name}</td>
       <td className="border p-2">{customer.email}</td>
-      <td className="border p-2">{customer.phone}</td>
-      <td className="border p-2">{customer.state}</td>
-      <td className="border p-2">{customer.country}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.phone}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.state}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.country}</td>
       <td className="border p-2 ">
       <div className='h-full flex justify-center space-x-2'>
         <Link href={`customers/${customer._id}`} passHref>
@@ -71,7 +71,7 @@ const CustomerList = () => {
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Customers List</h1>
       <Table columns={columns} data={customers} renderRow={renderRow} />
     </div>

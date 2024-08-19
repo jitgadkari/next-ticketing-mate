@@ -80,13 +80,13 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     <>
       <td className="border p-2">{ticket.ticket_number}</td>
       <td className="border p-2">{ticket.customer_name}</td>
-      <td className="border p-2">{ticket.current_step}</td>
-      <td className="border p-2">
+      <td className="border p-2 hidden md:table-cell">{ticket.current_step}</td>
+      <td className="border p-2 hidden md:table-cell">
         <span className={`px-2 py-1 rounded ${ticket.status === 'closed' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>
           {ticket.status}
         </span>
       </td>
-      <td className="border p-2">
+      <td className="border p-2 hidden md:table-cell">
         <span className={`px-2 py-1 rounded ${
           ticket.final_decision === 'approved' ? 'bg-green-200 text-green-800' :
           ticket.final_decision === 'denied' ? 'bg-red-200 text-red-800' :
@@ -95,8 +95,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
           {ticket.final_decision}
         </span>
       </td>
-      <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
-      <td className="border p-2">{formatDateTime(ticket.updated_date)}</td>
+      <td className="border p-2 hidden md:table-cell">{formatDateTime(ticket.created_date)}</td>
+      <td className="border p-2 hidden md:table-cell">{formatDateTime(ticket.updated_date)}</td>
       <td className="border p-2 ">
       <ul className='h-full flex justify-center space-x-2'>
         <Link href={`tickets/${ticket._id}`} passHref>
@@ -114,7 +114,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Tickets List</h1>
       <Table columns={columns} data={tickets} renderRow={renderRow} />
     </div>

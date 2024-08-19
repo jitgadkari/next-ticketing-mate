@@ -50,10 +50,10 @@ const VendorList = () => {
   const renderRow = (vendor: Vendor) => (
     <>
       <td className="border p-2">{vendor.name}</td>
-      <td className="border p-2">{vendor.phone}</td>
+      <td className="border p-2 hidden md:table-cell">{vendor.phone}</td>
       <td className="border p-2">{vendor.email}</td>
-      <td className="border p-2">{vendor.state}</td>
-      <td className="border p-2">{vendor.country}</td>
+      <td className="border p-2 hidden md:table-cell">{vendor.state}</td>
+      <td className="border p-2 hidden md:table-cell">{vendor.country}</td>
       <td className="border p-2">
         <div className="h-full flex justify-center space-x-2">
           <Link href={`vendors/${vendor._id}`} passHref>
@@ -71,7 +71,7 @@ const VendorList = () => {
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Vendors List</h1>
       <Table columns={columns} data={vendors} renderRow={renderRow} />
     </div>

@@ -52,9 +52,9 @@ const PeopleList: React.FC = () => {
   const renderRow = (person: Person): JSX.Element => (
     <>
       <td className="border p-2">{person.name}</td>
-      <td className="border p-2">{person.phone}</td>
+      <td className="border p-2 hidden md:table-cell">{person.phone}</td>
       <td className="border p-2">{person.email}</td>
-      <td className="border p-2">{person.type_employee}</td>
+      <td className="border p-2 hidden md:table-cell">{person.type_employee}</td>
       <td className="border p-2">
         <div className='h-full flex justify-center space-x-2'>
         <Link href={`people/${person._id}`} passHref>
@@ -72,7 +72,7 @@ const PeopleList: React.FC = () => {
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">People List</h1>
       <Table columns={columns} data={people} renderRow={renderRow} />
     </div>
