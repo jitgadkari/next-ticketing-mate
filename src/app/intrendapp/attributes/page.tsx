@@ -201,20 +201,20 @@ const AttributesPage: React.FC = () => {
   return (
     <div className="p-8 bg-white rounded shadow text-black">
       <div
-        className="flex justify-between items-center text-white font-bold py-2  rounded cursor-pointer"
-        onClick={() => setEditMode(!editMode)}
+        className="flex justify-between items-center text-white font-bold py-2  rounded "
+       
       >
         {editMode ? (
           <>
             <h1 className="text-2xl font-bold mb-4 text-black">Attributes</h1>
-            <div className="flex justify-end items-center text-black font-bold py-2  rounded cursor-pointer">
+            <div className="flex justify-end items-center text-black font-bold py-2  rounded cursor-pointer" onClick={() => setEditMode(!editMode)}>
               Cancel
             </div>
           </>
         ) : (
           <>
             <h1 className="text-2xl font-bold mb-4 text-black">Attributes</h1>
-            <FaEdit className="text-black text-2xl" />
+            <FaEdit className="text-black text-2xl"  onClick={() => setEditMode(!editMode)}/>
           </>
         )}
       </div>
