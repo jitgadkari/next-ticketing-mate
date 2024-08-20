@@ -164,7 +164,7 @@ const PersonDetailsPage: React.FC = () => {
         </>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+          {/* <Input
             label="Name"
             type="text"
             name="name"
@@ -172,7 +172,11 @@ const PersonDetailsPage: React.FC = () => {
             onChange={() => {}} // No-op function
             required
             
-          />
+          /> */}
+          <div className='flex justify-start items-center gap-2'>
+          <label className='text-gray-700 '>Name</label>
+          <h1>{person.name}</h1>
+          </div>
           <Input
             label="Phone"
             type="text"
