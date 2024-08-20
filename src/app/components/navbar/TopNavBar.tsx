@@ -73,9 +73,6 @@ export default function TopNavBar() {
                                 <Link href="/login" className="text-lg hover:text-gray-300 transition-colors">
                                     Login
                                 </Link>
-                                <Link href="/signup" className="text-lg hover:text-gray-300 transition-colors">
-                                    Signup
-                                </Link>
                             </>
                         )}
                     </div>
@@ -145,11 +142,6 @@ export default function TopNavBar() {
                                 <li>
                                     <Link href="/login" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>
                                         Login
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/signup" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>
-                                        Signup
                                     </Link>
                                 </li>
                             </>
