@@ -1,34 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
+import { Vendor } from './page';
 
-interface Vendor {
-  _id: string;
-  name: string;
-  phone: string;
-  email: string;
-  state: string;
-  country: string;
+interface VendorListProps{
+  vendors: Vendor[],
+  setVendors: (vendors:Vendor[])=>void
 }
-
-const VendorList = () => {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-
-  useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
-        const data = await response.json();
-        setVendors(data.vendors);
-      } catch (error) {
-        console.error('Error fetching vendors:', error);
-      }
-    };
-    fetchVendors();
-  }, []);
+const VendorList = ({vendors,setVendors}:VendorListProps) => {
 
   const handleDelete = async (vendorId: string) => {
     try {

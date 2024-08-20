@@ -1,15 +1,38 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import VendorList from './VendorList';
 import AddVendorForm from './AddVendorForm';
 import Button from '../../components/Button';
 
+export interface Vendor {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string;
+  state: string;
+  country: string;
+}
 const VendorsPage = () => {
   const [showForm, setShowForm] = useState(false);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const data = await response.json();
+      setVendors(data.vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
+  useEffect(() => {
+    fetchVendors();
+  }, []);
 
   const handleAdd = () => {
     setShowForm(false);
+    fetchVendors()
   };
 
   return (
@@ -27,7 +50,7 @@ const VendorsPage = () => {
           <AddVendorForm onAdd={handleAdd} />
         </div>
       )}
-      <VendorList />
+      <VendorList vendors={vendors} setVendors={setVendors}/>
     </div>
   );
 };
