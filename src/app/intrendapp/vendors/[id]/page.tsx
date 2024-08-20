@@ -368,7 +368,7 @@ const VendorDetailsPage: React.FC = () => {
             <p key={key}>
               <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>{' '}
               {key === 'group'
-                ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`).join(', ')
+                ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}`).join(', ')
                 : key === 'people'
                   ? (values as string[]).map(value => {
                       const person = unlinkedPeople.find(p => p.name === value);

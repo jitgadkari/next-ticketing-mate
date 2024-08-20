@@ -155,7 +155,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group
         </label>
@@ -173,7 +173,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
       <Button type="submit" className="w-full">
         Add customer
       </Button>

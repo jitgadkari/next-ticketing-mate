@@ -167,7 +167,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group
         </label>
@@ -185,7 +185,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
       <Button type="submit" className="w-full">
         Add Vendor
       </Button>
