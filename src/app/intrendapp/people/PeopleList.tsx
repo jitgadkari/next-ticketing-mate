@@ -1,36 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
+import { Person } from './page';
 
-interface Person {
-  _id: string;
-  name: string;
-  phone: string;
-  email: string;
-  type_employee: string;
+
+interface PeopleListProps{
+  people: Person[],
+  setPeople: (people:Person[])=>void
 }
 
-const PeopleList: React.FC = () => {
-  const [people, setPeople] = useState<Person[]>([]);
-
-  useEffect(() => {
-    const fetchPeople = async (): Promise<void> => {
-      try {
-        const api = process.env.NEXT_PUBLIC_ENDPOINT_URL;
-        console.log('api', api);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people`);
-        const data = await response.json();
-        setPeople(data.people);
-      } catch (error) {
-        console.error('Error fetching people:', error);
-      }
-    };
-    fetchPeople();
-  }, []);
-
+const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
+ 
   const handleDelete = async (personId: string): Promise<void> => {
     try {
       
