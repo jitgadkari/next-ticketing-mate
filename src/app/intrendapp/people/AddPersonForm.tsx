@@ -29,7 +29,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
     linked_to_id: "Null",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
     setFormData(prevData => ({
       ...prevData,

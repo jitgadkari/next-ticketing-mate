@@ -227,14 +227,18 @@ const VendorDetailsPage: React.FC = () => {
        { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {isEditing ? (
         <form onSubmit={handleSubmit} className="space-y-4 text-black">
-          <Input
+          {/* <Input
             label="Name"
             type="text"
             name="name"
             value={vendor.name}
             onChange={handleInputChange}
             required
-          />
+          /> */}
+           <div className='flex justify-start items-center gap-2'>
+          <label className='text-gray-700 '>Name</label>
+          <h1 className="font-bold text-lg">{vendor.name}</h1>
+          </div>
           <Input
             label="Phone"
             type="tel"

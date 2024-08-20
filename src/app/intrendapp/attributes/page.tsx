@@ -162,11 +162,10 @@ const AttributesPage: React.FC = () => {
           body: JSON.stringify({ attributes: attributeUpdateData }),
         }
       );
-      console.log(attributeResponse)
       if (!attributeResponse.ok) {
         throw new Error("Failed to update attributes");
       }
-
+      fetchAttributes()
       const updatedAttributes: AttributeResponse =
         await attributeResponse.json();
       if (

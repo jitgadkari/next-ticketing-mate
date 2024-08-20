@@ -175,7 +175,7 @@ const PersonDetailsPage: React.FC = () => {
           /> */}
           <div className='flex justify-start items-center gap-2'>
           <label className='text-gray-700 '>Name</label>
-          <h1>{person.name}</h1>
+          <h1 className="font-bold text-lg">{person.name}</h1>
           </div>
           <Input
             label="Phone"
