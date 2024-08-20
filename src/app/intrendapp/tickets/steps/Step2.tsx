@@ -7,21 +7,70 @@ interface Step2Props {
   ticketNumber: string;
   data: Record<string, any>;
   originalMessage: string;
-  handleNext: () => Promise<void>;
-  handleUpdate: (updatedData: Record<string, any>) => Promise<void>;
+  setActiveStep: (step: string) => void;
+  fetchTicket: (ticketId: string) => Promise<void>;
   isCurrentStep: boolean;
+  ticket: {
+    _id: string;
+    ticket_number: string;
+    customer_name: string;
+    current_step: string;
+    steps: Record<string, any>;
+    created_data: string;
+    updated_date: string;
+  },
+
 }
 
-const Step2: React.FC<Step2Props> = ({ 
-  ticketNumber, 
-  data, 
+const Step2: React.FC<Step2Props> = ({
+  ticketNumber,
+  data,
   originalMessage,
-  handleNext, 
-  handleUpdate, 
-  isCurrentStep 
+  fetchTicket,
+  setActiveStep,
+  isCurrentStep,
+  ticket,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(JSON.stringify(data, null, 2));
+
+  const handleNext = async () => {
+    console.log('Handling next for Step 2');
+    fetchTicket(ticket._id);
+    setActiveStep("Step 3 : Message Template for vendors");
+  }
+
+  const handleUpdate = async (updatedData: Record<string, any>) => {
+    console.log('Updating Step 2 data:', updatedData);
+    const payload = {
+      ticket_number: ticket.ticket_number,
+      step_info: updatedData,
+      step_number: "Step 2 : Message Decoded"
+    };
+
+    console.log('Payload:', JSON.stringify(payload));
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Update failed:', errorData);
+      } else {
+        const responseData = await response.json();
+        console.log('Update successful:', responseData);
+      }
+    } catch (error) {
+      console.error('Error during fetch:', error);
+    }
+    fetchTicket(ticket._id);
+  }
+
 
   useEffect(() => {
     if (isCurrentStep) {
@@ -38,8 +87,8 @@ const Step2: React.FC<Step2Props> = ({
 
   const handleNextStep = async () => {
     try {
-      const messageText = typeof originalMessage === 'string' 
-        ? originalMessage 
+      const messageText = typeof originalMessage === 'string'
+        ? originalMessage
         : JSON.parse(originalMessage).text || '';
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`, {
@@ -67,10 +116,10 @@ const Step2: React.FC<Step2Props> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          ticket_number: ticketNumber, 
-          step_info: { text: vendorMessageTemplate }, 
-          step_number: "Step 3 : Message Template for vendors" 
+        body: JSON.stringify({
+          ticket_number: ticketNumber,
+          step_info: { text: vendorMessageTemplate },
+          step_number: "Step 3 : Message Template for vendors"
         }),
       });
 
@@ -79,6 +128,7 @@ const Step2: React.FC<Step2Props> = ({
       console.error('Error preparing for next step:', error);
     }
   };
+
   const parsedMessage: Record<string, string> = JSON.parse(message);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
