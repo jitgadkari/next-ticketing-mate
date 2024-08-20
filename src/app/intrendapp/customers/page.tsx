@@ -1,15 +1,38 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CustomerList from './CustomerList';
 import AddCustomerForm from './AddCustomerForm';
 import Button from '../../components/Button';
+export interface Customer {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  state: string;
+  country: string;
+}
 
 const CustomersPage = () => {
   const [showForm, setShowForm] = useState(false);
 
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const data = await response.json();
+      setCustomers(data.customers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
   const handleAdd = () => {
     setShowForm(false);
+    fetchCustomers()
   };
 
   return (
@@ -27,7 +50,7 @@ const CustomersPage = () => {
           <AddCustomerForm onAdd={handleAdd} />
         </div>
       )}
-      <CustomerList />
+      <CustomerList customers={customers} setCustomers={setCustomers}/>
     </div>
   );
 };

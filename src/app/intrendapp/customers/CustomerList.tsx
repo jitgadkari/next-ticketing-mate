@@ -1,34 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
-
-interface Customer {
-  _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  state: string;
-  country: string;
+import { Customer } from './page';
+interface CustomerListProps{
+  customers:Customer[],
+  setCustomers:(customers:Customer[])=>void
 }
 
-const CustomerList = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
-        const data = await response.json();
-        setCustomers(data.customers);
-      } catch (error) {
-        console.error('Error fetching customers:', error);
-      }
-    };
-    fetchCustomers();
-  }, []);
 
   const handleDelete = async (customerId: string) => {
     try {
