@@ -1,3 +1,4 @@
+'use client'
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import { FaEdit } from 'react-icons/fa';
@@ -33,10 +34,11 @@ const Step2: React.FC<Step2Props> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(JSON.stringify(data, null, 2));
-
+  const [loading,setLoading] = useState(false);
   const handleNext = async () => {
     console.log('Handling next for Step 2');
     fetchTicket(ticket._id);
+    setLoading(false);
     setActiveStep("Step 3 : Message Template for vendors");
   }
 
@@ -49,7 +51,6 @@ const Step2: React.FC<Step2Props> = ({
     };
 
     console.log('Payload:', JSON.stringify(payload));
-
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`, {
         method: 'PUT',
@@ -70,22 +71,23 @@ const Step2: React.FC<Step2Props> = ({
     }
     fetchTicket(ticket._id);
   }
-
-
+  
+  
   useEffect(() => {
     if (isCurrentStep) {
       handleUpdate(JSON.parse(message));
     }
   }, [isCurrentStep]);
-
+  
   const handleSave = async () => {
     const updatedData = JSON.parse(message);
     console.log('updatedData from save button: ', updatedData);
     await handleUpdate(updatedData);
     setIsEditing(false);
   };
-
+  
   const handleNextStep = async () => {
+    setLoading(true);
     try {
       const messageText = typeof originalMessage === 'string'
         ? originalMessage
@@ -128,7 +130,7 @@ const Step2: React.FC<Step2Props> = ({
       console.error('Error preparing for next step:', error);
     }
   };
-
+  console.log(loading)
   const parsedMessage: Record<string, string> = JSON.parse(message);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -142,13 +144,14 @@ const Step2: React.FC<Step2Props> = ({
         </div>)}
       {isEditing ? (
        <div className='text-black'>
+        {loading && <h1>Loading...</h1>}
        <EditDecodedMessage message={message} setMessage={setMessage} />
        <Button onClick={handleSave} className="mt-4 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save</Button>
      </div>
       ) : (
         <div className=" bg-white rounded-md shadow-md">
             <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200">
+                {!loading &&<table className="min-w-full bg-white border border-gray-200">
                     <tbody>
                         {Object.entries(parsedMessage).map(([key, value]) => (
                             <tr key={key} className="border-b">
@@ -159,7 +162,8 @@ const Step2: React.FC<Step2Props> = ({
                             </tr>
                         ))}
                     </tbody>
-                </table>
+                </table>}
+                {loading && <h1>Loading...</h1>}
             </div>
         </div>
       )}

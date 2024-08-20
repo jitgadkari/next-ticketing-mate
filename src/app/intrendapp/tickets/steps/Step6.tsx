@@ -5,24 +5,58 @@ import VendorDecodedMessage from '@/app/components/step6/VendorDecodedMessage';
 interface Step6Props {
   ticketNumber: string;
   decodedMessages: { [key: string]: any };
-  handleNext: () => Promise<void>;
-  handleUpdate: (updatedDecodedMessages: { [key: string]: any }) => Promise<void>;
   isCurrentStep: boolean;
   customerName: string;  // Add this prop
   originalMessage: string;  // Add this prop
+  setActiveStep: (step: string) => void;
+  fetchTicket: (ticketId: string) => Promise<void>;
+  ticket: {
+    _id: string;
+    ticket_number: string;
+    customer_name: string;
+    current_step: string;
+    steps: Record<string, any>;
+    created_data: string;
+    updated_date: string;
+  },
 }
 
 const Step6: React.FC<Step6Props> = ({ 
   ticketNumber, 
   decodedMessages, 
-  handleNext, 
-  handleUpdate, 
   isCurrentStep,
   customerName,
-  originalMessage
+  originalMessage,
+  fetchTicket,
+  setActiveStep,
+  ticket,
 }) => {
   const [selectedMessages, setSelectedMessages] = useState<{ [key: string]: any }>({});
-
+  const [loading,setLoading] = useState(false);
+  const handleNext=async () => {
+    console.log("Handling next for Step 6");
+    fetchTicket(ticket._id);
+    setLoading(false)
+    setActiveStep("Step 7 : Customer Message Template");
+  }
+ const handleUpdate=async (updatedDecodedMessages: { [key: string]: any }) => {
+    console.log("Updating Step 6 messages:", updatedDecodedMessages);
+    await fetch(
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ticket_number: ticket.ticket_number,
+          step_number: "Step 6 : Vendor Message Decoded",
+          step_info: updatedDecodedMessages,
+        }),
+      }
+    );
+    fetchTicket(ticket._id);
+  }
   const handleSelectChange = (vendor: string, isChecked: boolean) => {
     setSelectedMessages(prev => {
       const updated = { ...prev };
@@ -37,6 +71,7 @@ const Step6: React.FC<Step6Props> = ({
 
   const handleNextStep = async () => {
     try {
+      setLoading(true)
       // First, update the current step with selected messages
       await handleUpdate(selectedMessages);
 
@@ -83,7 +118,7 @@ const Step6: React.FC<Step6Props> = ({
   return (
     <div>
       <h3>Decoded Messages from Vendors</h3>
-      {Object.keys(decodedMessages).map((vendor) => {
+      {!loading &&(Object.keys(decodedMessages).map((vendor) => {
            let decodedMessage = JSON.stringify(decodedMessages[vendor])
         return(
         <div key={vendor} className="mb-4">
@@ -96,7 +131,8 @@ const Step6: React.FC<Step6Props> = ({
           />
           <label className="ml-2">Select this quote</label>
         </div>
-      )})}
+      )}))}
+      {loading && <h1>Loading...</h1>}
       <div className="flex justify-end">
         <Button 
           onClick={handleNextStep} 
