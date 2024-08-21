@@ -141,7 +141,7 @@ const PersonDetailsPage: React.FC = () => {
   if (!person) return <div>Loading...</div>;
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-3 md:p-8 bg-white rounded shadow text-black text-xs md:text-base">
       <h1 className="text-2xl font-bold mb-4">Person Details</h1>
       { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {!isEditing ? (

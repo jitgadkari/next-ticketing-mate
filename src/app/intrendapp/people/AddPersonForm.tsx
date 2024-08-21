@@ -95,7 +95,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      <div >
         <label className="block text-gray-700">Type of Employee</label>
         <select
           name="type_employee"

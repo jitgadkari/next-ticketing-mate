@@ -59,7 +59,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     </nav>
                 </aside>
             )}
-            <main className="flex-1 px-8 py-4 bg-gray-100 overflow-auto h-[calc(100vh-4rem)]">
+            <main className="flex-1 md:px-8 md:py-4 bg-gray-100 overflow-auto h-[calc(h-full-4rem)]">
                 {children}
             </main>
         </div>

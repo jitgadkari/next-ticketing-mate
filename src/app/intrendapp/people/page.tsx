@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import PeopleList from "./PeopleList";
 import AddPersonForm from "./AddPersonForm";
 import Button from "../../components/Button";
+import PeopleMobileList from "./PeopleMobileList";
 export interface Person {
   _id: string;
   name: string;
@@ -38,7 +39,7 @@ const PeoplePage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-gray-100  text-black">
       <h1 className="text-2xl font-bold mb-4">People</h1>
       <div className="flex justify-end mb-4">
         {!showForm ? (
@@ -52,7 +53,12 @@ const PeoplePage: React.FC = () => {
           <AddPersonForm onAdd={handleAdd} />
         </div>
       )}
-      <PeopleList people={people} setPeople={setPeople} />
+      <div className="hidden md:block">
+        <PeopleList people={people} setPeople={setPeople} />
+      </div>
+      <div className="block md:hidden">
+        <PeopleMobileList people={people} setPeople={setPeople}/>
+      </div>
     </div>
   );
 };
