@@ -227,7 +227,7 @@ const AttributesPage: React.FC = () => {
               key={category}
               className="p-4 bg-[#F3F4F6] rounded-lg shadow-md"
             >
-              <label className="text-xl font-semibold mb-6 text-gray-800">
+              <label className="text-xl font-semibold mb-6 text-gray-800 pb-4">
                 {category}
               </label>
               {category !== "group" ? (
@@ -256,7 +256,7 @@ const AttributesPage: React.FC = () => {
                     value={inputValues[category]}
                     placeholder={`Add a new ${category}`}
                     onChange={handleInputChange}
-                    className="px-2"
+                    className="px-2 rounded-md"
                     onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                       if (e.key === "Enter") {
                         e.preventDefault();

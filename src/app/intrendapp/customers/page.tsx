@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import CustomerList from './CustomerList';
 import AddCustomerForm from './AddCustomerForm';
 import Button from '../../components/Button';
+import CustomerMobileList from './CustomerMobileList';
 export interface Customer {
   _id: string;
   name: string;
@@ -36,7 +37,7 @@ const CustomersPage = () => {
   };
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-gray-100 rounded  text-black">
       <h1 className="text-2xl font-bold mb-4">Customers</h1>
       <div className="flex justify-end mb-4">
       {!showForm?<Button onClick={() => setShowForm(true)}>
@@ -50,7 +51,12 @@ const CustomersPage = () => {
           <AddCustomerForm onAdd={handleAdd} />
         </div>
       )}
+      <div className='hidden md:block'>
       <CustomerList customers={customers} setCustomers={setCustomers}/>
+      </div>
+      <div className='md:hidden'>
+        <CustomerMobileList customers={customers} setCustomers={setCustomers}/>
+      </div>
     </div>
   );
 };

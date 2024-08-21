@@ -321,7 +321,7 @@ const Step4: React.FC<Step4Props> = ({
                 !isCurrentStep || selectedOptions.length === 0 || isSending
               }
             >
-              {isSending ? "Sending..." : "Send Messages"}
+              {isSending ? "Sending..." : "Send"}
             </Button>
             <Button
               onClick={handleNextStep}
@@ -332,7 +332,7 @@ const Step4: React.FC<Step4Props> = ({
               }`}
               disabled={!isCurrentStep || selectedOptions.length === 0}
             >
-              Next Step
+              Next
             </Button>
           </div>
         </>

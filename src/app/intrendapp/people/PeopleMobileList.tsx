@@ -31,35 +31,50 @@ export default function PeopleMobileList({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:hidden">
-    {people.map((person) => (
-      <div key={person._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
-        <div className="flex flex-col space-y-4 text-sm">
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <div className="font-semibold">{person.name}</div>
-              <div className="">{person.type_employee}</div>
+      {people.map((person) => (
+        <div key={person._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
+          <div className="flex flex-col space-y-4 text-sm w-full">
+            
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Name:</span>
+                <span>{person.name}</span>
+              </div>
             </div>
-            <div className="flex flex-col text-right">
-              <div className="">{person.email}</div>
-              <div className="">{person.phone}</div>
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Email:</span>
+                <span>{person.email}</span>
+              </div>
             </div>
-          </div>
-  
-          <div className="flex justify-end space-x-4">
-            <Link href={`people/${person._id}`} passHref>
-              <span className="text-blue-500 hover:text-blue-700">
-                <FaEye />
-              </span>
-            </Link>
-            <FaTrash
-              onClick={() => handleDelete(person._id)}
-              className="text-red-500 cursor-pointer hover:text-red-700"
-            />
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Employee Type:</span>
+                <span>{person.type_employee}</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Phone:</span>
+                <span>{person.phone}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <Link href={`people/${person._id}`} passHref>
+                <span className="text-blue-500 hover:text-blue-700">
+                  <FaEye />
+                </span>
+              </Link>
+              <FaTrash
+                onClick={() => handleDelete(person._id)}
+                className="text-red-500 cursor-pointer hover:text-red-700"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    ))}
-  </div>
+      ))}
+    </div>
   
   );
 }

@@ -452,7 +452,7 @@ const CustomerDetailsPage: React.FC = () => {
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-3 md:p-8 bg-white rounded shadow text-black text-xs md:text-base">
       <h1 className="text-2xl font-bold mb-4">Customer Details</h1>
       {!isEditing && (
         <div

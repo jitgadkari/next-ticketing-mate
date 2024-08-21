@@ -153,7 +153,7 @@ const Step7: React.FC<Step7Props> = ({
           onClick={handleSave}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
-          Save Template
+          Save
         </Button>
         <Button
           onClick={handleSendMessage}
@@ -162,7 +162,7 @@ const Step7: React.FC<Step7Props> = ({
           }`}
           disabled={!isCurrentStep || isSending}
         >
-          {isSending ? "Sending..." : "Send Message"}
+          {isSending ? "Sending..." : "Send"}
         </Button>
         <Button
           onClick={handleNextStep}
