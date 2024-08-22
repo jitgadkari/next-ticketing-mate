@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import Input from '../../components/Input';
-import Button from '../../components/Button';
+import { useState, useEffect } from "react";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 interface AddTicketFormProps {
   onAdd: () => void;
@@ -21,10 +21,12 @@ interface Person {
 }
 
 const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
+  const [showDropDown, setShowDropDown] = useState(false);
+  const [showPersonDropDown, setShowPersonDropDown] = useState(false);
   const [formData, setFormData] = useState({
-    customer_name: '',
-    person_name: '',
-    message: '',
+    customer_name: "",
+    person_name: "",
+    message: "",
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [people, setPeople] = useState<Person[]>([]); // Initialize as an empty array
@@ -32,11 +34,13 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+        );
         const data = await response.json();
         setCustomers(data.customers);
       } catch (error) {
-        console.error('Error fetching customers:', error);
+        console.error("Error fetching customers:", error);
       }
     };
     fetchCustomers();
@@ -52,96 +56,159 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
   const fetchPeople = async (customerName: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/customer/?customer=${encodeURIComponent(customerName)}`);
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_ENDPOINT_URL
+        }/people/customer/?customer=${encodeURIComponent(customerName)}`
+      );
       const data = await response.json();
       setPeople(data.person || []); // Use an empty array if data.person is undefined
     } catch (error) {
-      console.error('Error fetching people:', error);
+      console.error("Error fetching people:", error);
       setPeople([]); // Set to empty array in case of error
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
+    console.log("Form Data:", formData);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       if (response.ok) {
         onAdd();
         // Reset form after successful submission
         setFormData({
-          customer_name: '',
-          person_name: '',
-          message: '',
+          customer_name: "",
+          person_name: "",
+          message: "",
         });
       } else {
         const errorData = await response.json();
-        console.error('Failed to add ticket', errorData);
+        console.error("Failed to add ticket", errorData);
       }
     } catch (error) {
-      console.error('Error adding ticket:', error);
+      console.error("Error adding ticket:", error);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="mb-4">
-        <label htmlFor="customer_name" className="block text-gray-700 text-sm font-bold mb-2">
-          Customer
-        </label>
-        <select
-          id="customer_name"
-          name="customer_name"
-          value={formData.customer_name}
-          onChange={handleChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          required
+        <button
+          className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          type="button"
+          onClick={() => setShowDropDown(!showDropDown)}
         >
-          <option value="" disabled>Select a customer</option>
-          {customers.map((customer) => (
-            <option key={customer._id} value={customer.name}>
-              {customer.name}
-            </option>
-          ))}
-        </select>
+          {formData.customer_name || "Select Customer"}
+          <svg
+            className="w-2.5 h-2.5 ms-3"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 10 6"
+          >
+            <path
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m1 1 4 4 4-4"
+            />
+          </svg>
+        </button>
+
+        <div
+          className={`z-10 ${
+            !showDropDown && "hidden"
+          } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+        >
+          <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+            {customers.map((customer) => (
+              <li
+                key={customer._id}
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+                onClick={() => {
+                  setFormData({ ...formData, customer_name: customer.name });
+                  setShowDropDown(false);
+                }}
+              >
+                {customer.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
       {formData.customer_name && (
         <div className="mb-4">
-          <label htmlFor="person_name" className="block text-gray-700 text-sm font-bold mb-2">
-            Person
-          </label>
-          <select
-            id="person_name"
-            name="person_name"
-            value={formData.person_name}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            required
+          <button
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            type="button"
+            onClick={() => setShowPersonDropDown(!showPersonDropDown)}
           >
-            <option value="" disabled>Select a person</option>
-            {people.length > 0 ? (
-              people.map((person) => (
-                <option key={person._id} value={person.name}>
-                  {person.name}
-                </option>
-              ))
-            ) : (
-              <option disabled>No people available for this customer</option>
-            )}
-          </select>
+            {formData.person_name || "Select Person"}
+            <svg
+              className="w-2.5 h-2.5 ms-3"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 10 6"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="m1 1 4 4 4-4"
+              />
+            </svg>
+          </button>
+
+          <div
+            className={`z-10 ${
+              !showPersonDropDown && "hidden"
+            } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+          >
+            <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+              {people.length > 0 ? (
+                people.map((person) => (
+                  <li
+                    key={person._id}
+                    className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+                    onClick={() => {
+                      setFormData({ ...formData, person_name: person.name });
+                      setShowPersonDropDown(false);
+                    }}
+                  >
+                    {person.name}
+                  </li>
+                ))
+              ) : (
+                <li className="block px-4 py-2 text-gray-500">
+                  No people available for this customer
+                </li>
+              )}
+            </ul>
+          </div>
         </div>
       )}
       <Input
@@ -152,7 +219,11 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
         onChange={handleChange}
         required
       />
-      <Button type="submit" className="w-full" disabled={!formData.customer_name || !formData.person_name}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={!formData.customer_name || !formData.person_name}
+      >
         Add Ticket
       </Button>
     </form>
