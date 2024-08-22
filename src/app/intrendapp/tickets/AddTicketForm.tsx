@@ -8,7 +8,7 @@ interface AddTicketFormProps {
   onAdd: () => void;
 }
 
-interface Customer {
+export interface Customer {
   _id: string;
   name: string;
 }
