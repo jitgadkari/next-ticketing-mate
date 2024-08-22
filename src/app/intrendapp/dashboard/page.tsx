@@ -1,20 +1,42 @@
-import { Ticket } from "@/types/TicketInterfaces";
-
+interface ResponseTime {
+    ticket_number: string;
+    days: number;
+    hours: number;
+    minutes: number;
+  }
+  
+  interface DashboardData {
+    total_tickets: number;
+    open_tickets: number;
+    closed_tickets: number;
+    accepted_tickets: number;
+    rejected_tickets: number;
+    pending_tickets: number;
+    total_vendors: number;
+    total_customers: number;
+    total_people: number;
+    response_time_for_closed_tickets: ResponseTime[];
+  }
+  
 const Dashboard = async () => {
-  const fetchDashBoardData = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`
-      );
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+    const fetchDashBoardData = async (): Promise<DashboardData | undefined> => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`
+        );
+        const data: DashboardData = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+  
+    const dashboardData = await fetchDashBoardData();
+  
+    if (!dashboardData) {
+      return <div>Error loading dashboard data</div>;
     }
-  };
-
-  const dashboardData = await fetchDashBoardData();
-
+  
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold text-black mb-6">Dashboard</h1>
