@@ -1,34 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
-
-interface Customer {
-  _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  state: string;
-  country: string;
+import { Customer } from './page';
+interface CustomerListProps{
+  customers:Customer[],
+  setCustomers:(customers:Customer[])=>void
 }
 
-const CustomerList = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
-        const data = await response.json();
-        setCustomers(data.customers);
-      } catch (error) {
-        console.error('Error fetching customers:', error);
-      }
-    };
-    fetchCustomers();
-  }, []);
 
   const handleDelete = async (customerId: string) => {
     try {
@@ -51,10 +33,11 @@ const CustomerList = () => {
     <>
       <td className="border p-2">{customer.name}</td>
       <td className="border p-2">{customer.email}</td>
-      <td className="border p-2">{customer.phone}</td>
-      <td className="border p-2">{customer.state}</td>
-      <td className="border p-2">{customer.country}</td>
-      <td className="border p-2 flex justify-center space-x-2">
+      <td className="border p-2 hidden md:table-cell">{customer.phone}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.state}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.country}</td>
+      <td className="border p-2 ">
+      <div className='h-full flex justify-center space-x-2'>
         <Link href={`customers/${customer._id}`} passHref>
           <span className="text-blue-500 hover:text-blue-700">
             <FaEye />
@@ -63,13 +46,14 @@ const CustomerList = () => {
         <FaTrash
           onClick={() => handleDelete(customer._id)}
           className="text-red-500 cursor-pointer hover:text-red-700"
-        />
+          />
+          </div>
       </td>
     </>
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Customers List</h1>
       <Table columns={columns} data={customers} renderRow={renderRow} />
     </div>

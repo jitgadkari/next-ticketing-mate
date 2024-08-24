@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import { MultiSelect, Option } from 'react-multi-select-component';
+import { FaEdit } from 'react-icons/fa';
 
 interface Vendor {
   _id: string;
@@ -221,17 +222,23 @@ const VendorDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-3 md:p-8 bg-white  text-black text-xs md:text-base">
+          <h1 className="text-2xl font-bold mb-4">Vendor Details</h1>
+       { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+        <form onSubmit={handleSubmit} className="space-y-4 text-black">
+          {/* <Input
             label="Name"
             type="text"
             name="name"
             value={vendor.name}
             onChange={handleInputChange}
             required
-          />
+          /> */}
+           <div className='flex justify-start items-center gap-2'>
+          <label className='text-gray-700 '>Name</label>
+          <h1 className="font-bold text-lg">{vendor.name}</h1>
+          </div>
           <Input
             label="Phone"
             type="tel"
@@ -352,7 +359,7 @@ const VendorDetailsPage: React.FC = () => {
           </div>
         </form>
       ) : (
-        <div>
+        <div  className="grid grid-cols-2 gap-4">
           <p><strong>Name:</strong> {vendor.name}</p>
           <p><strong>Phone:</strong> {vendor.phone}</p>
           <p><strong>Email:</strong> {vendor.email}</p>
@@ -365,7 +372,7 @@ const VendorDetailsPage: React.FC = () => {
             <p key={key}>
               <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>{' '}
               {key === 'group'
-                ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`).join(', ')
+                ? Object.entries(values as Record<string, string>).map(([groupKey, groupValue]) => `${groupKey}`).join(', ')
                 : key === 'people'
                   ? (values as string[]).map(value => {
                       const person = unlinkedPeople.find(p => p.name === value);
@@ -374,9 +381,6 @@ const VendorDetailsPage: React.FC = () => {
                   : (values as string[]).join(', ')}
             </p>
           ))}
-          <div className="flex justify-end">
-            <Button onClick={() => setIsEditing(true)} className="bg-blue-500 text-white hover:bg-blue-600">Edit</Button>
-          </div>
         </div>
       )}
     </div>

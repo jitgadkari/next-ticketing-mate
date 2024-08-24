@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import { FaEdit } from 'react-icons/fa';
 
 interface Person {
   _id: string;
@@ -140,11 +141,13 @@ const PersonDetailsPage: React.FC = () => {
   if (!person) return <div>Loading...</div>;
 
   return (
-    <div className="p-8 bg-white rounded shadow">
+    <div className="p-3 md:p-8 bg-white rounded shadow text-black text-xs md:text-base">
       <h1 className="text-2xl font-bold mb-4">Person Details</h1>
+      { !isEditing &&<div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-blue-500 text-2xl' /></div>}
       {!isEditing ? (
         <>
-          <div className="space-y-4">
+          <div className="space-y-4 text-black">
+          <div className="grid grid-cols-2 gap-4">
             <p><strong>Name:</strong> {person.name}</p>
             <p><strong>Phone:</strong> {person.phone}</p>
             <p><strong>Email:</strong> {person.email}</p>
@@ -157,13 +160,11 @@ const PersonDetailsPage: React.FC = () => {
               </>
             )}
           </div>
-          <Button onClick={() => setIsEditing(true)} className="mt-4">
-            Edit
-          </Button>
+          </div>
         </>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+          {/* <Input
             label="Name"
             type="text"
             name="name"
@@ -171,7 +172,11 @@ const PersonDetailsPage: React.FC = () => {
             onChange={() => {}} // No-op function
             required
             
-          />
+          /> */}
+          <div className='flex justify-start items-center gap-2'>
+          <label className='text-gray-700 '>Name</label>
+          <h1 className="font-bold text-lg">{person.name}</h1>
+          </div>
           <Input
             label="Phone"
             type="text"

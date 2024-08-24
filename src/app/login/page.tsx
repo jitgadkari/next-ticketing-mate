@@ -1,22 +1,35 @@
 "use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import pb from '../../lib/pocketbase';
+import { useState, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import pb from "../../lib/pocketbase";
 
 const Login = () => {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const router = useRouter();
 
+  const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
+
+  useEffect(() => {
+    const unsubscribe = pb.authStore.onChange(() => {
+      setIsAuthValid(pb.authStore.isValid);
+    });
+
+    // Cleanup the listener on component unmount
+    return () => unsubscribe();
+  }, []);
+  if (authValid) {
+    router.push("/intrendapp/tickets");
+  }
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await pb.collection('users').authWithPassword(email, password);
-      router.push('/intrendapp/dashboard');
+      await pb.collection("users").authWithPassword(email, password);
+      router.push("/intrendapp/dashboard");
     } catch (err) {
-      setError('Invalid email or password');
+      setError("Invalid email or password");
     }
   };
 
@@ -46,7 +59,10 @@ const Login = () => {
             />
           </div>
           {error && <p className="text-red-500">{error}</p>}
-          <button type="submit" className="w-full p-2 text-white bg-blue-500 rounded">
+          <button
+            type="submit"
+            className="w-full p-2 text-white bg-blue-500 rounded"
+          >
             Login
           </button>
         </form>

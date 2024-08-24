@@ -124,7 +124,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-black">
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error: </strong>
@@ -155,7 +155,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group
         </label>
@@ -173,7 +173,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
       <Button type="submit" className="w-full">
         Add customer
       </Button>

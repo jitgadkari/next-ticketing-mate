@@ -136,7 +136,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-black">
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error: </strong>
@@ -167,7 +167,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group
         </label>
@@ -185,7 +185,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
       <Button type="submit" className="w-full">
         Add Vendor
       </Button>

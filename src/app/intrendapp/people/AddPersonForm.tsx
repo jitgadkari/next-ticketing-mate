@@ -29,7 +29,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
     linked_to_id: "Null",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
     setFormData(prevData => ({
       ...prevData,
@@ -70,7 +70,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-black">
       <Input
         label="Name"
         type="text"
@@ -95,7 +95,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      <div>
+      <div >
         <label className="block text-gray-700">Type of Employee</label>
         <select
           name="type_employee"

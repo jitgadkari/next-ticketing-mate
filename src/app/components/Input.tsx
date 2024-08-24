@@ -12,7 +12,7 @@ interface InputProps {
 
 const Input: React.FC<InputProps> = ({ label, type, name, value, onChange, required, rows = 10 }) => {
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       <label className="block text-gray-700 mb-2">{label}</label>
       {type === 'textarea' ? (
         <textarea
