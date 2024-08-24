@@ -1,5 +1,3 @@
-import DashboardDetailInput from "./DashboardDetailInput";
-
 interface ResponseTime {
     ticket_number: string;
     days: number;
@@ -7,7 +5,7 @@ interface ResponseTime {
     minutes: number;
   }
   
-  interface DashboardData {
+  interface DashboardDetailData {
     total_tickets: number;
     open_tickets: number;
     closed_tickets: number;
@@ -20,13 +18,19 @@ interface ResponseTime {
     response_time_for_closed_tickets: ResponseTime[];
   }
   
-const Dashboard = async () => {
-    const fetchDashBoardData = async (): Promise<DashboardData | undefined> => {
+  interface DashboardDetailProps{
+    params:{
+        detail:string
+    }
+  }
+const DashboardDetail = async ({params}:DashboardDetailProps) => {
+    console.log(params)
+    const fetchDashBoardData = async (): Promise<DashboardDetailData | undefined> => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_for_n_days/?days=${params.detail}`
         );
-        const data: DashboardData = await response.json();
+        const data: DashboardDetailData = await response.json();
         return data;
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -42,7 +46,7 @@ const Dashboard = async () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold text-black mb-6">Dashboard</h1>
-  
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold text-gray-700">Total Tickets</h2>
@@ -117,7 +121,7 @@ const Dashboard = async () => {
           </p>
         </div>
       </div>
-<DashboardDetailInput/>
+
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-black mb-4">
           Response Time for Closed Tickets
@@ -144,4 +148,4 @@ const Dashboard = async () => {
   );
 };
 
-export default Dashboard;
+export default DashboardDetail;
