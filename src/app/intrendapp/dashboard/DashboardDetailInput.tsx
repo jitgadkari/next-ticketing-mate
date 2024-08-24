@@ -12,15 +12,14 @@ const DashboardDetailInput = () => {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    router.push(`/dashboarddetail/${input}`);
-    console.log("Input submitted:", input);
+    router.push(`/intrendapp/dashboard/${input}`);
   };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md text-black mt-4">
       <h2 className="text-xl font-semibold text-gray-700 mb-4"> Get Dashboard Details </h2>
       <form onSubmit={handleSubmit}>
-        <h1>Last Number of Days</h1>
+        <h1>For Last N Number of Days</h1>
         <input
           type="text"
           value={input}

@@ -26,6 +26,7 @@ interface Customer {
   address: string;
   remarks: string;
   additional_info: string;
+  code:string;
 }
 
 interface Attributes {
@@ -293,6 +294,13 @@ const CustomerDetailsPage: React.FC = () => {
         value={customer.additional_info}
         onChange={handleInputChange}
       />
+      <Input
+        label="Code"
+        type="text"
+        name="code"
+        value={customer.code}
+        onChange={handleInputChange}
+      />
       {Object.entries(selectedAttributes).map(([key, values]) => (
         <div key={key}>
           <label className="block text-gray-700">
@@ -427,6 +435,9 @@ const CustomerDetailsPage: React.FC = () => {
         </p>
         <p>
           <strong>Additional Info:</strong> {customer.additional_info}
+        </p>
+        <p>
+          <strong>Code:</strong> {customer.code}
         </p>
         {Object.entries(selectedAttributes).map(([key, values]) => (
           <p key={key}>

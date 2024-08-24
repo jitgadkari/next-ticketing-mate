@@ -28,6 +28,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     name: '',
     email: '',
     phone: '',
+    code:'',
     group: '',
     fabric_type: [],
     certifications: [],
@@ -75,7 +76,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.code) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -96,6 +97,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
           name: '',
           email: '',
           phone: '',
+          code:'',
           group: '',
           fabric_type: [],
           certifications: [],
@@ -152,6 +154,14 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
         type="tel"
         name="phone"
         value={formData.phone}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Code"
+        type="text"
+        name="code"
+        value={formData.code}
         onChange={handleChange}
         required
       />

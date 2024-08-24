@@ -45,7 +45,7 @@ const DashboardDetail = async ({params}:DashboardDetailProps) => {
   
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold text-black mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-black mb-6">Dashboard Details for last {params.detail} days</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-lg shadow-md">

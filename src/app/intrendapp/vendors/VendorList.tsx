@@ -26,7 +26,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
     }
   };
 
-  const columns = ['Name', 'Contact', 'Email', 'State', 'Country', 'Actions'];
+  const columns = ['Name', 'Contact', 'Email', 'State', 'Country','Code', 'Actions'];
 
   const renderRow = (vendor: Vendor) => (
     <>
@@ -35,6 +35,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
       <td className="border p-2">{vendor.email}</td>
       <td className="border p-2 hidden md:table-cell">{vendor.state}</td>
       <td className="border p-2 hidden md:table-cell">{vendor.country}</td>
+      <td className="border p-2 hidden md:table-cell">{vendor.code}</td>
       <td className="border p-2">
         <div className="h-full flex justify-center space-x-2">
           <Link href={`vendors/${vendor._id}`} passHref>
