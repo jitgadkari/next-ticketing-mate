@@ -58,6 +58,12 @@ export default function VendorMobileList({
               <span>{vendor.state}</span>
             </div>
           </div>
+          <div className="flex justify-between items-center">
+            <div className="flex">
+              <span className="font-semibold mr-2">Code:</span>
+              <span>{vendor.code}</span>
+            </div>
+          </div>
   
           <div className="flex justify-end space-x-4">
             <Link href={`vendors/${vendor._id}`} passHref>

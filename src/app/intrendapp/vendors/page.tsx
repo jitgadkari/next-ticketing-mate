@@ -13,6 +13,7 @@ export interface Vendor {
   email: string;
   state: string;
   country: string;
+  code:string;
 }
 const VendorsPage = () => {
   const [showForm, setShowForm] = useState(false);

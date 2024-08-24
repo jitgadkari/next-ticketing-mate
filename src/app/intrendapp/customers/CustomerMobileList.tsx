@@ -63,6 +63,12 @@ export default function CustomerMobileList({
               <span>{customer.state}</span>
             </div>
           </div>
+          <div className="flex justify-between items-center">
+            <div className="flex">
+              <span className="font-semibold mr-2">Code:</span>
+              <span>{customer.code}</span>
+            </div>
+          </div>
 
           <div className="flex justify-end space-x-4">
             <Link href={`customers/${customer._id}`} passHref>

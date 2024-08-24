@@ -27,7 +27,7 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
     }
   };
 
-  const columns = ['Name', 'Email', 'Contact', 'State', 'Country', 'Actions'];
+  const columns = ['Name', 'Email', 'Contact', 'State', 'Country','Code', 'Actions'];
 
   const renderRow = (customer: Customer) => (
     <>
@@ -36,6 +36,7 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
       <td className="border p-2 hidden md:table-cell">{customer.phone}</td>
       <td className="border p-2 hidden md:table-cell">{customer.state}</td>
       <td className="border p-2 hidden md:table-cell">{customer.country}</td>
+      <td className="border p-2 hidden md:table-cell">{customer.code}</td>
       <td className="border p-2 ">
       <div className='h-full flex justify-center space-x-2'>
         <Link href={`customers/${customer._id}`} passHref>

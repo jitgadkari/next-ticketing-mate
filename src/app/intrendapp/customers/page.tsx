@@ -12,6 +12,7 @@ export interface Customer {
   phone: string;
   state: string;
   country: string;
+  code:string;
 }
 
 const CustomersPage = () => {

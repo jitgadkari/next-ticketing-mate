@@ -30,6 +30,7 @@ interface Vendor {
   gst_number: string;
   pan_number: string;
   group: Record<string, string>; // Changed from string to Record<string, string>
+  code:string;
 }
 
 interface Attributes {
@@ -290,6 +291,13 @@ const VendorDetailsPage: React.FC = () => {
             value={vendor.delivery_destination}
             onChange={handleInputChange}
           />
+          <Input
+            label="Code"
+            type="text"
+            name="code"
+            value={vendor.code}
+            onChange={handleInputChange}
+          />
           {Object.entries(selectedAttributes).map(([key, values]) => (
             <div key={key}>
               <label className="block text-gray-700">{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}</label>
@@ -368,6 +376,7 @@ const VendorDetailsPage: React.FC = () => {
           <p><strong>GST Number:</strong> {vendor.gst_number}</p>
           <p><strong>PAN Number:</strong> {vendor.pan_number}</p>
           <p><strong>Delivery Destination:</strong> {vendor.delivery_destination}</p>
+          <p><strong>Code:</strong> {vendor.code}</p>
           {Object.entries(selectedAttributes).map(([key, values]) => (
             <p key={key}>
               <strong>{key.replace('_', ' ').charAt(0).toUpperCase() + key.slice(1)}:</strong>{' '}
