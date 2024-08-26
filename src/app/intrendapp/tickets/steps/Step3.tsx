@@ -33,7 +33,7 @@ const Step3: React.FC<Step3Props> = ({
   ticket,
 }) => {
   const [message, setMessage] = useState(template);
-  const [includeCustomerName, setIncludeCustomerName] = useState(false);
+  const [includeCustomerName, setIncludeCustomerName] = useState(true);
   const [loading, setLoading] = useState(false);
   const handleNext = async () => {
     console.log("Handling next for Step 3");
@@ -95,7 +95,13 @@ const Step3: React.FC<Step3Props> = ({
         }
       );
       const data = await response.json();
-      setMessage(data.vendor_message_template);
+      let initialMessage = data.vendor_message_template;
+
+      // If the customer name should be included by default, append it
+      if (includeCustomerName) {
+        initialMessage += `\n\nCustomer Name: ${customerName}`;
+      }
+      setMessage(initialMessage);
     } catch (error) {
       console.error("Error fetching vendor template:", error);
     }
