@@ -60,7 +60,13 @@ const TicketDetailsPage = () => {
       console.error("Error fetching ticket:", error);
     }
   };
-
+  console.log(activeStep)
+  const listOfStepsWhereRefreshIsntAllowed = [
+    "Step 1 : Customer Message Received",
+    "Step 5: Messages from Vendors",
+    "Step 6 : Vendor Message Decoded",
+    "Step 7 : Customer Message Template",
+  ];
   const handleRefresh = async (step: string) => {
     const confirmed = window.confirm(
       "Are you sure you want to refresh this step? This will refresh all steps from the current step onward."
@@ -411,7 +417,18 @@ const TicketDetailsPage = () => {
   const getCurrentStepIndex = () => {
     return stepsOrder.indexOf(ticket?.current_step || "");
   };
+  const stepFromTicket = activeStep || "";
+  const isRefreshDisabled =
+    listOfStepsWhereRefreshIsntAllowed.includes(stepFromTicket);
 
+  console.log("Step from ticket:", `"${stepFromTicket}"`);
+  console.log("Is refresh disabled:", isRefreshDisabled);
+
+  // Debugging the list
+  console.log(
+    "List of steps where refresh isn't allowed:",
+    listOfStepsWhereRefreshIsntAllowed
+  );
   return (
     <div className="p-8 bg-white rounded shadow text-black max-w-full">
       <h1 className="text-2xl font-bold mb-4">Ticket Details</h1>
@@ -451,15 +468,20 @@ const TicketDetailsPage = () => {
               ))}
             </div>
           </div>
-          {ticket.current_step !== "Step 1 : Customer Message Received" && (
+          {ticket?.current_step !== "Step 1 : Customer Message Received" ? (
             <div className="flex justify-end mb-4">
               <Button
                 onClick={() => handleRefresh(activeStep || ticket.current_step)}
-                className="bg-red-500 text-white"
+                className={`bg-red-500 text-white ${
+                  isRefreshDisabled ? "opacity-50 cursor-not-allowed " : ""
+                }`}
+                disabled={isRefreshDisabled}
               >
                 Refresh Step
               </Button>
             </div>
+          ) : (
+            <></>
           )}
           <div>{renderStepPanel(activeStep || ticket.current_step)}</div>
         </div>
