@@ -20,6 +20,30 @@ interface Step6Props {
     updated_date: string;
   };
 }
+interface RateDetails {
+  price_per_meter: number;
+  currency: string;
+  quantity: number;
+  additional_charges: string;
+  other_info: string;
+}
+
+interface ScheduleDetails {
+  delivery_method: string;
+  delivery_time: string;
+  delivery_point: string;
+}
+
+interface VendorDetails {
+  rate: RateDetails;
+  schedule: ScheduleDetails;
+}
+
+interface DecodedMessages {
+  [vendor: string]: {
+    [type: string]: VendorDetails;
+  };
+}
 
 const Step6: React.FC<Step6Props> = ({
   ticketNumber,
@@ -123,26 +147,55 @@ const Step6: React.FC<Step6Props> = ({
       console.error("Error preparing for next step:", error);
     }
   };
-
+console.log(decodedMessages)
   return (
     <div>
       <h3>Decoded Messages from Vendors</h3>
       {!loading &&
-        Object.keys(decodedMessages).map((vendor) => {
-          let decodedMessage = JSON.stringify(decodedMessages[vendor]);
+  Object.keys(decodedMessages).map((vendor) => {
+    const vendorData = decodedMessages[vendor];
+
+    return (
+      <div key={vendor} className="mb-4">
+        <label className="block text-gray-700 font-bold">{vendor}</label>
+        {Object.entries(vendorData).map(([type, details]) => {
+          const vendorDetails = details as VendorDetails;
+
           return (
-            <div key={vendor} className="mb-4">
-              <label className="block text-gray-700">{vendor}</label>
-              <VendorDecodedMessage message={decodedMessage} />
-              <input
-                type="checkbox"
-                onChange={(e) => handleSelectChange(vendor, e.target.checked)}
-                className="mt-1"
-              />
-              <label className="ml-2">Unselect this quote</label>
+            <div key={type} className="my-2">
+              <h4 className="font-semibold">{type}</h4>
+              <div className="ml-4 flex md:flex-row flex-col md: gap-3">
+                <div className="bg-gray-100 px-3 py-2 rounded-md">
+                  <h5 className="font-medium">Rate:</h5>
+                  <p>
+                    Price per meter: {vendorDetails.rate.price_per_meter}{" "}
+                    {vendorDetails.rate.currency}
+                  </p>
+                  <p>Quantity: {vendorDetails.rate.quantity}</p>
+                  <p>Additional Charges: {vendorDetails.rate.additional_charges}</p>
+                  <p>Other Info: {vendorDetails.rate.other_info}</p>
+                </div>
+                <div className="bg-gray-100 px-3 py-2 rounded-md">
+                  <h5 className="font-medium">Schedule:</h5>
+                  <p>Delivery Method: {vendorDetails.schedule.delivery_method}</p>
+                  <p>Delivery Time: {vendorDetails.schedule.delivery_time}</p>
+                  <p>Delivery Point: {vendorDetails.schedule.delivery_point}</p>
+                </div>
+              </div>
             </div>
           );
         })}
+
+        <input
+          type="checkbox"
+          onChange={(e) => handleSelectChange(vendor, e.target.checked)}
+          className="mt-1"
+        />
+        <label className="ml-2">Unselect this quote</label>
+      </div>
+    );
+  })}
+
       {loading && <h1>Loading...</h1>}
       <div className="flex justify-end">
         <Button
