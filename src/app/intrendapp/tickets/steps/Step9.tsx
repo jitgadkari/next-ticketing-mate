@@ -131,7 +131,7 @@ const Step9: React.FC<Step9Props> = ({
         </div>
       {showOptions.status && (
         <div
-          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 `}
         >
           <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <li
@@ -166,26 +166,26 @@ const Step9: React.FC<Step9Props> = ({
       </div>
       {showOptions.finalDecision && (
         <div
-          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 `}
         >
           <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <button disabled={true} className="w-full px-4 py-2 ">
               Select a decision
             </button>
             <li
-              className={`block px-4 py-2 cursor-pointer rounded-lg  ${finalDecision ==='approved' && 'bg-green-500 text-white'}`}
+              className={`block px-4 py-2 cursor-pointer rounded-lg text-black  ${finalDecision ==='approved' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("approved")}
             >
               Approved
             </li>
             <li
-              className={`block px-4 py-2 cursor-pointer rounded-lg ${finalDecision ==='denied' && 'bg-green-500 text-white'}`}
+              className={`block px-4 py-2 cursor-pointer rounded-lg text-black  ${finalDecision ==='denied' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("denied")}
             >
               Denied
             </li>
             <li
-              className={`block px-4 py-2 cursor-pointer rounded-lg ${finalDecision ==='pending' && 'bg-green-500 text-white'}`}
+              className={`block px-4 py-2 cursor-pointer rounded-lg  text-black  ${finalDecision ==='pending' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("pending")}
             >
               Pending
