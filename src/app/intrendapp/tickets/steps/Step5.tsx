@@ -175,7 +175,7 @@ const Step5: React.FC<Step5Props> = ({
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-      <h3 className="text-xl font-bold mb-4">Messages from Vendors</h3>
+      <h3 className="text-xl font-bold mb-4">Step 5: Messages from Vendors</h3>
       {Object.entries(messages).map(([vendor, message]) => (
         <div key={vendor} className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">{vendor}</label>
