@@ -75,12 +75,12 @@ const Step3: React.FC<Step3Props> = ({
   };
 
   useEffect(() => {
-    fetchVendorTemplate()
+    fetchVendorTemplate();
   }, []);
 
   const fetchVendorTemplate = async () => {
     try {
-      console.log(originalMessage)
+      console.log(originalMessage);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
         {
@@ -104,6 +104,7 @@ const Step3: React.FC<Step3Props> = ({
   const handleNextStep = async () => {
     try {
       setLoading(true);
+      await handleUpdate(message);
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
         {
