@@ -1,6 +1,6 @@
-'use client'
-import React, { useState, useEffect } from 'react';
-import Button from '../../../components/Button';
+"use client";
+import React, { useState, useEffect } from "react";
+import Button from "../../../components/Button";
 
 interface Step5Props {
   ticketNumber: string;
@@ -15,29 +15,26 @@ interface Step5Props {
     steps: Record<string, any>;
     created_data: string;
     updated_date: string;
-  },
-  step:string
+  };
+  step: string;
   isCurrentStep: boolean;
 }
 
-const Step5: React.FC<Step5Props> = ({ 
-  ticketNumber, 
-  vendorMessages, 
+const Step5: React.FC<Step5Props> = ({
+  ticketNumber,
+  vendorMessages,
   fetchTicket,
   setActiveStep,
   ticket,
   step,
-  isCurrentStep 
+  isCurrentStep,
 }) => {
   const [messages, setMessages] = useState<Record<string, string>>({});
   const [isDecoding, setIsDecoding] = useState(false);
 
-  const handleNext=async () => {
+  const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
-    const currentMessages = ticket.steps[step] as Record<
-      string,
-      string
-    >;
+    const currentMessages = data.ticket.steps[step] as Record<string, string>;
     const vendorDecodedMessages: Record<string, any> = {};
 
     for (const [vendor, message] of Object.entries(currentMessages)) {
@@ -60,10 +57,7 @@ const Step5: React.FC<Step5Props> = ({
           const decodedMessage = await response.json();
           vendorDecodedMessages[vendor] = decodedMessage;
         } catch (error) {
-          console.error(
-            `Error decoding message for ${vendor}:`,
-            error
-          );
+          console.error(`Error decoding message for ${vendor}:`, error);
           vendorDecodedMessages[vendor] = {
             error: "Failed to decode message",
           };
@@ -92,9 +86,7 @@ const Step5: React.FC<Step5Props> = ({
           }
         );
         if (!updateResponse.ok) {
-          throw new Error(
-            `HTTP error! status: ${updateResponse.status}`
-          );
+          throw new Error(`HTTP error! status: ${updateResponse.status}`);
         }
       } catch (error) {
         console.error("Error updating next step:", error);
@@ -107,8 +99,8 @@ const Step5: React.FC<Step5Props> = ({
         "No messages to decode. Please enter messages for vendors."
       );
     }
-  }
-  const handleUpdate=async (updatedMessages: Record<string, string>) => {
+  };
+  const handleUpdate = async (updatedMessages: Record<string, string>) => {
     console.log("Updating Step 5 messages:", updatedMessages);
     try {
       const response = await fetch(
@@ -132,7 +124,7 @@ const Step5: React.FC<Step5Props> = ({
       console.error("Error updating Step 5:", error);
     }
     await fetchTicket(ticket._id);
-  }
+  };
   useEffect(() => {
     // Ensure we're setting the initial messages correctly
     if (Object.keys(vendorMessages).length > 0) {
@@ -141,14 +133,18 @@ const Step5: React.FC<Step5Props> = ({
   }, [vendorMessages]);
 
   const handleChange = (vendor: string, value: string) => {
-    setMessages(prev => ({
-      ...prev,
-      [vendor]: value,
-    }));
+    setMessages((prev) => {
+      const updatedMessages = {
+        ...prev,
+        [vendor]: value,
+      };
+      return updatedMessages;
+    });
+    console.log(`Updated messages for ${vendor}:`, value);
   };
 
   const handleSave = async () => {
-    console.log('Saving messages:', messages);
+    console.log("Saving messages:", messages);
     await handleUpdate(messages);
   };
 
@@ -157,10 +153,23 @@ const Step5: React.FC<Step5Props> = ({
     try {
       // First, save the current messages
       await handleSave();
+      const updatedData = await updateTicket(ticket._id);
       // Then proceed to the next step
-      await handleNext();
+      await handleNext(updatedData);
     } finally {
       setIsDecoding(false);
+    }
+  };
+
+  const updateTicket = async (ticketId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
+      );
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
     }
   };
 
@@ -179,23 +188,23 @@ const Step5: React.FC<Step5Props> = ({
         </div>
       ))}
       <div className="flex justify-end space-x-4">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           disabled={!isCurrentStep}
         >
           Save
         </Button>
-        <Button 
-          onClick={handleNextStep} 
+        <Button
+          onClick={handleNextStep}
           className={`font-bold py-2 px-4 rounded ${
-            isCurrentStep 
-              ? 'bg-green-500 hover:bg-green-700 text-white' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            isCurrentStep
+              ? "bg-green-500 hover:bg-green-700 text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
           disabled={!isCurrentStep || isDecoding}
         >
-          {isDecoding ? 'Decoding...' : 'Next'}
+          {isDecoding ? "Decoding..." : "Next"}
         </Button>
       </div>
     </div>
