@@ -42,6 +42,8 @@ const Step2: React.FC<Step2Props> = ({
     setActiveStep("Step 3 : Message Template for vendors");
   }
 
+
+
   const handleUpdate = async (updatedData: Record<string, any>) => {
     console.log('Updating Step 2 data:', updatedData);
     const payload = {
@@ -130,10 +132,15 @@ const Step2: React.FC<Step2Props> = ({
       console.error('Error preparing for next step:', error);
     }
   };
-  console.log(loading)
   const parsedMessage: Record<string, string> = JSON.parse(message);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <div>
+        <h1  className="text-xl font-bold ">Customer Message</h1>
+        <div>
+    {ticket.steps['Step 1 : Customer Message Received'].text}
+        </div>
+      </div>
         { !isEditing ?(<div className='flex justify-between items-center'>
           <h3 className="text-xl font-bold mb-4">Step 2: Decoded Message</h3>
           <div className='flex justify-end items-center' onClick={() => setIsEditing(true)} > <FaEdit className='text-black text-2xl' /></div>
