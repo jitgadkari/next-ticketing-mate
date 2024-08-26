@@ -133,15 +133,15 @@ const Step9: React.FC<Step9Props> = ({
         <div
           className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
         >
-          <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 rounded-lg text-black cursor-pointer ${status ==='open'&& "bg-green-600 text-white"}`}
               onClick={() => setStatus("open")}
             >
               Open{" "}
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 rounded-lg text-black  cursor-pointer ${status ==='close'&& "bg-green-600 text-white"} `}
               onClick={() => setStatus("close")}
             >
               Closed{" "}
@@ -168,24 +168,24 @@ const Step9: React.FC<Step9Props> = ({
         <div
           className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
         >
-          <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <button disabled={true} className="w-full px-4 py-2 ">
               Select a decision
             </button>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg  ${finalDecision ==='approved' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("approved")}
             >
               Approved
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg ${finalDecision ==='denied' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("denied")}
             >
               Denied
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg ${finalDecision ==='pending' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("pending")}
             >
               Pending
