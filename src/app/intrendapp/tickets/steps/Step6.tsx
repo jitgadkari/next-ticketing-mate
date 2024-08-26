@@ -104,7 +104,6 @@ const Step6: React.FC<Step6Props> = ({
       setLoading(true);
       // Update the current step with selected messages
       console.log(selectedMessages)
-      await handleUpdate(selectedMessages);
 
       // Generate client message template
       const response = await fetch(
@@ -151,7 +150,6 @@ const Step6: React.FC<Step6Props> = ({
       console.error("Error preparing for next step:", error);
     }
   };
-
   return (
     <div>
       <h3>Decoded Messages from Vendors</h3>
