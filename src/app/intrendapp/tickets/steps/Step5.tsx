@@ -42,7 +42,7 @@ const Step5: React.FC<Step5Props> = ({
         // Only decode non-empty messages
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`,
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode_groq`,
             {
               method: "POST",
               headers: {

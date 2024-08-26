@@ -135,7 +135,7 @@ const Step2: React.FC<Step2Props> = ({
   const parsedMessage: Record<string, string> = JSON.parse(message);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-      <div>
+      <div className='py-2'>
         <h1  className="text-xl font-bold ">Customer Message</h1>
         <div>
     {ticket.steps['Step 1 : Customer Message Received'].text}
