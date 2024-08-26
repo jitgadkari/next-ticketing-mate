@@ -181,7 +181,7 @@ const Step4: React.FC<Step4Props> = ({
         );
         const data = await response.json();
         console.log(data.message)
-        messages[option.value] = data.message;
+        messages[option.value] = `${data.message}\n Ticket Number: ${ticket.ticket_number}`;
       } catch (error) {
         console.error(
           `Error generating message for vendor ${option.value}:`,
@@ -190,6 +190,7 @@ const Step4: React.FC<Step4Props> = ({
         messages[option.value] = "Error generating message";
       }
     }
+    console.log(messages)
     setVendorMessages(messages);
   };
 
