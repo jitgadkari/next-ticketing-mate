@@ -30,6 +30,7 @@ interface FilterState {
   sortBy: string;
   sortDays: string;
   filterByCustomer: string;
+  ticketNumber: string;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
@@ -43,6 +44,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     sortBy: "",
     sortDays: "",
     filterByCustomer: "",
+    ticketNumber:""
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -116,7 +118,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         (ticket) => new Date(ticket.created_date) >= daysAgo
       );
     }
-
+    if (filterState.ticketNumber) {
+      filtered = filtered.filter((ticket) =>
+        ticket.ticket_number.includes(filterState.ticketNumber)
+      );
+    }
     // Return the filtered tickets
     return filtered;
   }, [tickets, filterState]);
@@ -249,7 +255,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-3xl font-bold mb-4 text-gray-800">Tickets List</h1>
         <div className="relative">
-          <ul className="flex gap-2 items-center">
+          <ul className="flex gap-2 items-center flex-wrap">
             {filterState.showDropDown &&<>
             <>
               <li className="relative group ">
@@ -321,6 +327,20 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                 min="0"
               />
             </li>
+            <li>
+              <input
+                type="text"
+                value={filterState.ticketNumber}
+                onChange={(e) =>
+                  setFilterState((prevState) => ({
+                    ...prevState,
+                    ticketNumber: e.target.value,
+                  }))
+                }
+                placeholder="Search Ticket Number"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+              />
+            </li>
             </>}
             <button
               className="ml-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -333,6 +353,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                   sortOrder: "asc",
                   sortBy: "",
                   sortDays: "",
+                  ticketNumber:""
                 }))
               }
             >
