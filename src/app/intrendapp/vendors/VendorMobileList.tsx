@@ -1,4 +1,5 @@
-import React from "react";
+'use client'
+import React, { useState } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Vendor } from "./page";
@@ -11,6 +12,7 @@ export default function VendorMobileList({
   vendors,
   setVendors,
 }: VendorMobileListProps) {
+  const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const handleDelete = async (vendorId: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`, {
@@ -18,6 +20,7 @@ export default function VendorMobileList({
       });
       if (response.ok) {
         setVendors(vendors.filter(vendor => vendor._id !== vendorId));
+        setDeleteVendorId(null);
       } else {
         console.error('Failed to delete vendor');
       }
@@ -72,7 +75,7 @@ export default function VendorMobileList({
               </span>
             </Link>
             <FaTrash
-              onClick={() => handleDelete(vendor._id)}
+                onClick={() => setDeleteVendorId(vendor._id)}
               className="text-red-500 cursor-pointer hover:text-red-700"
             />
           </div>
@@ -80,6 +83,26 @@ export default function VendorMobileList({
         </div>
       </div>
     ))}
+     {deleteVendorId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this customer?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteVendorId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteVendorId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
   </div>
   
   

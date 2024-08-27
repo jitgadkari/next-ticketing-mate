@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Vendor } from './page';
+import { useState } from 'react';
 
 interface VendorListProps{
   vendors: Vendor[],
   setVendors: (vendors:Vendor[])=>void
 }
 const VendorList = ({vendors,setVendors}:VendorListProps) => {
-
+  const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const handleDelete = async (vendorId: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`, {
@@ -18,6 +19,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
       });
       if (response.ok) {
         setVendors(vendors.filter(vendor => vendor._id !== vendorId));
+        setDeleteVendorId(null);
       } else {
         console.error('Failed to delete vendor');
       }
@@ -44,7 +46,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
             </span>
           </Link>
           <FaTrash
-            onClick={() => handleDelete(vendor._id)}
+            onClick={() => setDeleteVendorId(vendor._id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </div>
@@ -56,6 +58,26 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
     <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Vendors List</h1>
       <Table columns={columns} data={vendors} renderRow={renderRow} />
+      {deleteVendorId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this customer?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteVendorId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteVendorId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };
