@@ -1,4 +1,5 @@
-import React from "react";
+'use client'
+import React, { useState } from "react";
 import { Person } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
@@ -11,6 +12,8 @@ export default function PeopleMobileList({
   people,
   setPeople,
 }: PeopleMobileListProps) {
+  const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
+
   const handleDelete = async (personId: string): Promise<void> => {
     try {
       const response = await fetch(
@@ -21,6 +24,7 @@ export default function PeopleMobileList({
       );
       if (response.ok) {
         setPeople(people.filter((person) => person._id !== personId));
+        setDeletePersonId(null)
       } else {
         console.error("Failed to delete person");
       }
@@ -74,6 +78,26 @@ export default function PeopleMobileList({
           </div>
         </div>
       ))}
+        {deletePersonId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this person?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeletePersonId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deletePersonId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   
   );

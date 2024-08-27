@@ -61,7 +61,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
       {deleteVendorId && (
         <dialog open className="p-5 bg-white rounded shadow-lg">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
-          <p>Are you sure you want to delete this customer?</p>
+          <p>Are you sure you want to delete this vendor?</p>
           <div className="flex justify-end mt-4">
             <button
               onClick={() => setDeleteVendorId(null)}
