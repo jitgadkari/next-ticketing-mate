@@ -57,7 +57,7 @@ const Step6: React.FC<Step6Props> = ({
   setActiveStep,
   ticket,
 }) => {
-  const [selectedMessages, setSelectedMessages] = useState<{ [key: string]: any }>({});
+  const [selectedMessages, setSelectedMessages] = useState<{ [key: string]: any }>({decodedMessages});
   const [loading, setLoading] = useState(false);
   const [isEditing,setIsEditing] = useState(false);
 
@@ -80,17 +80,17 @@ const Step6: React.FC<Step6Props> = ({
         body: JSON.stringify({
           ticket_number: ticket.ticket_number,
           step_number: "Step 6 : Vendor Message Decoded",
-          step_info: updatedDecodedMessages,
+          step_info: JSON.stringify(updatedDecodedMessages),
         }),
       }
     );
     fetchTicket(ticket._id);
   };
-
+  console.log(decodedMessages)
   const handleSelectChange = (vendor: string, isChecked: boolean) => {
     setSelectedMessages((prev) => {
       const updated = { ...prev };
-      if (isChecked) {
+      if (!isChecked) {
         updated[vendor] = decodedMessages[vendor];
       } else {
         delete updated[vendor];
@@ -102,8 +102,10 @@ const Step6: React.FC<Step6Props> = ({
   const handleNextStep = async () => {
     try {
       setLoading(true);
+
       // Update the current step with selected messages
-      console.log(selectedMessages)
+   
+      await handleUpdate(selectedMessages)
 
       // Generate client message template
       const response = await fetch(

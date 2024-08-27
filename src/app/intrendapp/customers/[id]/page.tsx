@@ -29,7 +29,7 @@ interface Customer {
   code:string;
 }
 
-interface Attributes {
+export interface Attributes {
   fabric_type: string[];
   certifications: string[];
   approvals: string[];
