@@ -176,7 +176,7 @@ const Step6: React.FC<Step6Props> = ({
 
   return (
     <div>
-      <h3>Decoded Messages from Vendors</h3>
+      <h3 className="text-xl font-bold my-4">Step 6: Decoded Messages from Vendors</h3>
       <div className="flex justify-end items-center"  onClick={() => setIsEditing(!isEditing)}>
         <FaEdit
           className="text-black text-2xl"

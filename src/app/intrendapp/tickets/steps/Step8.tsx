@@ -82,7 +82,7 @@ const Step8: React.FC<Step8Props> = ({
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Customer Message Template</h3>
+      <h3 className="text-xl font-bold mb-4">Step 8: Message Sent</h3>
      {!loading && <>
       <div className="bg-gray-100 p-4 rounded mb-4">
         <pre className="whitespace-pre-wrap">{customerTemplate}</pre>

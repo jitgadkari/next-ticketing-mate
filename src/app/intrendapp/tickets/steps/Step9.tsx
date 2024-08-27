@@ -115,7 +115,7 @@ const Step9: React.FC<Step9Props> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold">Final Status</h3>
+      <h3 className="text-xl font-bold">Step 9: Final Status</h3>
       <div className="flex items-center gap-2">
       <label
         className="block text-gray-700 font-bold mb-2"

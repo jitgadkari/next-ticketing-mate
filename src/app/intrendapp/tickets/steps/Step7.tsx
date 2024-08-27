@@ -142,7 +142,7 @@ const Step7: React.FC<Step7Props> = ({
 
   return (
     <div>
-      <h3 className="text-xl font-bold my-4">Customer Message Template</h3>
+      <h3 className="text-xl font-bold my-4">Step 7: Customer Message Template</h3>
       <textarea
         value={template}
         onChange={(e) => setTemplate(e.target.value)}
