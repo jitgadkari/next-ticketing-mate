@@ -5,11 +5,14 @@ import MultiSelect, {
   MultiSelectOption,
 } from "../../../components/MultiSelect";
 import { MultiValue } from "react-select";
+import { FaWhatsapp } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
 
 interface Vendor {
   _id: string;
   name: string;
   group: { [key: string]: string } | string;
+  email: string;
 }
 
 interface Step4Props {
@@ -47,6 +50,7 @@ const Step4: React.FC<Step4Props> = ({
     {}
   );
   const [showPopup, setShowPopup] = useState(false);
+  const [showEmailPopup, setShowEmailPopup] = useState(false); 
   const [vendorDetails, setVendorDetails] = useState<Vendor[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<Record<string, string>>(
@@ -213,6 +217,54 @@ const Step4: React.FC<Step4Props> = ({
     setShowPopup(true);
   };
 
+  const handleSendEmail=()=>{
+    setShowEmailPopup(true);
+  }
+  const handleEmailPopupConfirm = async () => {
+    setShowEmailPopup(false);
+    setIsSending(true);
+    setSendingStatus({});
+
+    for (const option of selectedOptions) {
+      console.log(option)
+      const vendor = vendorDetails.find((v) => v.name === option.value);
+   
+      if (vendor) {
+        try {
+          console.log(vendor.email)
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email/`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                to: vendor.email,
+                subject:"Vendor Message",
+                message: JSON.stringify(vendorMessages[option.value]),
+              }),
+            }
+          );
+          const data = await response.json();
+          console.log(`Email sent to ${option.value}:`, data);
+          setSendingStatus((prev) => ({ ...prev, [option.value]: "Sent" }));
+        } catch (error) {
+          console.error(`Error sending email to ${option.value}:`, error);
+          setSendingStatus((prev) => ({ ...prev, [option.value]: "Failed" }));
+        }
+      } else {
+        console.error(`Vendor details not found for ${option.value}`);
+        setSendingStatus((prev) => ({
+          ...prev,
+          [option.value]: "Vendor details not found",
+        }));
+      }
+    }
+
+    setIsSending(false);
+  };
+
   const handlePopupConfirm = async () => {
     setShowPopup(false);
     setIsSending(true);
@@ -314,7 +366,7 @@ const Step4: React.FC<Step4Props> = ({
             </Button>
             <Button
               onClick={handleSendMessage}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
                 (!isCurrentStep || selectedOptions.length === 0 || isSending) &&
                 "opacity-50 cursor-not-allowed"
               }`}
@@ -322,7 +374,19 @@ const Step4: React.FC<Step4Props> = ({
                 !isCurrentStep || selectedOptions.length === 0 || isSending
               }
             >
-              {isSending ? "Sending..." : "Send"}
+            <span> {isSending ? "Sending..." : "Send"}</span><FaWhatsapp />
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
+                (!isCurrentStep || selectedOptions.length === 0 || isSending) &&
+                "opacity-50 cursor-not-allowed "
+              }`}
+              disabled={
+                !isCurrentStep || selectedOptions.length === 0 || isSending
+              }
+            >
+             <span> {isSending ? "Sending..." : "Send"}</span><MdEmail />
             </Button>
             <Button
               onClick={handleNextStep}
@@ -356,6 +420,30 @@ const Step4: React.FC<Step4Props> = ({
               </Button>
               <Button
                 onClick={handlePopupConfirm}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showEmailPopup && ( 
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Sending Emails...</h2>
+            <p className="mb-4">
+              Are you sure you want to send emails to the selected vendors?
+            </p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowEmailPopup(false)}
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEmailPopupConfirm}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 OK
