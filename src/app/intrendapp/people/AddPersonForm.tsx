@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import { Customer } from '../customers/page';
+import { Vendor } from '../vendors/page';
 
 interface AddPersonFormProps {
   onAdd: () => void;
@@ -19,6 +21,7 @@ interface FormData {
 }
 
 const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     phone: '',
@@ -29,6 +32,35 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
     linked_to_id: "Null",
   });
 
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    if (formData.linked_to === 'Customer') {
+      fetchCustomers();
+    } else if (formData.linked_to === 'Vendor') {
+      fetchVendors();
+    }
+  }, [formData.linked_to]);
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const data = await response.json();
+      setCustomers(data.customers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const data = await response.json();
+      setVendors(data.vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
     setFormData(prevData => ({
@@ -140,14 +172,23 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
                 </select>
               </div>
               {formData.linked_to && (
-                <Input
-                  label={`${formData.linked_to} ID`}
-                  type="text"
-                  name="linked_to_id"
-                  value={formData.linked_to_id || ''}
-                  onChange={handleChange}
-                  required
-                />
+                <div>
+                  <label className="block text-gray-700">{`${formData.linked_to} ID`}</label>
+                  <select
+                    name="linked_to_id"
+                    value={formData.linked_to_id || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full"
+                    required
+                  >
+                    <option value="">Select...</option>
+                    {(formData.linked_to === 'Customer' ? customers : vendors).map((option) => (
+                      <option key={option._id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </>
           )}
