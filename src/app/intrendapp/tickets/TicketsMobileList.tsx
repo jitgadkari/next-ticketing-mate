@@ -43,6 +43,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     showCustomerDropDown: false,
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -138,6 +139,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
       );
       if (response.ok) {
         setTickets(tickets.filter((ticket) => ticket._id !== ticketId));
+        setDeleteTicketId(null)
       } else {
         console.error("Failed to delete ticket");
       }
@@ -354,13 +356,33 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
                 </span>
               </Link>
               <FaTrash
-                onClick={() => handleDelete(ticket._id)}
+               onClick={() => setDeleteTicketId(ticket._id)}
                 className="text-red-500 cursor-pointer hover:text-red-700"
               />
             </div>
           </div>
         </div>
       ))}
+      {deleteTicketId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this ticket?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteTicketId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+            onClick={() => handleDelete(deleteTicketId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }
