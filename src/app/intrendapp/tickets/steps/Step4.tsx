@@ -400,6 +400,7 @@ const Step4: React.FC<Step4Props> = ({
               Next
             </Button>
           </div>
+        
         </>
       )}
       {loading && <h1>Loading...</h1>}
@@ -452,6 +453,7 @@ const Step4: React.FC<Step4Props> = ({
           </div>
         </div>
       )}
+        {!isCurrentStep &&<h1 className="text-end text-yellow-500">Messages Already Sent!</h1>}
     </div>
   );
 };
