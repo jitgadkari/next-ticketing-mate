@@ -51,12 +51,20 @@ const Step4: React.FC<Step4Props> = ({
     {}
   );
   const [showPopup, setShowPopup] = useState(false);
-  const [showEmailPopup, setShowEmailPopup] = useState(false); 
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
   const [vendorDetails, setVendorDetails] = useState<Vendor[]>([]);
-  const [isSending, setIsSending] = useState(false);
-  const [sendingStatus, setSendingStatus] = useState<Record<string, string>>(
+  const [isEmailSending, setIsEmailSending] = useState(false);
+  const [isWhatsAppSending, setIsWhatsAppSending] = useState(false);
+  const [emailSendingStatus, setEmailSendingStatus] = useState<Record<string, string>>(
     {}
   );
+  const [whatsappSendingStatus, setWhatsappSendingStatus] = useState<Record<string, string>>(
+    {}
+  );
+  const [isMessageSent, setIsMessageSent] = useState({
+    emailSent: false,
+    whatsappMessageSent: false,
+  });
   const [loading, setLoading] = useState(false);
   const handleNext = async (updatedVendors: Record<string, string>) => {
     console.log("Handling next for Step 4");
@@ -108,7 +116,7 @@ const Step4: React.FC<Step4Props> = ({
       await fetchTicket(ticket._id);
       setLoading(false);
       setActiveStep("Step 5: Messages from Vendors");
-      toast.success("Step 4 completed")
+      toast.success("Step 4 completed");
     } catch (error) {
       console.error("Error updating steps:", error);
     }
@@ -186,8 +194,10 @@ const Step4: React.FC<Step4Props> = ({
           }
         );
         const data = await response.json();
-        console.log(data.message)
-        messages[option.value] = `${data.message}\n Ticket Number: ${ticket.ticket_number}`;
+        console.log(data.message);
+        messages[
+          option.value
+        ] = `${data.message}\n Ticket Number: ${ticket.ticket_number}`;
       } catch (error) {
         console.error(
           `Error generating message for vendor ${option.value}:`,
@@ -196,7 +206,7 @@ const Step4: React.FC<Step4Props> = ({
         messages[option.value] = "Error generating message";
       }
     }
-    console.log(messages)
+    console.log(messages);
     setVendorMessages(messages);
   };
 
@@ -219,58 +229,80 @@ const Step4: React.FC<Step4Props> = ({
     setShowPopup(true);
   };
 
-  const handleSendEmail=()=>{
+  const handleSendEmail = () => {
     setShowEmailPopup(true);
-  }
+  };
   const handleEmailPopupConfirm = async () => {
     setShowEmailPopup(false);
-    setIsSending(true);
-    setSendingStatus({});
+    setIsEmailSending(true);
+    setEmailSendingStatus({});
+    if(isMessageSent.emailSent){
+      toast.error("Message already sent!")
+    }else{
 
-    for (const option of selectedOptions) {
-      console.log(option)
-      const vendor = vendorDetails.find((v) => v.name === option.value);
-   
-      if (vendor) {
-        try {
-          console.log(vendor.email)
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email/`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                to: vendor.email,
-                subject:"Vendor Message",
-                message: JSON.stringify(vendorMessages[option.value]),
-              }),
-            }
-          );
-          const data = await response.json();
-          console.log(`Email sent to ${option.value}:`, data);
-          setSendingStatus((prev) => ({ ...prev, [option.value]: "Sent" }));
-        } catch (error) {
-          console.error(`Error sending email to ${option.value}:`, error);
-          setSendingStatus((prev) => ({ ...prev, [option.value]: "Failed" }));
+      setIsMessageSent((prev) => {
+        const updated = { ...prev, emailSent: true };
+        return updated;
+      });
+      for (const option of selectedOptions) {
+        console.log(option);
+        const vendor = vendorDetails.find((v) => v.name === option.value);
+        
+        if (vendor) {
+          try {
+            console.log(vendor.email);
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email/`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  to: vendor.email,
+                  subject: "Vendor Message",
+                  message: JSON.stringify(vendorMessages[option.value]),
+                }),
+              }
+            );
+            const data = await response.json();
+            console.log(`Email sent to ${option.value}:`, data);
+            setEmailSendingStatus((prev) => ({ ...prev, [option.value]: "Email Sent" }));
+          } catch (error) {
+            console.error(`Error sending email to ${option.value}:`, error);
+            setEmailSendingStatus((prev) => ({ ...prev, [option.value]: "Failed" }));
+            setIsMessageSent((prev) => {
+              const updated = { ...prev, emailSent: false };
+              return updated;
+            });
+          }
+        } else {
+          console.error(`Vendor details not found for ${option.value}`);
+          setEmailSendingStatus((prev) => ({
+            ...prev,
+            [option.value]: "Vendor details not found",
+          }));
+          setIsMessageSent((prev) => {
+            const updated = { ...prev, emailSent: false };
+            return updated;
+          });
         }
-      } else {
-        console.error(`Vendor details not found for ${option.value}`);
-        setSendingStatus((prev) => ({
-          ...prev,
-          [option.value]: "Vendor details not found",
-        }));
-      }
+      } 
     }
-
-    setIsSending(false);
-  };
-
-  const handlePopupConfirm = async () => {
-    setShowPopup(false);
-    setIsSending(true);
-    setSendingStatus({});
+    setIsEmailSending(false);
+    };
+    
+    const handlePopupConfirm = async () => {
+      setShowPopup(false);
+      setIsWhatsAppSending(true);
+      setWhatsappSendingStatus({});
+    if(isMessageSent.whatsappMessageSent){
+      toast.error("Message already sent!")
+    }else{
+    setIsMessageSent((prev) => {
+      const updated = { ...prev, whatsappMessageSent: true };
+      return updated;
+    });
 
     for (const option of selectedOptions) {
       const vendor = vendorDetails.find((v) => v.name === option.value);
@@ -296,28 +328,47 @@ const Step4: React.FC<Step4Props> = ({
             );
             const data = await response.json();
             console.log(`Message sent to ${option.value}:`, data);
-            setSendingStatus((prev) => ({ ...prev, [option.value]: "Sent" }));
+            setWhatsappSendingStatus((prev) => ({
+              ...prev,
+              [option.value]: "Whatsapp Message Sent",
+            }));
           } catch (error) {
             console.error(`Error sending message to ${option.value}:`, error);
-            setSendingStatus((prev) => ({ ...prev, [option.value]: "Failed" }));
+            setWhatsappSendingStatus((prev) => ({
+              ...prev,
+              [option.value]: "Failed",
+            }));
+            setIsMessageSent((prev) => {
+              const updated = { ...prev,whatsappMessageSent: false };
+              return updated;
+            });
           }
         } else {
           console.error(`No group ID found for vendor ${option.value}`);
-          setSendingStatus((prev) => ({
+          setWhatsappSendingStatus((prev) => ({
             ...prev,
-            [option.value]: "No group ID",
+            [option.value]: "Vendor details not found",
           }));
+          setIsMessageSent((prev) => {
+            const updated = { ...prev,whatsappMessageSent: false };
+            return updated;
+          });
         }
       } else {
         console.error(`Vendor details not found for ${option.value}`);
-        setSendingStatus((prev) => ({
+        setWhatsappSendingStatus((prev) => ({
           ...prev,
           [option.value]: "Vendor details not found",
         }));
+        setIsMessageSent((prev) => {
+          return { ...prev, whatsappMessageSent: false };
+        });
+      }
       }
     }
+  
+  setIsWhatsAppSending(false);
 
-    setIsSending(false);
   };
 
   return (
@@ -343,15 +394,26 @@ const Step4: React.FC<Step4Props> = ({
                     readOnly
                     className="w-full h-32 p-2 border rounded"
                   />
-                  {sendingStatus[option.value] && (
+                  {emailSendingStatus[option.value] && (
                     <p
                       className={`mt-1 ${
-                        sendingStatus[option.value] === "Sent"
+                        emailSendingStatus[option.value] === "Email Sent"
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      Status: {sendingStatus[option.value]}
+                      Status: {emailSendingStatus[option.value]}
+                    </p>
+                  )}
+                  {whatsappSendingStatus[option.value] && (
+                    <p
+                      className={`mt-1 ${
+                        emailSendingStatus[option.value] === "Whatsapp Message Sent"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      Status: {whatsappSendingStatus[option.value]}
                     </p>
                   )}
                 </div>
@@ -369,26 +431,28 @@ const Step4: React.FC<Step4Props> = ({
             <Button
               onClick={handleSendMessage}
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-                (!isCurrentStep || selectedOptions.length === 0 || isSending) &&
+                (!isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending) &&
                 "opacity-50 cursor-not-allowed"
               }`}
               disabled={
-                !isCurrentStep || selectedOptions.length === 0 || isSending
+                !isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending
               }
             >
-            <span> {isSending ? "Sending..." : "Send"}</span><FaWhatsapp />
+              <span> {isWhatsAppSending ? "Sending..." : "Send"}</span>
+              <FaWhatsapp />
             </Button>
             <Button
               onClick={handleSendEmail}
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-                (!isCurrentStep || selectedOptions.length === 0 || isSending) &&
+                (!isCurrentStep || selectedOptions.length === 0 || isEmailSending) &&
                 "opacity-50 cursor-not-allowed "
               }`}
               disabled={
-                !isCurrentStep || selectedOptions.length === 0 || isSending
+                !isCurrentStep || selectedOptions.length === 0 || isEmailSending
               }
             >
-             <span> {isSending ? "Sending..." : "Send"}</span><MdEmail />
+              <span> {isEmailSending ? "Sending..." : "Send"}</span>
+              <MdEmail />
             </Button>
             <Button
               onClick={handleNextStep}
@@ -402,7 +466,6 @@ const Step4: React.FC<Step4Props> = ({
               Next
             </Button>
           </div>
-        
         </>
       )}
       {loading && <h1>Loading...</h1>}
@@ -431,7 +494,7 @@ const Step4: React.FC<Step4Props> = ({
           </div>
         </div>
       )}
-      {showEmailPopup && ( 
+      {showEmailPopup && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Sending Emails...</h2>
@@ -455,7 +518,9 @@ const Step4: React.FC<Step4Props> = ({
           </div>
         </div>
       )}
-        {!isCurrentStep &&<h1 className="text-end text-yellow-500">Messages Already Sent!</h1>}
+      {!isCurrentStep && (
+        <h1 className="text-end text-yellow-500">Messages Already Sent!</h1>
+      )}
     </div>
   );
 };

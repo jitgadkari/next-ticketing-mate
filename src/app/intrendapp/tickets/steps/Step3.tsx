@@ -93,6 +93,7 @@ const Step3: React.FC<Step3Props> = ({
           body: JSON.stringify({
             vendor_name: "{VENDOR}",
             customerMessage: originalMessage,
+            ticket_number:ticket.ticket_number
           }),
         }
       );
