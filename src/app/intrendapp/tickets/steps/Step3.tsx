@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
+import toast from "react-hot-toast";
 
 interface Step3Props {
   ticketNumber: string;
@@ -54,6 +55,7 @@ const Step3: React.FC<Step3Props> = ({
     fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 4 : Vendor Selection");
+    toast.success("Step 3 completed")
   };
   const handleUpdate = async (updatedTemplate: string) => {
     console.log("Updating Step 3 template:", updatedTemplate);

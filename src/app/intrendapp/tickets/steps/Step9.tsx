@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import { useRouter } from "next/navigation";
 import { FaEye } from "react-icons/fa";
+import toast from "react-hot-toast";
 interface Step9Props {
   ticketNumber: string;
   finalStatus: { status: string; final_decision: string };
@@ -60,6 +61,7 @@ const Step9: React.FC<Step9Props> = ({
     setLoading(false);
     alert("Ticket process completed and closed.");
     router.push("/intrendapp/tickets");
+    toast.success("Ticket process completed and closed!")
   };
 
   const handleUpdate = async (updatedStatus: {

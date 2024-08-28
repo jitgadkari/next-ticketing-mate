@@ -5,6 +5,7 @@ import Input from '../../components/Input';
 import Button from '../../components/Button';
 import { Customer } from '../customers/page';
 import { Vendor } from '../vendors/page';
+import toast from 'react-hot-toast';
 
 interface AddPersonFormProps {
   onAdd: () => void;
@@ -92,6 +93,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
       if (response.ok) {
         onAdd();
+        toast.success("Person added successfully");
       } else {
         const errorData = await response.json();
         console.error('Failed to add person', errorData);

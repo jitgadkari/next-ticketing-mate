@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Customer } from "./AddTicketForm";
+import toast from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -146,6 +147,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
       if (response.ok) {
         setTickets(tickets.filter((ticket) => ticket._id !== ticketId));
         setDeleteTicketId(null);
+        toast.success("Ticket deleted successfully")
       } else {
         console.error("Failed to delete ticket");
       }

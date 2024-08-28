@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
+import toast from "react-hot-toast";
 
 interface Step7Props {
   ticketNumber: string;
@@ -53,6 +54,7 @@ const Step7: React.FC<Step7Props> = ({
     );
     fetchTicket(ticket._id);
     setActiveStep("Step 8 : Customer Response");
+    toast.success("Step 7 completed")
   };
   const handleUpdate = async (updatedTemplate:string) => {
     console.log("Updating Step 7 template:", updatedTemplate);

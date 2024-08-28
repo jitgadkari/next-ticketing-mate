@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import toast from 'react-hot-toast';
 
 interface AddVendorFormProps {
   onAdd: () => void;
@@ -128,6 +129,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
           additional_info: '',
           // country:''
         });
+        toast.success("Vendor added successfully")
       } else {
         const errorData = await response.json();
         console.error('Failed to add vendor', errorData);

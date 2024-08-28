@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
+import toast from "react-hot-toast";
 
 interface Step5Props {
   ticketNumber: string;
@@ -94,6 +95,7 @@ const Step5: React.FC<Step5Props> = ({
 
       await fetchTicket(ticket._id);
       setActiveStep("Step 6 : Vendor Message Decoded");
+      toast.success("Step 5 completed")
     } else {
       console.error(
         "No messages to decode. Please enter messages for vendors."

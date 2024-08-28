@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Customer } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
+import toast from "react-hot-toast";
 interface CustomersMobileListProps {
   customers: Customer[];
   setCustomers: (customers: Customer[]) => void;
@@ -27,6 +28,7 @@ export default function CustomerMobileList({
           customers.filter((customer) => customer._id !== customerId)
         );
         setDeleteCustomerId(null);
+        toast.success("Customer deleted successfully")
       } else {
         console.error("Failed to delete customer");
       }

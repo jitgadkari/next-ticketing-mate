@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import { FaEdit } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 interface Person {
   _id: string;
@@ -128,6 +129,7 @@ const PersonDetailsPage: React.FC = () => {
         if (response.ok) {
           setIsEditing(false);
           router.push('/intrendapp/people');
+          toast.success("Person updated successfully")
         } else {
           const errorData = await response.json();
           console.error('Failed to update person', errorData);

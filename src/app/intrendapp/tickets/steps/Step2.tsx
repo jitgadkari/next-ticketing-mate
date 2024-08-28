@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../../components/Button';
 import { FaEdit } from 'react-icons/fa';
 import EditDecodedMessage from '@/app/components/step2/EditDecodedMessage';
+import toast from 'react-hot-toast';
 
 interface Step2Props {
   ticketNumber: string;
@@ -40,6 +41,7 @@ const Step2: React.FC<Step2Props> = ({
     fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 3 : Message Template for vendors");
+    toast.success("Step 2 completed")
   }
 
 

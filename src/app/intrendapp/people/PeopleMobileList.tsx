@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Person } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
+import toast from "react-hot-toast";
 interface PeopleMobileListProps {
   people: Person[];
   setPeople: (people: Person[]) => void;
@@ -25,6 +26,7 @@ export default function PeopleMobileList({
       if (response.ok) {
         setPeople(people.filter((person) => person._id !== personId));
         setDeletePersonId(null)
+        toast.success("Person deleted successfully")
       } else {
         console.error("Failed to delete person");
       }

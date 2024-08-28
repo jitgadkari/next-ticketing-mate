@@ -5,6 +5,7 @@ import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Vendor } from './page';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface VendorListProps{
   vendors: Vendor[],
@@ -20,6 +21,7 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
       if (response.ok) {
         setVendors(vendors.filter(vendor => vendor._id !== vendorId));
         setDeleteVendorId(null);
+        toast.success("Vendor deleted successfully")
       } else {
         console.error('Failed to delete vendor');
       }

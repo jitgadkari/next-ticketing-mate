@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Vendor } from "./page";
+import toast from "react-hot-toast";
 interface VendorMobileListProps {
   vendors: Vendor[];
   setVendors: (vendors: Vendor[]) => void;
@@ -21,6 +22,7 @@ export default function VendorMobileList({
       if (response.ok) {
         setVendors(vendors.filter(vendor => vendor._id !== vendorId));
         setDeleteVendorId(null);
+        toast.success("Vendor deleted successfully")
       } else {
         console.error('Failed to delete vendor');
       }

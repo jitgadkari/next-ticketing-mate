@@ -6,6 +6,7 @@ import Input from "../../../components/Input";
 import Button from "../../../components/Button";
 import { MultiSelect, Option } from "react-multi-select-component";
 import { FaEdit } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 interface Customer {
   _id: string;
@@ -182,6 +183,7 @@ const CustomerDetailsPage: React.FC = () => {
         if (response.ok) {
           setIsEditing(false);
           router.push("/intrendapp/customers");
+          toast.success("Customer updated successfully")
         } else {
           const errorData = await response.json();
           console.error("Failed to update customer", errorData);

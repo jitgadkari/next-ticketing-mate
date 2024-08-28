@@ -7,6 +7,7 @@ import MultiSelect, {
 import { MultiValue } from "react-select";
 import { FaWhatsapp } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
+import toast from "react-hot-toast";
 
 interface Vendor {
   _id: string;
@@ -107,6 +108,7 @@ const Step4: React.FC<Step4Props> = ({
       await fetchTicket(ticket._id);
       setLoading(false);
       setActiveStep("Step 5: Messages from Vendors");
+      toast.success("Step 4 completed")
     } catch (error) {
       console.error("Error updating steps:", error);
     }

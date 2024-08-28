@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Person } from './page';
+import toast from 'react-hot-toast';
 
 
 interface PeopleListProps{
@@ -24,6 +25,7 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
       if (response.ok) {
         setPeople(people.filter(person => person._id !== personId));
         setDeletePersonId(null)
+        toast.success("Person deleted successfully")
       } else {
         console.error('Failed to delete person');
       }

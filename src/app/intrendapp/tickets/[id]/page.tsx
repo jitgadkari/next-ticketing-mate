@@ -12,6 +12,7 @@ import Step6 from "../steps/Step6";
 import Step7 from "../steps/Step7";
 import Step8 from "../steps/Step8";
 import Step9 from "../steps/Step9";
+import toast from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -91,6 +92,7 @@ const TicketDetailsPage = () => {
       if (response.ok) {
         fetchTicket(ticket?._id!);
         setActiveStep(step);
+        toast.success(`Ticket refreshed to: ${step} `)
       } else {
         console.error("Failed to refresh steps");
       }

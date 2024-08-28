@@ -6,6 +6,7 @@ import Input from '../../../components/Input';
 import Button from '../../../components/Button';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { FaEdit } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 interface Vendor {
   _id: string;
@@ -191,6 +192,7 @@ const VendorDetailsPage: React.FC = () => {
         if (response.ok) {
           setIsEditing(false);
           router.push('/intrendapp/vendors');
+          toast.success("Vendor updated successfully")
         } else {
           const errorData = await response.json();
           console.error('Failed to update vendor', errorData);

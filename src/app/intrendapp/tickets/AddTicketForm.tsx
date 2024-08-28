@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import toast from "react-hot-toast";
 
 interface AddTicketFormProps {
   onAdd: () => void;
@@ -102,6 +103,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
           person_name: "",
           message: "",
         });
+        toast.success("Ticket added successfully")
       } else {
         const errorData = await response.json();
         console.error("Failed to add ticket", errorData);

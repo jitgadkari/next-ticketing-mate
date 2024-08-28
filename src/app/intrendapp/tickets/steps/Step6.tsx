@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Button from "../../../components/Button";
 import { FaEdit } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 interface Step6Props {
   ticketNumber: string;
@@ -88,6 +89,7 @@ const Step6: React.FC<Step6Props> = ({
     fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 7 : Customer Message Template");
+    toast.success("Step 6 completed")
   };
 
   const handleUpdate = async (updatedDecodedMessages: DecodedMessages) => {

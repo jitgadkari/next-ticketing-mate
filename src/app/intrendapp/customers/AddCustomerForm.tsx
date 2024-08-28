@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import toast from 'react-hot-toast';
 
 interface AddcustomerFormProps {
   onAdd: () => void;
@@ -114,6 +115,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
           remarks: '',
           additional_info: ''
         });
+        toast.success("Customer added successfully")
       } else {
         const errorData = await response.json();
         console.error('Failed to add customer', errorData);

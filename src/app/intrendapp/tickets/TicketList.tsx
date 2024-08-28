@@ -6,6 +6,7 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { Customer } from "./AddTicketForm";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
+import toast from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -171,6 +172,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       if (response.ok) {
         setTickets(tickets.filter((ticket) => ticket._id !== ticketId));
       setDeleteTicketId(null)
+      toast.success("Ticket deleted successfully")
       } else {
         console.error("Failed to delete ticket");
       }

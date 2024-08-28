@@ -5,6 +5,7 @@ import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Customer } from './page';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 interface CustomerListProps{
   customers:Customer[],
   setCustomers:(customers:Customer[])=>void
@@ -22,6 +23,7 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
       if (response.ok) {
         setCustomers(customers.filter(customer => customer._id !== customerId));
         setDeleteCustomerId(null);
+        toast.success("Customer deleted successfully")
       } else {
         console.error('Failed to delete customer');
       }
