@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
-import toast from "react-hot-toast";
 
 interface Step5Props {
   ticketNumber: string;
@@ -20,6 +19,10 @@ interface Step5Props {
   step: string;
   isCurrentStep: boolean;
 }
+interface MessagesState {
+  customer_query: string;
+  vendor_reply: Record<string, string>| string;
+}
 
 const Step5: React.FC<Step5Props> = ({
   ticketNumber,
@@ -30,15 +33,17 @@ const Step5: React.FC<Step5Props> = ({
   step,
   isCurrentStep,
 }) => {
-  const [messages, setMessages] = useState<Record<string, string>>({});
+  console.log(vendorMessages)
+  const [messages, setMessages] = useState<MessagesState>({customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:vendorMessages.vendor_reply});
   const [isDecoding, setIsDecoding] = useState(false);
-
+  console.log(vendorMessages)
   const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
     const currentMessages = data.ticket.steps[step] as Record<string, string>;
     const vendorDecodedMessages: Record<string, any> = {};
 
-    for (const [vendor, message] of Object.entries(currentMessages)) {
+    for (const [vendor, message] of Object.entries(currentMessages.vendor_reply)) {
+      console.log(message)
       if (message.trim() !== "") {
         // Only decode non-empty messages
         try {
@@ -56,6 +61,7 @@ const Step5: React.FC<Step5Props> = ({
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const decodedMessage = await response.json();
+          console.log(decodedMessage)
           vendorDecodedMessages[vendor] = decodedMessage;
         } catch (error) {
           console.error(`Error decoding message for ${vendor}:`, error);
@@ -95,15 +101,16 @@ const Step5: React.FC<Step5Props> = ({
 
       await fetchTicket(ticket._id);
       setActiveStep("Step 6 : Vendor Message Decoded");
-      toast.success("Step 5 completed")
     } else {
       console.error(
         "No messages to decode. Please enter messages for vendors."
       );
     }
   };
-  const handleUpdate = async (updatedMessages: Record<string, string>) => {
+  const handleUpdate = async (updatedMessages:MessagesState) => {
     console.log("Updating Step 5 messages:", updatedMessages);
+    // const formatUpdatedMessages={customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:updatedMessages}
+    // console.log(formatUpdatedMessages)
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
@@ -119,6 +126,7 @@ const Step5: React.FC<Step5Props> = ({
           }),
         }
       );
+      console.log(response)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -130,15 +138,18 @@ const Step5: React.FC<Step5Props> = ({
   useEffect(() => {
     // Ensure we're setting the initial messages correctly
     if (Object.keys(vendorMessages).length > 0) {
-      setMessages(vendorMessages);
+      setMessages({customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:vendorMessages.vendor_reply});
     }
   }, [vendorMessages]);
 
   const handleChange = (vendor: string, value: string) => {
-    setMessages((prev) => {
+    setMessages((prevMessage:any) => {
       const updatedMessages = {
-        ...prev,
-        [vendor]: value,
+        ...prevMessage,
+        vendor_reply: {
+          ...prevMessage.vendor_reply,
+          [vendor]: value,
+        },
       };
       return updatedMessages;
     });
@@ -169,16 +180,18 @@ const Step5: React.FC<Step5Props> = ({
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
       );
       const data = await response.json();
+      console.log(data)
       return data;
     } catch (error) {
       console.error("Error fetching ticket:", error);
     }
   };
-
+console.log(messages)
+console.log(messages.vendor_reply)
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       <h3 className="text-xl font-bold mb-4">Step 5: Messages from Vendors</h3>
-      {Object.entries(messages).map(([vendor, message]) => (
+      {Object.entries(messages.vendor_reply).map(([vendor, message]) => (
         <div key={vendor} className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">{vendor}</label>
           <textarea
@@ -210,7 +223,9 @@ const Step5: React.FC<Step5Props> = ({
         </Button>
       </div>
     </div>
+ 
   );
 };
 
 export default Step5;
+

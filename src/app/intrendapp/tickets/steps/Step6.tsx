@@ -57,6 +57,7 @@ const Step6: React.FC<Step6Props> = ({
   setActiveStep,
   ticket,
 }) => {
+  const [allDecodedMessages,setAllDecodedMessages]= useState(decodedMessages);
   const [selectedMessages, setSelectedMessages] =
     useState<DecodedMessages>(decodedMessages);
   const [loading, setLoading] = useState(false);
@@ -129,7 +130,11 @@ const Step6: React.FC<Step6Props> = ({
       console.log(selectedMessages);
       // Update the current step with selected messages
       await handleUpdate(selectedMessages);
-
+      console.log({
+        client_name: customerName,
+        customerMessage: originalMessage,
+        vendor_delivery_info_json: JSON.stringify(selectedMessages),
+      })
       // Generate client message template
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
@@ -142,10 +147,11 @@ const Step6: React.FC<Step6Props> = ({
             client_name: customerName,
             customerMessage: originalMessage,
             vendor_delivery_info_json: JSON.stringify(selectedMessages),
+            ticket_number:ticket.ticket_number
           }),
         }
       );
-
+console.log(response)
       if (!response.ok) {
         throw new Error("Failed to generate client message template");
       }
@@ -186,8 +192,8 @@ const Step6: React.FC<Step6Props> = ({
         />
       </div>
       {!loading &&
-        Object.keys(selectedMessages).map((vendor) => {
-          const vendorData = selectedMessages[vendor];
+        Object.keys(allDecodedMessages).map((vendor) => {
+          const vendorData = allDecodedMessages[vendor];
 
           return (
             <div key={vendor} className="mb-4">
