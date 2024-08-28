@@ -73,8 +73,11 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    console.log('Form Data:', formData);
-
+    const fromNumberRegex = /^91.*@u\.cs$/;
+    if (!fromNumberRegex.test(formData.phone)) {
+      toast.error("Invalid 'From Number'. It should start with '91' and end with '@u.cs'");
+      return; 
+    }
     const submitData = {
       ...formData,
       linked: formData.type_employee === 'External' ? formData.linked : 'No',

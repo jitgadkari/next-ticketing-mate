@@ -18,6 +18,7 @@ interface Step7Props {
     steps: Record<string, any>;
     created_data: string;
     updated_date: string;
+    from_number:string;
   },
 }
 
@@ -98,19 +99,19 @@ const Step7: React.FC<Step7Props> = ({
 
     try {
       // Fetch person details
-      const personResponse = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_ENDPOINT_URL
-        }/person/name/?person=${encodeURIComponent(personName)}`
-      );
-      const personData = await personResponse.json();
+      // const personResponse = await fetch(
+      //   `${
+      //     process.env.NEXT_PUBLIC_ENDPOINT_URL
+      //   }/person/name/?person=${encodeURIComponent(personName)}`
+      // );
+      // const personData = await personResponse.json();
 
-      if (!personData.person || !personData.person.phone) {
-        throw new Error("Person details or phone number not found");
-      }
+      // if (!personData.person || !personData.person.phone) {
+      //   throw new Error("Person details or phone number not found");
+      // }
 
       // Format the phone number
-      let phoneNumber = personData.person.phone.replace(/\D/g, "");
+      let phoneNumber = ticket.from_number.replace(/\D/g, "");
       if (phoneNumber.length === 10) {
         phoneNumber = "91" + phoneNumber;
       }

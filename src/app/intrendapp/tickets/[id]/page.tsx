@@ -23,6 +23,7 @@ interface Ticket {
   steps: Record<string, any>;
   created_data: string;
   updated_date: string;
+  from_number:string;
 }
 
 const stepsOrder = [
