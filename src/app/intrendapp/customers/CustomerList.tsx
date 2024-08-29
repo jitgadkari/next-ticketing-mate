@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Customer } from './page';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 interface CustomerListProps{
   customers:Customer[],
   setCustomers:(customers:Customer[])=>void
 }
 
 const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
 
 
   const handleDelete = async (customerId: string) => {
@@ -19,6 +22,8 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
       });
       if (response.ok) {
         setCustomers(customers.filter(customer => customer._id !== customerId));
+        setDeleteCustomerId(null);
+        toast.success("Customer deleted successfully")
       } else {
         console.error('Failed to delete customer');
       }
@@ -45,7 +50,7 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
           </span>
         </Link>
         <FaTrash
-          onClick={() => handleDelete(customer._id)}
+         onClick={() => setDeleteCustomerId(customer._id)}
           className="text-red-500 cursor-pointer hover:text-red-700"
           />
           </div>
@@ -57,6 +62,26 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
     <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">Customers List</h1>
       <Table columns={columns} data={customers} renderRow={renderRow} />
+      {deleteCustomerId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this customer?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteCustomerId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteCustomerId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import toast from 'react-hot-toast';
 
 interface AddcustomerFormProps {
   onAdd: () => void;
@@ -76,7 +77,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.code) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.code || !formData.country || !formData.state) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -114,6 +115,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
           remarks: '',
           additional_info: ''
         });
+        toast.success("Customer added successfully")
       } else {
         const errorData = await response.json();
         console.error('Failed to add customer', errorData);
@@ -162,6 +164,22 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
         type="text"
         name="code"
         value={formData.code}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="State"
+        type="text"
+        name="state"
+        value={formData.state}
+        onChange={handleChange}
+        required
+      />
+      <Input
+        label="Country"
+        type="text"
+        name="country"
+        value={formData.country}
         onChange={handleChange}
         required
       />

@@ -6,6 +6,7 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { Customer } from "./AddTicketForm";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
+import toast from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -30,6 +31,7 @@ interface FilterState {
   sortBy: string;
   sortDays: string;
   filterByCustomer: string;
+  ticketNumber: string;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
@@ -43,8 +45,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     sortBy: "",
     sortDays: "",
     filterByCustomer: "",
+    ticketNumber:""
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   useEffect(() => {
     const fetchTickets = async () => {
       try {
@@ -115,7 +119,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         (ticket) => new Date(ticket.created_date) >= daysAgo
       );
     }
-
+    if (filterState.ticketNumber) {
+      filtered = filtered.filter((ticket) =>
+        ticket.ticket_number.includes(filterState.ticketNumber)
+      );
+    }
     // Return the filtered tickets
     return filtered;
   }, [tickets, filterState]);
@@ -152,6 +160,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     };
     fetchCustomers();
   }, []);
+
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
@@ -162,6 +171,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       );
       if (response.ok) {
         setTickets(tickets.filter((ticket) => ticket._id !== ticketId));
+      setDeleteTicketId(null)
+      toast.success("Ticket deleted successfully")
       } else {
         console.error("Failed to delete ticket");
       }
@@ -233,7 +244,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
             </span>
           </Link>
           <FaTrash
-            onClick={() => handleDelete(ticket._id)}
+            onClick={() => setDeleteTicketId(ticket._id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </ul>
@@ -246,7 +257,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-3xl font-bold mb-4 text-gray-800">Tickets List</h1>
         <div className="relative">
-          <ul className="flex gap-2 items-center">
+          <ul className="flex gap-2 items-center flex-wrap">
             {filterState.showDropDown &&<>
             <>
               <li className="relative group ">
@@ -318,6 +329,20 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                 min="0"
               />
             </li>
+            <li>
+              <input
+                type="text"
+                value={filterState.ticketNumber}
+                onChange={(e) =>
+                  setFilterState((prevState) => ({
+                    ...prevState,
+                    ticketNumber: e.target.value,
+                  }))
+                }
+                placeholder="Search Ticket Number"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+              />
+            </li>
             </>}
             <button
               className="ml-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -330,6 +355,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                   sortOrder: "asc",
                   sortBy: "",
                   sortDays: "",
+                  ticketNumber:""
                 }))
               }
             >
@@ -367,7 +393,26 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
           <p>Use the filter to change the customer</p>
         </div>
       )}
-     
+      {deleteTicketId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this ticket?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteTicketId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteTicketId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };

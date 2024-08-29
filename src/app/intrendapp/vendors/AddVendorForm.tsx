@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import toast from 'react-hot-toast';
 
 interface AddVendorFormProps {
   onAdd: () => void;
@@ -49,7 +50,8 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
     group: '',
     address: '',
     remarks: '',
-    additional_info: ''
+    additional_info: '',
+    // country:''
   });
 
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
@@ -82,7 +84,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.code) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.code || !formData.state) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -124,8 +126,10 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
           group: '',
           address: '',
           remarks: '',
-          additional_info: ''
+          additional_info: '',
+          // country:''
         });
+        toast.success("Vendor added successfully")
       } else {
         const errorData = await response.json();
         console.error('Failed to add vendor', errorData);
@@ -177,6 +181,22 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
+      <Input
+        label="State"
+        type="text"
+        name="state"
+        value={formData.state}
+        onChange={handleChange}
+        required
+      />
+      {/* <Input
+        label="Country"
+        type="text"
+        name="country"
+        value={formData.country}
+        onChange={handleChange}
+        required
+      /> */}
       {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import { useRouter } from "next/navigation";
 import { FaEye } from "react-icons/fa";
+import toast from "react-hot-toast";
 interface Step9Props {
   ticketNumber: string;
   finalStatus: { status: string; final_decision: string };
@@ -28,11 +29,11 @@ const Step9: React.FC<Step9Props> = ({
 }) => {
   const [status, setStatus] = useState(finalStatus.status || "open");
   const [finalDecision, setFinalDecision] = useState(
-    finalStatus.final_decision || ""
+    finalStatus.final_decision || "pending"
   );
   const [showOptions, setShowOptions] = useState({
-    status: false,
-    finalDecision: false,
+    status: true,
+    finalDecision: true,
   });
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,7 @@ const Step9: React.FC<Step9Props> = ({
     setLoading(false);
     alert("Ticket process completed and closed.");
     router.push("/intrendapp/tickets");
+    toast.success("Ticket process completed and closed!")
   };
 
   const handleUpdate = async (updatedStatus: {
@@ -115,7 +117,7 @@ const Step9: React.FC<Step9Props> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold">Final Status</h3>
+      <h3 className="text-xl font-bold">Step 9: Final Status</h3>
       <div className="flex items-center gap-2">
       <label
         className="block text-gray-700 font-bold mb-2"
@@ -131,17 +133,17 @@ const Step9: React.FC<Step9Props> = ({
         </div>
       {showOptions.status && (
         <div
-          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 `}
         >
-          <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 rounded-lg text-black cursor-pointer ${status ==='open'&& "bg-green-600 text-white"}`}
               onClick={() => setStatus("open")}
             >
               Open{" "}
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 rounded-lg text-black  cursor-pointer ${status ==='close'&& "bg-green-600 text-white"} `}
               onClick={() => setStatus("close")}
             >
               Closed{" "}
@@ -166,26 +168,26 @@ const Step9: React.FC<Step9Props> = ({
       </div>
       {showOptions.finalDecision && (
         <div
-          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+          className={`z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 `}
         >
-          <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className=" text-sm text-gray-700 dark:text-gray-200">
             <button disabled={true} className="w-full px-4 py-2 ">
               Select a decision
             </button>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg text-black  ${finalDecision ==='approved' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("approved")}
             >
               Approved
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg text-black  ${finalDecision ==='denied' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("denied")}
             >
               Denied
             </li>
             <li
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+              className={`block px-4 py-2 cursor-pointer rounded-lg  text-black  ${finalDecision ==='pending' && 'bg-green-500 text-white'}`}
               onClick={() => setFinalDecision("pending")}
             >
               Pending

@@ -1,10 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Person } from './page';
+import toast from 'react-hot-toast';
 
 
 interface PeopleListProps{
@@ -13,7 +14,8 @@ interface PeopleListProps{
 }
 
 const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
- 
+  const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
+
   const handleDelete = async (personId: string): Promise<void> => {
     try {
       
@@ -22,6 +24,8 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
       });
       if (response.ok) {
         setPeople(people.filter(person => person._id !== personId));
+        setDeletePersonId(null)
+        toast.success("Person deleted successfully")
       } else {
         console.error('Failed to delete person');
       }
@@ -46,7 +50,7 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
           </span>
         </Link>
         <FaTrash
-          onClick={() => handleDelete(person._id)}
+          onClick={() => setDeletePersonId(person._id)}
           className="text-red-500 cursor-pointer hover:text-red-700"
           />
           </div>
@@ -58,6 +62,26 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
     <div className="p-8 bg-white rounded shadow text-black overflow-x-scroll">
       <h1 className="text-2xl font-bold mb-4">People List</h1>
       <Table columns={columns} data={people} renderRow={renderRow} />
+      {deletePersonId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this person?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeletePersonId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deletePersonId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };

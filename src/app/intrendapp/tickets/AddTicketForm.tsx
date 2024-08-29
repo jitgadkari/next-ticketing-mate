@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import toast from "react-hot-toast";
 
 interface AddTicketFormProps {
   onAdd: () => void;
@@ -27,6 +28,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
     customer_name: "",
     person_name: "",
     message: "",
+    from_number: "",
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [people, setPeople] = useState<Person[]>([]); // Initialize as an empty array
@@ -80,9 +82,15 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form Data:", formData);
-
+    const fromNumberRegex = /^91.*@c\.us$/;
+    if (!fromNumberRegex.test(formData.from_number)) {
+      toast.error(
+        "Invalid 'From Number'. It should start with '91' and end with '@c.us'"
+      );
+      return;
+    }
     try {
+      console.log(formData)
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket`,
         {
@@ -101,7 +109,9 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
           customer_name: "",
           person_name: "",
           message: "",
+          from_number: "",
         });
+        toast.success("Ticket added successfully");
       } else {
         const errorData = await response.json();
         console.error("Failed to add ticket", errorData);
@@ -150,7 +160,12 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                   key={customer._id}
                   className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
                   onClick={() => {
-                    setFormData({ ...formData, customer_name: customer.name });
+                    setFormData({
+                      ...formData,
+                      person_name: "",
+                      from_number: "",
+                      customer_name: customer.name,
+                    });
                     setShowDropDown(false);
                   }}
                 >
@@ -197,16 +212,22 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {people.length > 0 ? (
                   people.map((person) => (
-                    <li
-                      key={person._id}
-                      className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
-                      onClick={() => {
-                        setFormData({ ...formData, person_name: person.name });
-                        setShowPersonDropDown(false);
-                      }}
-                    >
-                      {person.name}
-                    </li>
+                    <>
+                      <li
+                        key={person._id}
+                        className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            person_name: person.name,
+                            from_number: person.phone+"@c.us",
+                          });
+                          setShowPersonDropDown(false);
+                        }}
+                      >
+                        {person.name}
+                      </li>
+                    </>
                   ))
                 ) : (
                   <li className="block px-4 py-2 text-gray-500">
@@ -215,6 +236,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                 )}
               </ul>
             </div>
+            
           </div>
         </>
       )}

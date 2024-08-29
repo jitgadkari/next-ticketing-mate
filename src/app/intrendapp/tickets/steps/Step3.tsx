@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
+import toast from "react-hot-toast";
 
 interface Step3Props {
   ticketNumber: string;
@@ -33,7 +34,7 @@ const Step3: React.FC<Step3Props> = ({
   ticket,
 }) => {
   const [message, setMessage] = useState(template);
-  const [includeCustomerName, setIncludeCustomerName] = useState(false);
+  const [includeCustomerName, setIncludeCustomerName] = useState(true);
   const [loading, setLoading] = useState(false);
   const handleNext = async () => {
     console.log("Handling next for Step 3");
@@ -54,6 +55,7 @@ const Step3: React.FC<Step3Props> = ({
     fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 4 : Vendor Selection");
+    toast.success("Step 3 completed")
   };
   const handleUpdate = async (updatedTemplate: string) => {
     console.log("Updating Step 3 template:", updatedTemplate);
@@ -75,12 +77,12 @@ const Step3: React.FC<Step3Props> = ({
   };
 
   useEffect(() => {
-    fetchVendorTemplate()
+    fetchVendorTemplate();
   }, []);
 
   const fetchVendorTemplate = async () => {
     try {
-      console.log(originalMessage)
+      console.log(originalMessage);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
         {
@@ -91,11 +93,18 @@ const Step3: React.FC<Step3Props> = ({
           body: JSON.stringify({
             vendor_name: "{VENDOR}",
             customerMessage: originalMessage,
+            ticket_number:ticket.ticket_number
           }),
         }
       );
       const data = await response.json();
-      setMessage(data.vendor_message_template);
+      let initialMessage = data.vendor_message_template;
+
+      // If the customer name should be included by default, append it
+      if (includeCustomerName) {
+        initialMessage += `\n\nCustomer Name: ${customerName}`;
+      }
+      setMessage(initialMessage);
     } catch (error) {
       console.error("Error fetching vendor template:", error);
     }
@@ -104,6 +113,7 @@ const Step3: React.FC<Step3Props> = ({
   const handleNextStep = async () => {
     try {
       setLoading(true);
+      await handleUpdate(message);
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
         {

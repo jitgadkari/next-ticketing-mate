@@ -1,6 +1,7 @@
-'use client'
+"use client";
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
+import toast from "react-hot-toast";
 
 interface Step7Props {
   ticketNumber: string;
@@ -17,7 +18,8 @@ interface Step7Props {
     steps: Record<string, any>;
     created_data: string;
     updated_date: string;
-  },
+    from_number: string;
+  };
 }
 
 const Step7: React.FC<Step7Props> = ({
@@ -53,8 +55,9 @@ const Step7: React.FC<Step7Props> = ({
     );
     fetchTicket(ticket._id);
     setActiveStep("Step 8 : Customer Response");
+    toast.success("Step 7 completed");
   };
-  const handleUpdate = async (updatedTemplate:string) => {
+  const handleUpdate = async (updatedTemplate: string) => {
     console.log("Updating Step 7 template:", updatedTemplate);
     await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
@@ -96,24 +99,25 @@ const Step7: React.FC<Step7Props> = ({
 
     try {
       // Fetch person details
-      const personResponse = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_ENDPOINT_URL
-        }/person/name/?person=${encodeURIComponent(personName)}`
-      );
-      const personData = await personResponse.json();
+      // const personResponse = await fetch(
+      //   `${
+      //     process.env.NEXT_PUBLIC_ENDPOINT_URL
+      //   }/person/name/?person=${encodeURIComponent(personName)}`
+      // );
+      // const personData = await personResponse.json();
 
-      if (!personData.person || !personData.person.phone) {
-        throw new Error("Person details or phone number not found");
+      // if (!personData.person || !personData.person.phone) {
+      //   throw new Error("Person details or phone number not found");
+      // }
+
+      console.log(ticket.from_number);
+      const fromNumberRegex = /^91.*@c\.us$/;
+      if (!fromNumberRegex.test(ticket.from_number)) {
+        toast.error(
+          "Invalid 'Phone Number'"
+        );
+        return;
       }
-
-      // Format the phone number
-      let phoneNumber = personData.person.phone.replace(/\D/g, "");
-      if (phoneNumber.length === 10) {
-        phoneNumber = "91" + phoneNumber;
-      }
-      phoneNumber += "@c.us";
-
       // Send the message
       const sendMessageResponse = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
@@ -123,7 +127,7 @@ const Step7: React.FC<Step7Props> = ({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            to: phoneNumber,
+            to: ticket.from_number,
             message: template,
           }),
         }
@@ -142,7 +146,9 @@ const Step7: React.FC<Step7Props> = ({
 
   return (
     <div>
-      <h3 className="text-xl font-bold my-4">Customer Message Template</h3>
+      <h3 className="text-xl font-bold my-4">
+        Step 7: Customer Message Template
+      </h3>
       <textarea
         value={template}
         onChange={(e) => setTemplate(e.target.value)}

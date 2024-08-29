@@ -1,4 +1,5 @@
 import React from 'react';
+import { Placeholder } from 'react-select/animated';
 
 interface InputProps {
   label: string;
@@ -8,9 +9,10 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   required?: boolean;
   rows?: number;  // New prop for textarea height
+  placeholder?:string
 }
 
-const Input: React.FC<InputProps> = ({ label, type, name, value, onChange, required, rows = 10 }) => {
+const Input: React.FC<InputProps> = ({ label, type, name, value, onChange, required, rows = 10,placeholder }) => {
   return (
     <div className="mb-3">
       <label className="block text-gray-700 mb-2">{label}</label>
@@ -31,6 +33,7 @@ const Input: React.FC<InputProps> = ({ label, type, name, value, onChange, requi
           onChange={onChange}
           className="w-full p-2 border border-gray-300 rounded mt-1"
           required={required}
+          placeholder={placeholder}
         />
       )}
     </div>

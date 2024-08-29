@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Customer } from "./AddTicketForm";
+import toast from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -28,6 +29,7 @@ interface FilterState {
   sortDays: string;
   filterByCustomer: string;
   fetchAll: boolean;
+  ticketNumber: string;
 }
 
 export default function TicketsMobileList({ refreshList }: TicketListProps) {
@@ -41,8 +43,10 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     filterByCustomer: "",
     fetchAll: false,
     showCustomerDropDown: false,
+    ticketNumber: "",
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -124,7 +128,11 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
         (ticket) => new Date(ticket.created_date) >= daysAgo
       );
     }
-
+    if (filterState.ticketNumber) {
+      filtered = filtered.filter((ticket) =>
+        ticket.ticket_number.includes(filterState.ticketNumber)
+      );
+    }
     return filtered;
   }, [tickets, allTickets, filterState]);
 
@@ -138,6 +146,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
       );
       if (response.ok) {
         setTickets(tickets.filter((ticket) => ticket._id !== ticketId));
+        setDeleteTicketId(null);
+        toast.success("Ticket deleted successfully")
       } else {
         console.error("Failed to delete ticket");
       }
@@ -179,24 +189,32 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <div className="mb-4">
             <div className="flex items-center">
-            <button className="block text-sm font-semibold mb-2" onClick={()=>setFilterState((prev)=>({...prev,showCustomerDropDown:!prev.showCustomerDropDown}))}>
-              Sort By Customer
-            </button>
-              <svg
-              className="w-2.5 h-2.5 ms-3"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 10 6"
+              <button
+                className="block text-sm font-semibold mb-2"
+                onClick={() =>
+                  setFilterState((prev) => ({
+                    ...prev,
+                    showCustomerDropDown: !prev.showCustomerDropDown,
+                  }))
+                }
               >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m1 1 4 4 4-4"
+                Sort By Customer
+              </button>
+              <svg
+                className="w-2.5 h-2.5 ms-3"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="m1 1 4 4 4-4"
                 />
-            </svg>
+              </svg>
             </div>
             {/* <select
               value={filterState.filterByCustomer}
@@ -239,15 +257,32 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               </ul>
             </div>
           </div>
-
+          <div className="mb-4">
+          <label className="block text-sm font-semibold mb-2">
+              Filter by Ticket Number
+            </label>
+              <input
+                type="text"
+                value={filterState.ticketNumber}
+                onChange={(e) =>
+                  setFilterState((prevState) => ({
+                    ...prevState,
+                    ticketNumber: e.target.value,
+                  }))
+                }
+                placeholder="Enter Ticket Number"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+              />
+            </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-2">
               Filter by Last Number of Days
             </label>
             <input
               type="number"
-              className="w-full border px-3 py-2 rounded-lg"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
               value={filterState.sortDays}
+                  placeholder="Enter Number of Days"
               onChange={(e) =>
                 setFilterState((prevState) => ({
                   ...prevState,
@@ -354,13 +389,33 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
                 </span>
               </Link>
               <FaTrash
-                onClick={() => handleDelete(ticket._id)}
+                onClick={() => setDeleteTicketId(ticket._id)}
                 className="text-red-500 cursor-pointer hover:text-red-700"
               />
             </div>
           </div>
         </div>
       ))}
+      {deleteTicketId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to delete this ticket?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setDeleteTicketId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(deleteTicketId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }

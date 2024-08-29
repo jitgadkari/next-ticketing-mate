@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 
 interface Step1Props {
@@ -34,13 +34,20 @@ const Step1: React.FC<Step1Props> = ({
   setActiveStep,
 }) => {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isCurrentStep ) {
+      handleNext();
+    }
+  }, [isCurrentStep]);
+
   const handleNext = async () => {
     console.log("Handling next for Step 1");
     try {
       // Decode the message
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode_groq`,
         {
           method: "POST",
           headers: {

@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import { Customer } from '../customers/page';
+import { Vendor } from '../vendors/page';
+import toast from 'react-hot-toast';
 
 interface AddPersonFormProps {
   onAdd: () => void;
@@ -19,6 +22,7 @@ interface FormData {
 }
 
 const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     phone: '',
@@ -29,6 +33,35 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
     linked_to_id: "Null",
   });
 
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    if (formData.linked_to === 'Customer') {
+      fetchCustomers();
+    } else if (formData.linked_to === 'Vendor') {
+      fetchVendors();
+    }
+  }, [formData.linked_to]);
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const data = await response.json();
+      setCustomers(data.customers);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const data = await response.json();
+      setVendors(data.vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
     setFormData(prevData => ({
@@ -40,8 +73,11 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    console.log('Form Data:', formData);
-
+    const fromNumberRegex = /^91\d{10}$/;
+    if (!fromNumberRegex.test(formData.phone)) {
+      toast.error("Invalid 'phone Number'. It should start with '91' and be followed by 10 digits.");
+      return;
+    }
     const submitData = {
       ...formData,
       linked: formData.type_employee === 'External' ? formData.linked : 'No',
@@ -60,6 +96,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
       if (response.ok) {
         onAdd();
+        toast.success("Person added successfully");
       } else {
         const errorData = await response.json();
         console.error('Failed to add person', errorData);
@@ -78,6 +115,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.name}
         onChange={handleChange}
         required
+        placeholder='name'
       />
       <Input
         label="Phone"
@@ -86,6 +124,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.phone}
         onChange={handleChange}
         required
+        placeholder='91.....'
       />
       <Input
         label="Email"
@@ -94,6 +133,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.email}
         onChange={handleChange}
         required
+        placeholder='abc@gmail.com'
       />
       <div >
         <label className="block text-gray-700">Type of Employee</label>
@@ -140,14 +180,23 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
                 </select>
               </div>
               {formData.linked_to && (
-                <Input
-                  label={`${formData.linked_to} ID`}
-                  type="text"
-                  name="linked_to_id"
-                  value={formData.linked_to_id || ''}
-                  onChange={handleChange}
-                  required
-                />
+                <div>
+                  <label className="block text-gray-700">{`${formData.linked_to} ID`}</label>
+                  <select
+                    name="linked_to_id"
+                    value={formData.linked_to_id || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full"
+                    required
+                  >
+                    <option value="">Select...</option>
+                    {(formData.linked_to === 'Customer' ? customers : vendors).map((option) => (
+                      <option key={option._id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </>
           )}
