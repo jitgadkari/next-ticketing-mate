@@ -29,11 +29,11 @@ const Step9: React.FC<Step9Props> = ({
 }) => {
   const [status, setStatus] = useState(finalStatus.status || "open");
   const [finalDecision, setFinalDecision] = useState(
-    finalStatus.final_decision || ""
+    finalStatus.final_decision || "pending"
   );
   const [showOptions, setShowOptions] = useState({
-    status: false,
-    finalDecision: false,
+    status: true,
+    finalDecision: true,
   });
   const router = useRouter();
   const [loading, setLoading] = useState(false);
