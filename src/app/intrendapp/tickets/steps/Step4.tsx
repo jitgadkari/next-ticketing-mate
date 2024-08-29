@@ -65,6 +65,9 @@ const Step4: React.FC<Step4Props> = ({
     emailSent: false,
     whatsappMessageSent: false,
   });
+  const [showResendWhatsappMessage,setShowResendWhatsappMessage]=useState(false);
+  const [showResendEmail, setShowResendEmail] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const handleNext = async (updatedVendors: Record<string, string>) => {
     console.log("Handling next for Step 4");
@@ -236,10 +239,12 @@ const Step4: React.FC<Step4Props> = ({
     setShowEmailPopup(false);
     setIsEmailSending(true);
     setEmailSendingStatus({});
-    if(isMessageSent.emailSent){
-      toast.error("Message already sent!")
+    if (isMessageSent.emailSent) {
+      if (!showResendEmail) {
+        toast.error("Email already sent!");
+        setShowResendEmail(true);
+      }
     }else{
-
       setIsMessageSent((prev) => {
         const updated = { ...prev, emailSent: true };
         return updated;
@@ -297,7 +302,10 @@ const Step4: React.FC<Step4Props> = ({
       setIsWhatsAppSending(true);
       setWhatsappSendingStatus({});
     if(isMessageSent.whatsappMessageSent){
+      if(!showResendWhatsappMessage){
       toast.error("Message already sent!")
+      setShowResendWhatsappMessage(true)
+      }
     }else{
     setIsMessageSent((prev) => {
       const updated = { ...prev, whatsappMessageSent: true };
@@ -408,7 +416,7 @@ const Step4: React.FC<Step4Props> = ({
                   {whatsappSendingStatus[option.value] && (
                     <p
                       className={`mt-1 ${
-                        emailSendingStatus[option.value] === "Whatsapp Message Sent"
+                        whatsappSendingStatus[option.value] === "Whatsapp Message Sent"
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
@@ -438,7 +446,8 @@ const Step4: React.FC<Step4Props> = ({
                 !isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending
               }
             >
-              <span> {isWhatsAppSending ? "Sending..." : "Send"}</span>
+             <span>{isWhatsAppSending ? "Sending..." : showResendWhatsappMessage ? "Resend" : "Send"}</span>
+
               <FaWhatsapp />
             </Button>
             <Button
@@ -451,7 +460,7 @@ const Step4: React.FC<Step4Props> = ({
                 !isCurrentStep || selectedOptions.length === 0 || isEmailSending
               }
             >
-              <span> {isEmailSending ? "Sending..." : "Send"}</span>
+            <span>{isEmailSending ? "Sending..." : showResendEmail ? "Resend" : "Send"}</span>
               <MdEmail />
             </Button>
             <Button
@@ -474,9 +483,12 @@ const Step4: React.FC<Step4Props> = ({
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Sending Messages...</h2>
-            <p className="mb-4">
+            {!showResendWhatsappMessage&&<p className="mb-4">
               Are you sure you want to send messages to the selected vendors?
-            </p>
+            </p>}
+            {showResendWhatsappMessage && (
+            <p>Messages have already been sent. Do you want to resend them?</p>
+          )}
             <div className="flex justify-end">
               <Button
                 onClick={() => setShowPopup(false)}
@@ -488,36 +500,39 @@ const Step4: React.FC<Step4Props> = ({
                 onClick={handlePopupConfirm}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
-                OK
+               {!showResendWhatsappMessage ? "OK" : "Resend"}
               </Button>
             </div>
           </div>
         </div>
       )}
-      {showEmailPopup && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-5 rounded-lg shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Sending Emails...</h2>
-            <p className="mb-4">
-              Are you sure you want to send emails to the selected vendors?
-            </p>
-            <div className="flex justify-end">
-              <Button
-                onClick={() => setShowEmailPopup(false)}
-                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEmailPopupConfirm}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                OK
-              </Button>
-            </div>
-          </div>
-        </div>
+     {showEmailPopup && (
+  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+    <div className="bg-white p-5 rounded-lg shadow-xl">
+      <h2 className="text-xl font-bold mb-4">Sending Emails...</h2>
+      {!showResendEmail && (
+        <p className="mb-4">Are you sure you want to send emails to the selected vendors?</p>
       )}
+      {showResendEmail && (
+        <p>Emails have already been sent. Do you want to resend them?</p>
+      )}
+      <div className="flex justify-end">
+        <Button
+          onClick={() => setShowEmailPopup(false)}
+          className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleEmailPopupConfirm}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          {!showResendEmail ? "OK" : "Resend"}
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
       {!isCurrentStep && (
         <h1 className="text-end text-yellow-500">Messages Already Sent!</h1>
       )}

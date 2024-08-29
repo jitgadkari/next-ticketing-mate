@@ -82,15 +82,15 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form Data:", formData);
     const fromNumberRegex = /^91.*@c\.us$/;
     if (!fromNumberRegex.test(formData.from_number)) {
       toast.error(
-        "Invalid 'From Number'. It should start with '91' and end with '@u.cs'"
+        "Invalid 'From Number'. It should start with '91' and end with '@c.us'"
       );
       return;
     }
     try {
+      console.log(formData)
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket`,
         {
@@ -220,7 +220,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                           setFormData({
                             ...formData,
                             person_name: person.name,
-                            from_number: person.phone,
+                            from_number: person.phone+"@c.us",
                           });
                           setShowPersonDropDown(false);
                         }}
@@ -236,12 +236,7 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                 )}
               </ul>
             </div>
-            {formData.from_number && (
-              <>
-                <h1 className="pt-2">Phone Number</h1>
-                <h1 className=" text-blue-800">{formData.from_number}</h1>
-              </>
-            )}
+            
           </div>
         </>
       )}

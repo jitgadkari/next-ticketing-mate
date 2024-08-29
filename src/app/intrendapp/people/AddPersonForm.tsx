@@ -73,10 +73,10 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    const fromNumberRegex = /^91.*@u\.cs$/;
+    const fromNumberRegex = /^91\d{10}$/;
     if (!fromNumberRegex.test(formData.phone)) {
-      toast.error("Invalid 'From Number'. It should start with '91' and end with '@u.cs'");
-      return; 
+      toast.error("Invalid 'phone Number'. It should start with '91' and be followed by 10 digits.");
+      return;
     }
     const submitData = {
       ...formData,
@@ -115,6 +115,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.name}
         onChange={handleChange}
         required
+        placeholder='name'
       />
       <Input
         label="Phone"
@@ -123,6 +124,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.phone}
         onChange={handleChange}
         required
+        placeholder='91.....'
       />
       <Input
         label="Email"
@@ -131,6 +133,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         value={formData.email}
         onChange={handleChange}
         required
+        placeholder='abc@gmail.com'
       />
       <div >
         <label className="block text-gray-700">Type of Employee</label>
