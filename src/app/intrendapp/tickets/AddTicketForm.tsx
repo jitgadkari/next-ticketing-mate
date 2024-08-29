@@ -160,7 +160,12 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                   key={customer._id}
                   className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
                   onClick={() => {
-                    setFormData({ ...formData, customer_name: customer.name });
+                    setFormData({
+                      ...formData,
+                      person_name: "",
+                      from_number: "",
+                      customer_name: customer.name,
+                    });
                     setShowDropDown(false);
                   }}
                 >
@@ -214,7 +219,8 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                         onClick={() => {
                           setFormData({
                             ...formData,
-                            person_name: person.name,from_number: person.phone,
+                            person_name: person.name,
+                            from_number: person.phone,
                           });
                           setShowPersonDropDown(false);
                         }}
@@ -230,12 +236,12 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
                 )}
               </ul>
             </div>
-            { formData.from_number &&
+            {formData.from_number && (
               <>
                 <h1 className="pt-2">Phone Number</h1>
                 <h1 className=" text-blue-800">{formData.from_number}</h1>
               </>
-            }
+            )}
           </div>
         </>
       )}
