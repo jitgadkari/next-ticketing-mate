@@ -100,7 +100,7 @@ const Step4: React.FC<Step4Props> = ({
       );
 
       console.log("Step 5 initial vendor messages:", emptyVendorMessages);
-      const formatMessage={vendor_reply:emptyVendorMessages}
+  
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
         {
@@ -110,7 +110,7 @@ const Step4: React.FC<Step4Props> = ({
           },
           body: JSON.stringify({
             ticket_number: ticket.ticket_number,
-            step_info: formatMessage,
+            step_info: emptyVendorMessages,
             step_number: "Step 5: Messages from Vendors",
           }),
         }
