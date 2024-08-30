@@ -5,6 +5,7 @@ import Button from "../../../components/Button";
 interface Step5Props {
   ticketNumber: string;
   vendorMessages: Record<string, string>;
+  isCurrentStep: boolean;
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
@@ -17,33 +18,33 @@ interface Step5Props {
     updated_date: string;
   };
   step: string;
-  isCurrentStep: boolean;
-}
-interface MessagesState {
-  customer_query: string;
-  vendor_reply: Record<string, string>| string;
 }
 
 const Step5: React.FC<Step5Props> = ({
   ticketNumber,
   vendorMessages,
+  isCurrentStep,
   fetchTicket,
   setActiveStep,
   ticket,
   step,
-  isCurrentStep,
 }) => {
-  console.log(vendorMessages)
-  const [messages, setMessages] = useState<MessagesState>({customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:vendorMessages.vendor_reply});
+  console.log(vendorMessages);
+  const [messages, setMessages] =
+    useState<Record<string, string>>(vendorMessages);
   const [isDecoding, setIsDecoding] = useState(false);
-  console.log(vendorMessages)
+  console.log(vendorMessages);
   const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
     const currentMessages = data.ticket.steps[step] as Record<string, string>;
     const vendorDecodedMessages: Record<string, any> = {};
 
-    for (const [vendor, message] of Object.entries(currentMessages.vendor_reply)) {
-      console.log(message)
+    for (const [vendor, message] of Object.entries(
+      currentMessages
+    )) {
+      console.log(message);
+      let formatmsg=`query from customer :${ticket.steps['Step 1 : Customer Message Received'].text} vendor reply :${message}`;
+      console.log(formatmsg);
       if (message.trim() !== "") {
         // Only decode non-empty messages
         try {
@@ -54,14 +55,13 @@ const Step5: React.FC<Step5Props> = ({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ text: message }),
+              body: JSON.stringify({ text: formatmsg}),
             }
           );
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           const decodedMessage = await response.json();
-          console.log(decodedMessage)
           vendorDecodedMessages[vendor] = decodedMessage;
         } catch (error) {
           console.error(`Error decoding message for ${vendor}:`, error);
@@ -107,49 +107,33 @@ const Step5: React.FC<Step5Props> = ({
       );
     }
   };
-  const handleUpdate = async (updatedMessages:MessagesState) => {
+  const handleUpdate = async (updatedMessages: Record<string, string>) => {
     console.log("Updating Step 5 messages:", updatedMessages);
-    // const formatUpdatedMessages={customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:updatedMessages}
-    // console.log(formatUpdatedMessages)
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ticket_number: ticket.ticket_number,
-            step_number: "Step 5: Messages from Vendors",
-            step_info: updatedMessages,
-          }),
-        }
-      );
-      console.log(response)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    await fetch(
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ticket_number: ticket.ticket_number,
+          step_number: "Step 5: Messages from Vendors",
+          step_info: updatedMessages,
+        }),
       }
-    } catch (error) {
-      console.error("Error updating Step 5:", error);
-    }
-    await fetchTicket(ticket._id);
+    );
+    fetchTicket(ticket._id);
   };
   useEffect(() => {
-    // Ensure we're setting the initial messages correctly
-    if (Object.keys(vendorMessages).length > 0) {
-      setMessages({customer_query:ticket.steps['Step 1 : Customer Message Received'].text,vendor_reply:vendorMessages.vendor_reply});
-    }
+    setMessages(vendorMessages);
   }, [vendorMessages]);
 
   const handleChange = (vendor: string, value: string) => {
-    setMessages((prevMessage:any) => {
+    setMessages((prevMessage) => {
       const updatedMessages = {
         ...prevMessage,
-        vendor_reply: {
-          ...prevMessage.vendor_reply,
-          [vendor]: value,
-        },
+        [vendor]: value,
       };
       return updatedMessages;
     });
@@ -180,18 +164,18 @@ const Step5: React.FC<Step5Props> = ({
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
       );
       const data = await response.json();
-      console.log(data)
+      console.log(data);
       return data;
     } catch (error) {
       console.error("Error fetching ticket:", error);
     }
   };
-console.log(messages)
-console.log(messages.vendor_reply)
+  console.log(messages);
+
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       <h3 className="text-xl font-bold mb-4">Step 5: Messages from Vendors</h3>
-      {Object.entries(messages.vendor_reply).map(([vendor, message]) => (
+      {Object.entries(messages).map(([vendor, message]) => (
         <div key={vendor} className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">{vendor}</label>
           <textarea
@@ -223,9 +207,8 @@ console.log(messages.vendor_reply)
         </Button>
       </div>
     </div>
- 
+
   );
 };
 
 export default Step5;
-
