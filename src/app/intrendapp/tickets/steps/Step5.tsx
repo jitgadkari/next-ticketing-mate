@@ -33,17 +33,16 @@ const Step5: React.FC<Step5Props> = ({
   const [messages, setMessages] =
     useState<Record<string, string>>(vendorMessages);
   const [isDecoding, setIsDecoding] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   console.log(vendorMessages);
   const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
     const currentMessages = data.ticket.steps[step] as Record<string, string>;
     const vendorDecodedMessages: Record<string, any> = {};
 
-    for (const [vendor, message] of Object.entries(
-      currentMessages
-    )) {
+    for (const [vendor, message] of Object.entries(currentMessages)) {
       console.log(message);
-      let formatmsg=`query from customer :${ticket.steps['Step 1 : Customer Message Received'].text} vendor reply :${message}`;
+      let formatmsg = `query from customer :${ticket.steps["Step 1 : Customer Message Received"].text} vendor reply :${message}`;
       console.log(formatmsg);
       if (message.trim() !== "") {
         // Only decode non-empty messages
@@ -55,7 +54,7 @@ const Step5: React.FC<Step5Props> = ({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ text: formatmsg}),
+              body: JSON.stringify({ text: formatmsg }),
             }
           );
           if (!response.ok) {
@@ -126,8 +125,17 @@ const Step5: React.FC<Step5Props> = ({
     fetchTicket(ticket._id);
   };
   useEffect(() => {
-    setMessages(vendorMessages);
-  }, [vendorMessages]);
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 10000); 
+    const allMessagesAreFilled = Object.values(messages).every(
+      (message) => message.trim() !== ""
+    );
+    if (allMessagesAreFilled) {
+      clearInterval(interval); 
+    }
+    return () => clearInterval(interval); 
+  }, [messages]); 
 
   const handleChange = (vendor: string, value: string) => {
     setMessages((prevMessage) => {
@@ -207,7 +215,6 @@ const Step5: React.FC<Step5Props> = ({
         </Button>
       </div>
     </div>
-
   );
 };
 

@@ -112,10 +112,10 @@ const Step7: React.FC<Step7Props> = ({
 
       console.log(ticket.from_number);
       const fromNumberRegex = /^91.*@c\.us$/;
-      if (!fromNumberRegex.test(ticket.from_number)) {
-        toast.error(
-          "Invalid 'Phone Number'"
-        );
+      const fromGroupRegex = /^.*@g\.us$/;
+      
+      if (!fromNumberRegex.test(ticket.from_number) && !fromGroupRegex.test(ticket.from_number)) {
+        toast.error("Invalid 'phone or group Number'");
         return;
       }
       // Send the message
