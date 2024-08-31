@@ -1,3 +1,5 @@
+"use client";
+import { useEffect, useState } from "react";
 import DashboardDetailInput from "./DashboardDetailInput";
 
 interface ResponseTime {
@@ -20,25 +22,34 @@ interface DashboardData {
   response_time_for_closed_tickets: ResponseTime[];
 }
 
-const Dashboard = async () => {
-  const fetchDashBoardData = async (): Promise<DashboardData | undefined> => {
+const Dashboard = () => {
+  const [dashboardData, setDashboardData] = useState<DashboardData | undefined>(
+    undefined
+  );
+  const fetchDashBoardData = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`,{
-          cache:'no-store'
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`,
+        {
+          cache: "no-cache",
         }
       );
+      if (response.status != 200) {
+        console.log("failed to fetch dashboard data");
+      }
       const data: DashboardData = await response.json();
-      return data;
+      setDashboardData(data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     }
   };
 
-  const dashboardData = await fetchDashBoardData();
+  useEffect(() => {
+    fetchDashBoardData();
+  }, []);
 
   if (!dashboardData) {
-    return <div>Error loading dashboard data</div>;
+    return <div>Loading...</div>;
   }
 
   return (
