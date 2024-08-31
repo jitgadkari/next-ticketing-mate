@@ -86,7 +86,7 @@ export default function TopNavBar() {
                         {authValid ? (
                             <>
                                 <li>
-                                    <Link href="/" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>
+                                    <Link href="/intrendapp/dashboard" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>
                                         Dashboard
                                     </Link>
                                 </li>

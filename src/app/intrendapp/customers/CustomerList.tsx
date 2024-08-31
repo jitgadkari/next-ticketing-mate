@@ -63,7 +63,7 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
       <h1 className="text-2xl font-bold mb-4">Customers List</h1>
       <Table columns={columns} data={customers} renderRow={renderRow} />
       {deleteCustomerId && (
-        <dialog open className="p-5 bg-white rounded shadow-lg">
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this customer?</p>
           <div className="flex justify-end mt-4">
