@@ -86,7 +86,7 @@ export default function VendorMobileList({
       </div>
     ))}
      {deleteVendorId && (
-        <dialog open className="p-5 bg-white rounded shadow-lg">
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this vendor?</p>
           <div className="flex justify-end mt-4">

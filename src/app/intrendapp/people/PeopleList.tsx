@@ -63,7 +63,7 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
       <h1 className="text-2xl font-bold mb-4">People List</h1>
       <Table columns={columns} data={people} renderRow={renderRow} />
       {deletePersonId && (
-        <dialog open className="p-5 bg-white rounded shadow-lg">
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this person?</p>
           <div className="flex justify-end mt-4">
