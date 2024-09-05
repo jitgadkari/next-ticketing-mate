@@ -1,0 +1,47 @@
+I have created a Next js application on top of these apis 
+
+but the information has been changed 
+
+Lets look into Customer page first 
+Follwoing is the structure
+
+the next app structure is 
+
+/src/app/about/page.tsx
+/src/app/components/Button.tsx
+/src/app/components/Input.tsx
+/src/app/components/Table.tsx
+/src/app/contact/page.tsx
+/src/app/intrendapp/attributes/page.tsx
+
+/src/app/intrendapp/dashboard/page.tsx
+
+/src/app/intrendapp/customers/page.tsx
+/src/app/intrendapp/customers/AddCustomerForm.tsx
+/src/app/intrendapp/customers/CustomerList.tsx
+/src/app/intrendapp/customers/[id]/page.tsx
+
+/src/app/intrendapp/vendors/page.tsx
+/src/app/intrendapp/customers/AddVendorForm.tsx
+/src/app/intrendapp/customers/VendorList.tsx
+/src/app/intrendapp/vendors/[id]/page.tsx
+
+/src/app/intrendapp/people/page.tsx
+/src/app/intrendapp/customers/AddPersonForm.tsx
+/src/app/intrendapp/customers/CustomerList.tsx
+/src/app/intrendapp/people/[id]/page.tsx
+
+/src/app/intrendapp/tickets/page.tsx
+/src/app/intrendapp/customers/AddTicketForm.tsx
+/src/app/intrendapp/customers/TicketList.tsx
+/src/app/intrendapp/tickets/[id]/page.tsx
+
+/src/app/login
+/src/app/signup
+/src/app/styles
+/src/app/layout.tsx
+/src/app/page.tsx
+/src/app/global.css
+
+
+
