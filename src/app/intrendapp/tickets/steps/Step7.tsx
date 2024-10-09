@@ -35,6 +35,7 @@ const Step7: React.FC<Step7Props> = ({
   const [showPopup, setShowPopup] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<string | null>(null);
+  const [sendButtonClicked, setSendButtonClicked] = useState(false);
 
   const handleNext = async () => {
     console.log("Handling next for Step 7");
@@ -84,12 +85,17 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleNextStep = async () => {
-    await handleSave();
-    await handleNext();
+    if (!sendButtonClicked) {
+      setShowPopup(true);
+    } else {
+      await handleSave();
+      await handleNext();
+    }
   };
 
   const handleSendMessage = () => {
     setShowPopup(true);
+    setSendButtonClicked(true);
   };
 
   const handlePopupConfirm = async () => {
@@ -113,8 +119,11 @@ const Step7: React.FC<Step7Props> = ({
       console.log(ticket.from_number);
       const fromNumberRegex = /^91.*@c\.us$/;
       const fromGroupRegex = /^.*@g\.us$/;
-      
-      if (!fromNumberRegex.test(ticket.from_number) && !fromGroupRegex.test(ticket.from_number)) {
+
+      if (
+        !fromNumberRegex.test(ticket.from_number) &&
+        !fromGroupRegex.test(ticket.from_number)
+      ) {
         toast.error("Invalid 'phone or group Number'");
         return;
       }
@@ -195,7 +204,7 @@ const Step7: React.FC<Step7Props> = ({
         </p>
       )}
 
-      {showPopup && (
+      {showPopup && sendButtonClicked && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Sending Message...</h2>
@@ -214,6 +223,28 @@ const Step7: React.FC<Step7Props> = ({
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPopup && !sendButtonClicked && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Messages are not send.</h2>
+            <p className="mb-4">please click on send button to send messages</p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowPopup(false)}
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSendMessage}
+                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+               Send
               </Button>
             </div>
           </div>
