@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
+import { FaWhatsapp } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
 
 interface Step7Props {
   ticketNumber: string;
   customerTemplate: string;
-  personName: string; // Add this prop
+  personName: string;
   isCurrentStep: boolean;
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
@@ -25,21 +27,27 @@ interface Step7Props {
 const Step7: React.FC<Step7Props> = ({
   ticketNumber,
   customerTemplate,
-  personName, // Add this prop
+  personName,
   isCurrentStep,
   fetchTicket,
   setActiveStep,
   ticket,
 }) => {
   const [template, setTemplate] = useState(customerTemplate);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showPopup, setShowPopup] = useState({
+    whatsApp: false,
+    email: false,
+    sendReminder: false,
+  });
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<string | null>(null);
-  const [sendButtonClicked, setSendButtonClicked] = useState(false);
+  const [messagesSent, setMessagesSent] = useState({
+    whatsApp: false,
+    email: false,
+  });
 
   const handleNext = async () => {
     console.log("Handling next for Step 7");
-    // Update Step 8 with an empty string from client
     await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
       {
@@ -58,6 +66,7 @@ const Step7: React.FC<Step7Props> = ({
     setActiveStep("Step 8 : Customer Response");
     toast.success("Step 7 completed");
   };
+
   const handleUpdate = async (updatedTemplate: string) => {
     console.log("Updating Step 7 template:", updatedTemplate);
     await fetch(
@@ -76,6 +85,7 @@ const Step7: React.FC<Step7Props> = ({
     );
     fetchTicket(ticket._id);
   };
+
   useEffect(() => {
     setTemplate(customerTemplate);
   }, [customerTemplate]);
@@ -85,69 +95,93 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleNextStep = async () => {
-    if (!sendButtonClicked) {
-      setShowPopup(true);
+    if (!messagesSent.whatsApp || !messagesSent.email) {
+      setShowPopup((prev) => ({
+        ...prev,
+        sendReminder: true,
+      }));
     } else {
       await handleSave();
       await handleNext();
     }
   };
 
-  const handleSendMessage = () => {
-    setShowPopup(true);
-    setSendButtonClicked(true);
+  const handleSendMessage = (type: "whatsApp" | "email") => {
+    setShowPopup((prev) => ({
+      ...prev,
+      [type]: true,
+    }));
   };
 
-  const handlePopupConfirm = async () => {
-    setShowPopup(false);
+  const handlePopupConfirm = async (type: "whatsApp" | "email") => {
+    setShowPopup((prev) => ({
+      ...prev,
+      [type]: false,
+    }));
     setIsSending(true);
     setSendingStatus(null);
 
     try {
-      // Fetch person details
-      // const personResponse = await fetch(
-      //   `${
-      //     process.env.NEXT_PUBLIC_ENDPOINT_URL
-      //   }/person/name/?person=${encodeURIComponent(personName)}`
-      // );
-      // const personData = await personResponse.json();
+      if (type === "whatsApp") {
+        const fromNumberRegex = /^91.*@c\.us$/;
+        const fromGroupRegex = /^.*@g\.us$/;
 
-      // if (!personData.person || !personData.person.phone) {
-      //   throw new Error("Person details or phone number not found");
-      // }
-
-      console.log(ticket.from_number);
-      const fromNumberRegex = /^91.*@c\.us$/;
-      const fromGroupRegex = /^.*@g\.us$/;
-
-      if (
-        !fromNumberRegex.test(ticket.from_number) &&
-        !fromGroupRegex.test(ticket.from_number)
-      ) {
-        toast.error("Invalid 'phone or group Number'");
-        return;
-      }
-      // Send the message
-      const sendMessageResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            to: ticket.from_number,
-            message: template,
-          }),
+        if (
+          !fromNumberRegex.test(ticket.from_number) &&
+          !fromGroupRegex.test(ticket.from_number)
+        ) {
+          toast.error("Invalid 'phone or group number'");
+          return;
         }
-      );
 
-      const sendMessageData = await sendMessageResponse.json();
-      console.log("Message sent:", sendMessageData);
-      setSendingStatus("Message sent successfully");
+        const sendMessageResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: ticket.from_number,
+              message: template,
+            }),
+          }
+        );
+
+        const sendMessageData = await sendMessageResponse.json();
+        console.log("WhatsApp message sent:", sendMessageData);
+        setSendingStatus("WhatsApp message sent successfully");
+        setMessagesSent((prev) => ({
+          ...prev,
+          whatsApp: true,
+        }));
+      } else if (type === "email") {
+        const sendEmailResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: ticket.customer_name,
+              subject: "Customer Message",
+              body: template,
+            }),
+          }
+        );
+
+        const sendEmailData = await sendEmailResponse.json();
+        console.log("Email sent:", sendEmailData);
+        setSendingStatus("Email sent successfully");
+        setMessagesSent((prev) => ({
+          ...prev,
+          email: true,
+        }));
+      }
     } catch (error) {
-      console.error("Error sending message:", error);
-      setSendingStatus("Failed to send message");
+      console.error(`Error sending ${type} message:`, error);
+      setSendingStatus(`Failed to send ${type} message`);
     } finally {
       setIsSending(false);
     }
@@ -155,9 +189,7 @@ const Step7: React.FC<Step7Props> = ({
 
   return (
     <div>
-      <h3 className="text-xl font-bold my-4">
-        Step 7: Customer Message Template
-      </h3>
+      <h3 className="text-xl font-bold my-4">Step 7: Customer Message Template</h3>
       <textarea
         value={template}
         onChange={(e) => setTemplate(e.target.value)}
@@ -170,15 +202,28 @@ const Step7: React.FC<Step7Props> = ({
         >
           Save
         </Button>
-        <Button
-          onClick={handleSendMessage}
-          className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ${
-            (!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
-          }`}
-          disabled={!isCurrentStep || isSending}
-        >
-          {isSending ? "Sending..." : "Send"}
-        </Button>
+        <div className="md:flex gap-2 items-center">
+          <Button
+            onClick={() => handleSendMessage("whatsApp")}
+            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
+              (!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
+            }`}
+            disabled={!isCurrentStep || isSending}
+          >
+            {isSending ? "Sending..." : "Send"}
+            <FaWhatsapp />
+          </Button>
+          <Button
+            onClick={() => handleSendMessage("email")}
+            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
+              (!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
+            }`}
+            disabled={!isCurrentStep || isSending}
+          >
+            {isSending ? "Sending..." : "Send"}
+            <MdEmail />
+          </Button>
+        </div>
         <Button
           onClick={handleNextStep}
           className={`font-bold py-2 px-4 rounded ${
@@ -204,22 +249,27 @@ const Step7: React.FC<Step7Props> = ({
         </p>
       )}
 
-      {showPopup && sendButtonClicked && (
+      {showPopup.whatsApp && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Sending Message...</h2>
+            <h2 className="text-xl font-bold mb-4">Sending WhatsApp Message...</h2>
             <p className="mb-4">
-              Are you sure you want to send this message to the customer?
+              Are you sure you want to send this WhatsApp message to the customer?
             </p>
             <div className="flex justify-end">
               <Button
-                onClick={() => setShowPopup(false)}
+                onClick={() =>
+                  setShowPopup((prev) => ({
+                    ...prev,
+                    whatsApp: false,
+                  }))
+                }
                 className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handlePopupConfirm}
+                onClick={() => handlePopupConfirm("whatsApp")}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 OK
@@ -228,28 +278,64 @@ const Step7: React.FC<Step7Props> = ({
           </div>
         </div>
       )}
-      {showPopup && !sendButtonClicked && (
+
+      {showPopup.email && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Messages are not send.</h2>
-            <p className="mb-4">please click on send button to send messages</p>
+            <h2 className="text-xl font-bold mb-4">Sending Email...</h2>
+            <p className="mb-4">
+              Are you sure you want to send this email to the customer?
+            </p>
             <div className="flex justify-end">
               <Button
-                onClick={() => setShowPopup(false)}
+                onClick={() =>
+                  setShowPopup((prev) => ({
+                    ...prev,
+                    email: false,
+                  }))
+                }
                 className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handleSendMessage}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                onClick={() => handlePopupConfirm("email")}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
-               Send
+                OK
               </Button>
             </div>
           </div>
         </div>
       )}
+
+{showPopup.sendReminder && (
+  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+    <div className="bg-white p-5 rounded-lg shadow-xl">
+      <h2 className="text-xl font-bold mb-4">Messages Not Sent</h2>
+      <p className="mb-4">
+        {messagesSent.whatsApp && !messagesSent.email
+          ? "Please send the Email message before proceeding."
+          : !messagesSent.whatsApp && messagesSent.email
+          ? "Please send the WhatsApp message before proceeding."
+          : "Please send the WhatsApp and Email messages before proceeding."}
+      </p>
+      <div className="flex justify-end">
+        <Button
+          onClick={() =>
+            setShowPopup((prev) => ({
+              ...prev,
+              sendReminder: false,
+            }))
+          }
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          OK
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
