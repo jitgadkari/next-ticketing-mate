@@ -309,33 +309,43 @@ const Step7: React.FC<Step7Props> = ({
         </div>
       )}
 
-{showPopup.sendReminder && (
-  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-    <div className="bg-white p-5 rounded-lg shadow-xl">
-      <h2 className="text-xl font-bold mb-4">Messages Not Sent</h2>
-      <p className="mb-4">
-        {messagesSent.whatsApp && !messagesSent.email
-          ? "Please send the Email message before proceeding."
-          : !messagesSent.whatsApp && messagesSent.email
-          ? "Please send the WhatsApp message before proceeding."
-          : "Please send the WhatsApp and Email messages before proceeding."}
-      </p>
-      <div className="flex justify-end">
-        <Button
-          onClick={() =>
-            setShowPopup((prev) => ({
-              ...prev,
-              sendReminder: false,
-            }))
-          }
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          OK
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
+      {showPopup.sendReminder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
+            <p className="mb-4">
+              You haven't sent all messages yet. Would you like to proceed without sending ?
+            </p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowPopup((prev) => ({ ...prev, sendReminder: false }))}
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleNext();
+                  setShowPopup((prev) => ({ ...prev, sendReminder: false }));
+                }}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Proceed without sending
+              </Button>
+              {/* <Button
+                onClick={() => {
+                  if (!messagesSent.whatsApp) handleSendMessage("whatsApp");
+                  if (!messagesSent.email) handleSendMessage("email");
+                  setShowPopup((prev) => ({ ...prev, sendReminder: false }));
+                }}
+                className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Send now
+              </Button> */}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
