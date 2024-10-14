@@ -39,7 +39,6 @@ interface FilterState {
 }
 
 const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
-  // const [tickets, setTickets] = useState<Ticket[]>([]);
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
@@ -393,11 +392,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                       }
                       className="px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none"
                     >
-                      Step 
+                      Step
                     </button>
                     {filterState.showStepDropDown && (
                       <ul className="absolute left-0 w-48 mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
-                        {stepsOrder.map((step,index) => {
+                        {stepsOrder.map((step, index) => {
                           return (
                             <li
                               onClick={() =>
@@ -409,12 +408,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                               }
                               className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
                             >
-                              Step {index+1}
+                              Step {index + 1}
                             </li>
                           );
                         })}
-
-                      
                       </ul>
                     )}
                   </li>
@@ -467,6 +464,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                 setFilterState((prevState) => ({
                   ...prevState,
                   showDropDown: !prevState.showDropDown,
+                  showCustomerDropDown:false,
+                  showDecisionDropDown:false,
+                  showStatusDropDown:false,
+                  showStepDropDown:false,
                   ticket_num: "",
                   customer_name: "",
                   current_step: "",

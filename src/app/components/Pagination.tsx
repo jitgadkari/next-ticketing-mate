@@ -97,8 +97,10 @@ function Pagination({
   };
 
   return (
+    <div className="bg-white">
+    
     <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-      <div className="flex flex-1 justify-between sm:hidden">
+      <div className="flex flex-1 justify-between items-center sm:hidden">
         <button
           onClick={onPrevious}
           disabled={current_page === 1}
@@ -106,6 +108,7 @@ function Pagination({
         >
           Previous
         </button>
+        <p className="sm:hidden">{current_page}/{total_pages}</p>
         <button
           onClick={onNext}
           disabled={!has_next}
@@ -152,6 +155,14 @@ function Pagination({
           </nav>
         </div>
       </div>
+    </div>
+    <p className="sm:hidden text-sm text-gray-700 text-center pb-2">
+            Showing <span className="font-medium">{offset + 1}</span> to{" "}
+            <span className="font-medium">
+              {Math.min(offset + limit, parseInt(total_items || "0"))}
+            </span>{" "}
+            of <span className="font-medium">{total_items}</span> results
+          </p>
     </div>
   );
 }
