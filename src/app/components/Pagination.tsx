@@ -3,12 +3,12 @@ import React from "react";
 interface PaginationProps {
   limit: number;
   offset: number;
-  total_items: string | null;
-  current_page: number | null;
-  total_pages: number | null;
-  has_next: boolean | null;
-  onPrevious: () => void;
-  onNext: () => void;
+  total_items?: string | null;
+  current_page?: number | null;
+  total_pages?: number | null;
+  has_next?: boolean | null;
+  onPrevious?: () => void;
+  onNext?: () => void;
   onPageChange: (page: number) => void;
 }
 

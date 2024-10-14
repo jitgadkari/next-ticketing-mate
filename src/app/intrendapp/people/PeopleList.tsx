@@ -6,14 +6,21 @@ import { FaEye, FaTrash } from 'react-icons/fa';
 import Table from '../../components/Table';
 import { Person } from './page';
 import toast from 'react-hot-toast';
+import Pagination from '@/app/components/Pagination';
 
 
 interface PeopleListProps{
   people: Person[],
-  setPeople: (people:Person[])=>void
+  setPeople: (people:Person[])=>void,
+  limit:number,
+  offset:number,
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
+
 }
 
-const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
+const PeopleList: React.FC<PeopleListProps> = ({people,setPeople,limit,offset,onPrevious,onNext,onPageChange}) => {
   const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
 
   const handleDelete = async (personId: string): Promise<void> => {
@@ -82,6 +89,16 @@ const PeopleList: React.FC<PeopleListProps> = ({people,setPeople}) => {
           </div>
         </dialog>
       )}
+      <Pagination 
+        limit={limit}
+        offset={offset}
+        total_items={`${people.length+1}`}
+        current_page={1}
+        total_pages={2}
+        has_next={true}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}/>
     </div>
   );
 };
