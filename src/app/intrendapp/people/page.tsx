@@ -46,8 +46,7 @@ const PeoplePage: React.FC = () => {
         offset: pageFilter.offset.toString(),
         limit: pageFilter.limit.toString(),
       });
-      const api = process.env.NEXT_PUBLIC_ENDPOINT_URL;
-      console.log("query", pageFilter.offset,pageFilter.limit);
+      
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people?${queryParams.toString()}`
       );

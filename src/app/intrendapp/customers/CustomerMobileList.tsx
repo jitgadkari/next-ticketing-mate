@@ -4,14 +4,28 @@ import { Customer } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { pageFilter, pageInfo } from "../people/page";
+import Pagination from "@/app/components/Pagination";
 interface CustomersMobileListProps {
   customers: Customer[];
   setCustomers: (customers: Customer[]) => void;
+  pageFilter: pageFilter;
+  pageInfo: pageInfo;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
+
 }
 
 export default function CustomerMobileList({
   customers,
   setCustomers,
+  pageFilter,
+  pageInfo,
+  onPrevious,
+  onNext,
+  onPageChange,
+  
 }: CustomersMobileListProps) {
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
 
@@ -116,6 +130,17 @@ export default function CustomerMobileList({
           </div>
         </dialog>
       )}
+        <Pagination
+        limit={pageFilter.limit}
+        offset={pageFilter.offset}
+        total_items={pageInfo.total_items}
+        current_page={pageInfo.current_page}
+        total_pages={pageInfo.total_pages}
+        has_next={pageInfo.has_next}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }
