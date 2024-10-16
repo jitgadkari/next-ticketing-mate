@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import { FilterState } from '../intrendapp/tickets/TicketList';
 
 interface TableProps<T> {
   columns: string[];
   data: T[];
   renderRow: (item: T) => JSX.Element;
+  setFilterState:(filter:any)=>void;
 }
 
-const Table = <T extends { [key: string]: any }>({ columns, data, renderRow }: TableProps<T>) => {
+const Table = <T extends { [key: string]: any }>({ columns, data, renderRow ,setFilterState}: TableProps<T>) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const sortedData = useMemo(() => {
@@ -27,13 +29,13 @@ const Table = <T extends { [key: string]: any }>({ columns, data, renderRow }: T
     return sortableData;
   }, [data, sortConfig]);
 
-  const requestSort = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
+  // const requestSort = (key: string) => {
+  //   let direction: 'asc' | 'desc' = 'asc';
+  //   if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+  //     direction = 'desc';
+  //   }
+  //   setSortConfig({ key, direction });
+  // };
 
   const hideSpecificColumns=['State','Country','Contact','Phone', 'Type Employee', 'Decision', 'Created Date', 'Updated Date', 'Current Step','Status']
   return (
@@ -43,7 +45,15 @@ const Table = <T extends { [key: string]: any }>({ columns, data, renderRow }: T
           {columns.map((column) => (
             <th
               key={column}
-              onClick={() => requestSort(column.toLowerCase())}
+              onClick={() => {
+                // Check if the column is 'Created Date' and toggle sort order
+                if (column === 'Created Date') {
+                  setFilterState((prev: FilterState) => ({
+                    ...prev, 
+                    sort_order: !prev.sort_order, 
+                  }));
+                }
+              }}
               className={`px-6 py-4 border-b border-gray-200 bg-gray-50 text-left text-sm leading-4 font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-200 ${
                 hideSpecificColumns.includes(column) ? 'hidden sm:table-cell' : 'table-cell'
               }`}

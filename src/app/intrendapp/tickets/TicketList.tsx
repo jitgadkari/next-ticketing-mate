@@ -8,6 +8,7 @@ import { Customer } from "./AddTicketForm";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
+import { BsCalendar2DateFill } from "react-icons/bs";
 interface Ticket {
   _id: string;
   ticket_number: string;
@@ -23,7 +24,7 @@ interface TicketListProps {
   refreshList: () => void;
 }
 
-interface FilterState {
+export interface FilterState {
   showDropDown: boolean;
   showCustomerDropDown: boolean;
   showStatusDropDown: boolean;
@@ -36,6 +37,9 @@ interface FilterState {
   final_decision: string;
   limit: number;
   offset: number;
+  start_date?: string;
+  end_date?: string;
+  sort_order?:boolean;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
@@ -53,6 +57,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     final_decision: "",
     limit: 10,
     offset: 0,
+    start_date: "",
+    end_date: "",
+    sort_order:false
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -76,6 +83,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
   ];
   useEffect(() => {
     const fetchTickets = async () => {
+      console.log(filterState.start_date)
       const queryParams = new URLSearchParams({
         limit: filterState.limit.toString(),
         offset: filterState.offset.toString(),
@@ -84,6 +92,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         status: filterState.status || "",
         final_decision: filterState.final_decision || "",
         ticket_num: filterState.ticket_num || "",
+        start_date:filterState.start_date || "",
+        end_date:filterState.end_date || "",
+        sort_order: filterState.sort_order?'asc':'desc'
       });
 
       try {
@@ -415,6 +426,43 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                       </ul>
                     )}
                   </li>
+                  <ul className="flex gap-2 items-center flex-wrap    px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none">
+                    <h1>Start Date</h1>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={filterState.start_date}
+                        onChange={(e) =>
+                          setFilterState((prevState) => ({
+                            ...prevState,
+                            start_date: e.target.value,
+                          }))
+                        }
+                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                      />
+
+                      <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">    
+                      <BsCalendar2DateFill className="text-black"/>
+                      </div>
+                    </div>
+                    <h1>End Date</h1>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={filterState.end_date}
+                        onChange={(e) =>
+                          setFilterState((prevState) => ({
+                            ...prevState,
+                            end_date: e.target.value,
+                          }))
+                        }
+                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                      />
+                      <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
+                      <BsCalendar2DateFill className="text-black"/>
+                      </div>
+                    </div>
+                  </ul>
                 </>
 
                 {/* <li
@@ -464,10 +512,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                 setFilterState((prevState) => ({
                   ...prevState,
                   showDropDown: !prevState.showDropDown,
-                  showCustomerDropDown:false,
-                  showDecisionDropDown:false,
-                  showStatusDropDown:false,
-                  showStepDropDown:false,
+                  showCustomerDropDown: false,
+                  showDecisionDropDown: false,
+                  showStatusDropDown: false,
+                  showStepDropDown: false,
                   ticket_num: "",
                   customer_name: "",
                   current_step: "",
@@ -503,7 +551,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         </div>
       )} */}
       {allTickets.length > 0 ? (
-        <Table columns={columns} data={allTickets} renderRow={renderRow} />
+        <Table columns={columns} data={allTickets} renderRow={renderRow} setFilterState={setFilterState}/>
       ) : (
         <div className="text-center py-20">
           <h2 className="text-xl text-gray-600">
