@@ -1,17 +1,28 @@
 'use client'
 import React, { useState } from "react";
-import { Person } from "./page";
+import { pageFilter, pageInfo, Person } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
+import Pagination from "@/app/components/Pagination";
 interface PeopleMobileListProps {
   people: Person[];
   setPeople: (people: Person[]) => void;
+  pageFilter: pageFilter;
+  pageInfo: pageInfo;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
 }
 
 export default function PeopleMobileList({
   people,
   setPeople,
+  pageFilter,
+  pageInfo,
+  onPrevious,
+  onNext,
+  onPageChange,
 }: PeopleMobileListProps) {
   const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
 
@@ -100,6 +111,17 @@ export default function PeopleMobileList({
           </div>
         </dialog>
       )}
+         <Pagination
+        limit={pageFilter.limit}
+        offset={pageFilter.offset}
+        total_items={pageInfo.total_items}
+        current_page={pageInfo.current_page}
+        total_pages={pageInfo.total_pages}
+        has_next={pageInfo.has_next}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}
+      />
     </div>
   
   );

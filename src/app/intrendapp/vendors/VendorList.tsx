@@ -1,36 +1,62 @@
 "use client";
 
-import Link from 'next/link';
-import { FaEye, FaTrash } from 'react-icons/fa';
-import Table from '../../components/Table';
-import { Vendor } from './page';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import Link from "next/link";
+import { FaEye, FaTrash } from "react-icons/fa";
+import Table from "../../components/Table";
+import { Vendor } from "./page";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { pageFilter, pageInfo } from "../people/page";
+import Pagination from "@/app/components/Pagination";
 
-interface VendorListProps{
-  vendors: Vendor[],
-  setVendors: (vendors:Vendor[])=>void
+interface VendorListProps {
+  vendors: Vendor[];
+  setVendors: (vendors: Vendor[]) => void;
+  pageFilter: pageFilter;
+  pageInfo: pageInfo;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
 }
-const VendorList = ({vendors,setVendors}:VendorListProps) => {
+const VendorList = ({
+  vendors,
+  setVendors,
+  pageFilter,
+  pageInfo,
+  onPrevious,
+  onNext,
+  onPageChange,
+}: VendorListProps) => {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const handleDelete = async (vendorId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (response.ok) {
-        setVendors(vendors.filter(vendor => vendor._id !== vendorId));
+        setVendors(vendors.filter((vendor) => vendor._id !== vendorId));
         setDeleteVendorId(null);
-        toast.success("Vendor deleted successfully")
+        toast.success("Vendor deleted successfully");
       } else {
-        console.error('Failed to delete vendor');
+        console.error("Failed to delete vendor");
       }
     } catch (error) {
-      console.error('Error deleting vendor:', error);
+      console.error("Error deleting vendor:", error);
     }
   };
 
-  const columns = ['Name', 'Contact', 'Email', 'State', 'Country','Code', 'Actions'];
+  const columns = [
+    "Name",
+    "Contact",
+    "Email",
+    "State",
+    "Country",
+    "Code",
+    "Actions",
+  ];
 
   const renderRow = (vendor: Vendor) => (
     <>
@@ -80,6 +106,17 @@ const VendorList = ({vendors,setVendors}:VendorListProps) => {
           </div>
         </dialog>
       )}
+      <Pagination
+        limit={pageFilter.limit}
+        offset={pageFilter.offset}
+        total_items={pageInfo.total_items}
+        current_page={pageInfo.current_page}
+        total_pages={pageInfo.total_pages}
+        has_next={pageInfo.has_next}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 };
