@@ -35,6 +35,7 @@ const Step3: React.FC<Step3Props> = ({
 }) => {
   const [message, setMessage] = useState(template);
   const [includeCustomerName, setIncludeCustomerName] = useState(true);
+  const [includeSampleQuery, setSampleQuery] = useState(false);
   const [loading, setLoading] = useState(false);
   const handleNext = async () => {
     console.log("Handling next for Step 3");
@@ -55,7 +56,7 @@ const Step3: React.FC<Step3Props> = ({
     fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 4 : Vendor Selection");
-    toast.success("Step 3 completed")
+    toast.success("Step 3 completed");
   };
   const handleUpdate = async (updatedTemplate: string) => {
     console.log("Updating Step 3 template:", updatedTemplate);
@@ -93,7 +94,7 @@ const Step3: React.FC<Step3Props> = ({
           body: JSON.stringify({
             vendor_name: "{VENDOR}",
             customerMessage: originalMessage,
-            ticket_number:ticket.ticket_number
+            ticket_number: ticket.ticket_number,
           }),
         }
       );
@@ -151,6 +152,18 @@ const Step3: React.FC<Step3Props> = ({
       );
     }
   };
+  const toggleSampleQuery = () => {
+    setSampleQuery(!includeSampleQuery);
+    if (!includeSampleQuery) {
+      setMessage(
+        (prevMessage) => `${prevMessage}\n\nThis is a Sample Query`
+      );
+    } else {
+      setMessage((prevMessage) =>
+        prevMessage.replace(`\n\nThis is a Sample Query`, "")
+      );
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -182,14 +195,24 @@ const Step3: React.FC<Step3Props> = ({
             >
               Save
             </Button>
-            <Button
-              onClick={toggleCustomerName}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              {includeCustomerName
-                ? "Remove Customer Name"
-                : "Add Customer Name"}
-            </Button>
+            <div className="flex gap-4">
+              <Button
+                onClick={toggleSampleQuery}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                {includeSampleQuery
+                  ? "Remove Sample Query"
+                  : "Add Sample Query"}
+              </Button>
+              <Button
+                onClick={toggleCustomerName}
+                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+                {includeCustomerName
+                  ? "Remove Customer Name"
+                  : "Add Customer Name"}
+              </Button>
+            </div>
           </div>
           <Button
             onClick={handleNextStep}
