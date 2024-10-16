@@ -5,6 +5,7 @@ import CustomerList from './CustomerList';
 import AddCustomerForm from './AddCustomerForm';
 import Button from '../../components/Button';
 import CustomerMobileList from './CustomerMobileList';
+import { pageFilter, pageInfo } from '../people/page';
 export interface Customer {
   _id: string;
   name: string;
@@ -17,13 +18,34 @@ export interface Customer {
 
 const CustomersPage = () => {
   const [showForm, setShowForm] = useState(false);
-
+  const [pageFilter,setPageFilter]=useState<pageFilter>({
+    offset:0,
+    limit:10,
+  })
+  const [pageInfo,setPageInfo]=useState<pageInfo>({
+    current_page:null,
+    has_next:null,
+    total_pages:null,
+    total_items:null
+  })
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const queryParams = new URLSearchParams({
+        offset: pageFilter.offset.toString(),
+        limit: pageFilter.limit.toString(),
+      });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers?${queryParams.toString()}`);
       const data = await response.json();
+    
+      setPageInfo((prev) => ({
+        ...prev,
+       total_pages:data.total_pages,
+       current_page:data.current_page,
+       has_next:data.has_next,
+       total_items:data.total_customers
+      }));
       setCustomers(data.customers);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -31,10 +53,29 @@ const CustomersPage = () => {
   };
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [pageFilter]);
   const handleAdd = () => {
     setShowForm(false);
     fetchCustomers()
+  };
+  const handlePrevious = () => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: Math.max(prev.offset - prev.limit, 0),
+    }));
+  };
+
+  const handleNext = () => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: prev.offset + prev.limit,
+    }));
+  };
+  const handlePageChange = (page: number) => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: (page - 1) * prev.limit,
+    }));
   };
 
   return (
@@ -53,10 +94,10 @@ const CustomersPage = () => {
         </div>
       )}
       <div className='hidden md:block'>
-      <CustomerList customers={customers} setCustomers={setCustomers}/>
+      <CustomerList customers={customers} setCustomers={setCustomers}  pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
       </div>
       <div className='md:hidden'>
-        <CustomerMobileList customers={customers} setCustomers={setCustomers}/>
+        <CustomerMobileList customers={customers} setCustomers={setCustomers}  pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
       </div>
     </div>
   );

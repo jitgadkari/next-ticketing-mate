@@ -52,6 +52,7 @@ const Step4: React.FC<Step4Props> = ({
   );
   const [showPopup, setShowPopup] = useState(false);
   const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [showReminderPopUp, setShowReminderPopUp] = useState(false);
   const [vendorDetails, setVendorDetails] = useState<Vendor[]>([]);
   const [isEmailSending, setIsEmailSending] = useState(false);
   const [isWhatsAppSending, setIsWhatsAppSending] = useState(false);
@@ -224,9 +225,13 @@ const Step4: React.FC<Step4Props> = ({
   };
 
   const handleNextStep = async () => {
-    setLoading(true);
-    await handleSave();
-    await handleNext(vendorMessages);
+    if (!isMessageSent.emailSent || !isMessageSent.whatsappMessageSent) {
+      setShowReminderPopUp(true);
+    } else {
+      setLoading(true);
+      await handleSave();
+      await handleNext(vendorMessages);
+    }
   };
 
   const handleSendMessage = () => {
@@ -647,6 +652,41 @@ const Step4: React.FC<Step4Props> = ({
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 {!showResendEmail ? "OK" : "Resend"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showReminderPopUp && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
+            <p className="mb-4">
+              {`You haven't sent ${!isMessageSent.emailSent ? "Email" : ""}${
+                !isMessageSent.emailSent && !isMessageSent.whatsappMessageSent
+                  ? ", "
+                  : ""
+              }${
+                !isMessageSent.whatsappMessageSent ? "WhatsApp" : ""
+              } messages yet. Would you like to proceed without sending?`}
+            </p>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowReminderPopUp(false)}
+                className="mr-2 bg-blue-500 hover:bg-blue-700 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleSave();
+                  await handleNext(vendorMessages);
+                  setShowReminderPopUp(false);
+                }}
+                className=" bg-gray-300 hover:bg-gray-400 text-black  font-bold py-2 px-4 rounded"
+              >
+                Proceed without sending
               </Button>
             </div>
           </div>

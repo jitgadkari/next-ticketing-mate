@@ -1,91 +1,106 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Vendor } from "./page";
 import toast from "react-hot-toast";
+import Pagination from "@/app/components/Pagination";
+import { pageFilter, pageInfo } from "../people/page";
 interface VendorMobileListProps {
   vendors: Vendor[];
   setVendors: (vendors: Vendor[]) => void;
+  pageFilter: pageFilter;
+  pageInfo: pageInfo;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
 }
 
 export default function VendorMobileList({
   vendors,
   setVendors,
+  pageFilter,
+  pageInfo,
+  onPrevious,
+  onNext,
+  onPageChange,
 }: VendorMobileListProps) {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const handleDelete = async (vendorId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (response.ok) {
-        setVendors(vendors.filter(vendor => vendor._id !== vendorId));
+        setVendors(vendors.filter((vendor) => vendor._id !== vendorId));
         setDeleteVendorId(null);
-        toast.success("Vendor deleted successfully")
+        toast.success("Vendor deleted successfully");
       } else {
-        console.error('Failed to delete vendor');
+        console.error("Failed to delete vendor");
       }
     } catch (error) {
-      console.error('Error deleting vendor:', error);
+      console.error("Error deleting vendor:", error);
     }
   };
 
-
   return (
     <div className="grid grid-cols-1 gap-4 md:hidden">
-    {vendors.map((vendor) => (
-      <div key={vendor._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
-        <div className="flex flex-col space-y-4 text-sm w-full">
-          
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="font-semibold mr-2">Name:</span>
-              <span>{vendor.name}</span>
+      {vendors.map((vendor) => (
+        <div
+          key={vendor._id}
+          className="bg-white text-black p-4 rounded-lg shadow-lg"
+        >
+          <div className="flex flex-col space-y-4 text-sm w-full">
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Name:</span>
+                <span>{vendor.name}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="font-semibold mr-2">Email:</span>
-              <span>{vendor.email}</span>
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Email:</span>
+                <span>{vendor.email}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="font-semibold mr-2">Phone:</span>
-              <span>{vendor.phone}</span>
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Phone:</span>
+                <span>{vendor.phone}</span>
+              </div>
             </div>
-          </div>
-  
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="font-semibold mr-2">State:</span>
-              <span>{vendor.state}</span>
+
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">State:</span>
+                <span>{vendor.state}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="font-semibold mr-2">Code:</span>
-              <span>{vendor.code}</span>
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Code:</span>
+                <span>{vendor.code}</span>
+              </div>
             </div>
-          </div>
-  
-          <div className="flex justify-end space-x-4">
-            <Link href={`vendors/${vendor._id}`} passHref>
-              <span className="text-blue-500 hover:text-blue-700">
-                <FaEye />
-              </span>
-            </Link>
-            <FaTrash
+
+            <div className="flex justify-end space-x-4">
+              <Link href={`vendors/${vendor._id}`} passHref>
+                <span className="text-blue-500 hover:text-blue-700">
+                  <FaEye />
+                </span>
+              </Link>
+              <FaTrash
                 onClick={() => setDeleteVendorId(vendor._id)}
-              className="text-red-500 cursor-pointer hover:text-red-700"
-            />
+                className="text-red-500 cursor-pointer hover:text-red-700"
+              />
+            </div>
           </div>
-          
         </div>
-      </div>
-    ))}
-     {deleteVendorId && (
+      ))}
+      {deleteVendorId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this vendor?</p>
@@ -105,8 +120,17 @@ export default function VendorMobileList({
           </div>
         </dialog>
       )}
-  </div>
-  
-  
+      <Pagination
+        limit={pageFilter.limit}
+        offset={pageFilter.offset}
+        total_items={pageInfo.total_items}
+        current_page={pageInfo.current_page}
+        total_pages={pageInfo.total_pages}
+        has_next={pageInfo.has_next}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}
+      />
+    </div>
   );
 }

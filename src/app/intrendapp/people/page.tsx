@@ -12,18 +12,52 @@ export interface Person {
   email: string;
   type_employee: string;
 }
+export interface pageFilter{
+  offset:number,
+  limit:number,
+  total_items?: string | null;
+  current_page?: number | null;
+  total_pages?: number | null;
+  has_next?: boolean | null;
+}
+export interface pageInfo{
+  total_items?: string | null;
+  current_page?: number | null;
+  total_pages?: number | null;
+  has_next?: boolean | null;
+}
 const PeoplePage: React.FC = () => {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [people, setPeople] = useState<Person[]>([]);
+  const [pageFilter,setPageFilter]=useState<pageFilter>({
+    offset:0,
+    limit:10,
+  })
+  const [pageInfo,setPageInfo]=useState<pageInfo>({
+    current_page:null,
+    has_next:null,
+    total_pages:null,
+    total_items:null
+  })
 
   const fetchPeople = async (): Promise<void> => {
     try {
-      const api = process.env.NEXT_PUBLIC_ENDPOINT_URL;
-      console.log("api", api);
+      const queryParams = new URLSearchParams({
+        offset: pageFilter.offset.toString(),
+        limit: pageFilter.limit.toString(),
+      });
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people?${queryParams.toString()}`
       );
       const data = await response.json();
+      setPageInfo((prev) => ({
+        ...prev,
+       total_pages:data.total_pages,
+       current_page:data.current_page,
+       has_next:data.has_next,
+       total_items:data.total_people
+      }));
       setPeople(data.people);
     } catch (error) {
       console.error("Error fetching people:", error);
@@ -31,11 +65,30 @@ const PeoplePage: React.FC = () => {
   };
   useEffect(() => {
     fetchPeople();
-  }, []);
+  }, [pageFilter]);
 
   const handleAdd = (): void => {
     setShowForm(false);
     fetchPeople();
+  };
+  const handlePrevious = () => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: Math.max(prev.offset - prev.limit, 0),
+    }));
+  };
+
+  const handleNext = () => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: prev.offset + prev.limit,
+    }));
+  };
+  const handlePageChange = (page: number) => {
+    setPageFilter((prev) => ({
+      ...prev,
+      offset: (page - 1) * prev.limit,
+    }));
   };
 
   return (
@@ -54,10 +107,10 @@ const PeoplePage: React.FC = () => {
         </div>
       )}
       <div className="hidden md:block">
-        <PeopleList people={people} setPeople={setPeople} />
+        <PeopleList people={people} setPeople={setPeople} pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
       </div>
       <div className="block md:hidden">
-        <PeopleMobileList people={people} setPeople={setPeople}/>
+        <PeopleMobileList people={people} setPeople={setPeople} pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
       </div>
     </div>
   );

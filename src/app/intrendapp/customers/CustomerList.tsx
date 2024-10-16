@@ -1,38 +1,65 @@
 "use client";
 
-import Link from 'next/link';
-import { FaEye, FaTrash } from 'react-icons/fa';
-import Table from '../../components/Table';
-import { Customer } from './page';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-interface CustomerListProps{
-  customers:Customer[],
-  setCustomers:(customers:Customer[])=>void
+import Link from "next/link";
+import { FaEye, FaTrash } from "react-icons/fa";
+import Table from "../../components/Table";
+import { Customer } from "./page";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { pageFilter, pageInfo } from "../people/page";
+import Pagination from "@/app/components/Pagination";
+interface CustomerListProps {
+  customers: Customer[];
+  setCustomers: (customers: Customer[]) => void;
+  pageFilter: pageFilter;
+  pageInfo: pageInfo;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onPageChange: (page: number) => void;
 }
 
-const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
+const CustomerList = ({
+  customers,
+  setCustomers,
+  pageFilter,
+  pageInfo,
+  onPrevious,
+  onNext,
+  onPageChange,
+}: CustomerListProps) => {
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
-
 
   const handleDelete = async (customerId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (response.ok) {
-        setCustomers(customers.filter(customer => customer._id !== customerId));
+        setCustomers(
+          customers.filter((customer) => customer._id !== customerId)
+        );
         setDeleteCustomerId(null);
-        toast.success("Customer deleted successfully")
+        toast.success("Customer deleted successfully");
       } else {
-        console.error('Failed to delete customer');
+        console.error("Failed to delete customer");
       }
     } catch (error) {
-      console.error('Error deleting customer:', error);
+      console.error("Error deleting customer:", error);
     }
   };
 
-  const columns = ['Name', 'Email', 'Contact', 'State', 'Country','Code', 'Actions'];
+  const columns = [
+    "Name",
+    "Email",
+    "Contact",
+    "State",
+    "Country",
+    "Code",
+    "Actions",
+  ];
 
   const renderRow = (customer: Customer) => (
     <>
@@ -43,17 +70,17 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
       <td className="border p-2 hidden md:table-cell">{customer.country}</td>
       <td className="border p-2 hidden md:table-cell">{customer.code}</td>
       <td className="border p-2 ">
-      <div className='h-full flex justify-center space-x-2'>
-        <Link href={`customers/${customer._id}`} passHref>
-          <span className="text-blue-500 hover:text-blue-700">
-            <FaEye />
-          </span>
-        </Link>
-        <FaTrash
-         onClick={() => setDeleteCustomerId(customer._id)}
-          className="text-red-500 cursor-pointer hover:text-red-700"
+        <div className="h-full flex justify-center space-x-2">
+          <Link href={`customers/${customer._id}`} passHref>
+            <span className="text-blue-500 hover:text-blue-700">
+              <FaEye />
+            </span>
+          </Link>
+          <FaTrash
+            onClick={() => setDeleteCustomerId(customer._id)}
+            className="text-red-500 cursor-pointer hover:text-red-700"
           />
-          </div>
+        </div>
       </td>
     </>
   );
@@ -82,6 +109,17 @@ const CustomerList = ({customers,setCustomers}:CustomerListProps) => {
           </div>
         </dialog>
       )}
+      <Pagination
+        limit={pageFilter.limit}
+        offset={pageFilter.offset}
+        total_items={pageInfo.total_items}
+        current_page={pageInfo.current_page}
+        total_pages={pageInfo.total_pages}
+        has_next={pageInfo.has_next}
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 };
