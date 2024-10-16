@@ -523,6 +523,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                   final_decision: "",
                   limit: 10,
                   offset: 0,
+                  start_date: "",
+                  end_date: "",
+                  sort_order:false
                 }))
               }
             >

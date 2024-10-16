@@ -6,6 +6,7 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import { Customer } from "./AddTicketForm";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
+import { BsCalendar2DateFill } from "react-icons/bs";
 
 interface Ticket {
   _id: string;
@@ -35,6 +36,9 @@ interface FilterState {
   final_decision: string;
   limit: number;
   offset: number;
+  start_date?: string;
+  end_date?: string;
+  sort_order?:boolean;
 }
 
 export default function TicketsMobileList({ refreshList }: TicketListProps) {
@@ -52,6 +56,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     final_decision: "",
     limit: 10,
     offset: 0,
+    start_date: "",
+    end_date: "",
+    sort_order:false
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -83,6 +90,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
         status: filterState.status || "",
         final_decision: filterState.final_decision || "",
         ticket_num: filterState.ticket_num || "",
+        start_date:filterState.start_date || "",
+        end_date:filterState.end_date || "",
+        sort_order: filterState.sort_order?'asc':'desc'
       });
 
       try {
@@ -206,6 +216,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               final_decision: "",
               limit: 10,
               offset: 0,
+              start_date: "",
+              end_date: "",
+              sort_order:false
             }))
           }
         >
@@ -232,6 +245,43 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
             />
           </div>
+          <ul className="flex gap-2 items-center flex-wrap  py-2 bg-white text-gray-800 font-semibold rounded-lg  border-gray-100 hover:bg-gray-100 focus:outline-none">
+                    <h1>Start Date</h1>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={filterState.start_date}
+                        onChange={(e) =>
+                          setFilterState((prevState) => ({
+                            ...prevState,
+                            start_date: e.target.value,
+                          }))
+                        }
+                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                      />
+
+                      <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">    
+                      <BsCalendar2DateFill className="text-black"/>
+                      </div>
+                    </div>
+                    <h1>End Date</h1>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={filterState.end_date}
+                        onChange={(e) =>
+                          setFilterState((prevState) => ({
+                            ...prevState,
+                            end_date: e.target.value,
+                          }))
+                        }
+                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                      />
+                      <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
+                      <BsCalendar2DateFill className="text-black"/>
+                      </div>
+                    </div>
+                  </ul>
           <div className="mb-4">
             <div
               className="flex items-center"
@@ -373,6 +423,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               </ul>
             </div>
           </div>
+        
           <div className="mb-4">
             <div
               className="flex items-center"
@@ -487,6 +538,21 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
                   );
                 })}
               </ul>
+            </div>
+          </div>
+          <div className="mb-4">
+            <div
+              className="flex items-center " 
+            >
+              <button  onClick={() =>
+                setFilterState((prev) => ({
+                  ...prev,
+                  sort_order: !prev.sort_order,
+                }))
+              } className="block text-sm font-semibold mb-2 bg-gray-200 rounded-md px-3 py-2">
+               Sort By Date
+              </button>
+            
             </div>
           </div>
 
