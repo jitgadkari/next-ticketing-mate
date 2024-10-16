@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
+import toast from "react-hot-toast";
 
 interface Step5Props {
   ticketNumber: string;
@@ -34,6 +35,8 @@ const Step5: React.FC<Step5Props> = ({
     useState<Record<string, string>>(vendorMessages);
   const [isDecoding, setIsDecoding] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   console.log(vendorMessages);
   const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
@@ -127,15 +130,15 @@ const Step5: React.FC<Step5Props> = ({
   useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
-    }, 10000); 
+    }, 50000);
     const allMessagesAreFilled = Object.values(messages).every(
       (message) => message.trim() !== ""
     );
     if (allMessagesAreFilled) {
-      clearInterval(interval); 
+      clearInterval(interval);
     }
-    return () => clearInterval(interval); 
-  }, [messages]); 
+    return () => clearInterval(interval);
+  }, [messages]);
 
   const handleChange = (vendor: string, value: string) => {
     setMessages((prevMessage) => {
@@ -178,6 +181,17 @@ const Step5: React.FC<Step5Props> = ({
       console.error("Error fetching ticket:", error);
     }
   };
+
+  const sendReminder = (ticket_number: string, vendorName: string) => {
+    console.log(`Reminder sent to ${vendorName} for ticket ${ticket_number}`);
+    // Here, you would add an API call to send the reminder
+
+    toast.success(`Reminder sent to ${vendorName} successfully.`);
+  };
+  const handleReminderClick = (vendor: string) => {
+    setSelectedVendor(vendor);
+    setShowPopup(true);
+  };
   console.log(messages);
 
   return (
@@ -185,7 +199,21 @@ const Step5: React.FC<Step5Props> = ({
       <h3 className="text-xl font-bold mb-4">Step 5: Messages from Vendors</h3>
       {Object.entries(messages).map(([vendor, message]) => (
         <div key={vendor} className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">{vendor}</label>
+          <div className=" flex justify-between items-center">
+            <label className="block text-gray-700 font-bold mb-2">
+              {vendor}
+            </label>
+
+            {message === "" && (
+              <Button
+                onClick={() => handleReminderClick(vendor)}
+                className="bg-gray-500 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
+                disabled={!isCurrentStep}
+              >
+                Send Reminder
+              </Button>
+            )}
+          </div>
           <textarea
             value={message}
             onChange={(e) => handleChange(vendor, e.target.value)}
@@ -214,6 +242,34 @@ const Step5: React.FC<Step5Props> = ({
           {isDecoding ? "Decoding..." : "Next"}
         </Button>
       </div>
+      {showPopup && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Send Reminder</h2>
+            <p className="mb-4">
+              Are you sure you want to send a reminder to {selectedVendor} to
+              respond to this ticket?
+            </p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowPopup(false)}
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  sendReminder(ticket.ticket_number, selectedVendor || "");
+                  setShowPopup(false);
+                }}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
