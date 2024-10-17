@@ -137,7 +137,7 @@ const Step6: React.FC<Step6Props> = ({
       })
       // Generate client message template
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message_new`,
         {
           method: "POST",
           headers: {
