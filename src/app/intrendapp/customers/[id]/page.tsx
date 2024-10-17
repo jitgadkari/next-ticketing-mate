@@ -28,7 +28,7 @@ interface Customer {
   remarks: string;
   additional_info: string;
   code:string;
-  mark_up:string;
+  mark_up:number;
 }
 
 export interface Attributes {
@@ -271,9 +271,9 @@ const CustomerDetailsPage: React.FC = () => {
       />
       <Input
         label="Mark Up"
-        type="text"
+        type="number"
         name="mark_up"
-        value={customer.mark_up}
+        value={customer.mark_up ? customer.mark_up.toString() : ""}
         onChange={handleInputChange}
       />
       <Input
