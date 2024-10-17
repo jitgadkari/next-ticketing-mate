@@ -28,6 +28,7 @@ interface Customer {
   remarks: string;
   additional_info: string;
   code:string;
+  mark_up:number;
 }
 
 export interface Attributes {
@@ -269,6 +270,13 @@ const CustomerDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <Input
+        label="Mark Up"
+        type="number"
+        name="mark_up"
+        value={customer.mark_up ? customer.mark_up.toString() : ""}
+        onChange={handleInputChange}
+      />
+      <Input
         label="Delivery Destination"
         type="text"
         name="delivery_destination"
@@ -419,6 +427,9 @@ const CustomerDetailsPage: React.FC = () => {
         </p>
         <p>
           <strong>Country:</strong> {customer.country}
+        </p>
+        <p>
+          <strong>MarkUP:</strong> {customer.mark_up}
         </p>
         <p>
           <strong>GST Number:</strong> {customer.gst_number}
