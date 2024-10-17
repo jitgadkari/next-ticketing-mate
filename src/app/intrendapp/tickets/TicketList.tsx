@@ -83,7 +83,6 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
   ];
   useEffect(() => {
     const fetchTickets = async () => {
-      console.log(filterState.start_date)
       const queryParams = new URLSearchParams({
         limit: filterState.limit.toString(),
         offset: filterState.offset.toString(),
@@ -209,6 +208,12 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     }));
 
     console.log(`Page: ${page}, Offset: ${(page - 1) * filterState.limit}`);
+  };
+  const  handleChangeSortOrder= () => {
+    setFilterState((prev) => ({
+      ...prev,
+      sort_order:!prev.sort_order,
+    }));
   };
 
   const renderRow = (ticket: Ticket) => (
@@ -409,7 +414,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                       <ul className="absolute left-0 w-48 mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
                         {stepsOrder.map((step, index) => {
                           return (
-                            <li
+                            <li key={index}
                               onClick={() =>
                                 setFilterState((prev) => ({
                                   ...prev,
@@ -427,7 +432,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                     )}
                   </li>
                   <ul className="flex gap-2 items-center flex-wrap    px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none">
-                    <h1>Start Date</h1>
+                    <h1>Start</h1>
                     <div className="relative">
                       <input
                         type="date"
@@ -445,7 +450,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                       <BsCalendar2DateFill className="text-black"/>
                       </div>
                     </div>
-                    <h1>End Date</h1>
+                    <h1>End </h1>
                     <div className="relative">
                       <input
                         type="date"
@@ -523,6 +528,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                   final_decision: "",
                   limit: 10,
                   offset: 0,
+                  start_date: "",
+                  end_date: "",
+                  sort_order:false
                 }))
               }
             >
@@ -551,7 +559,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         </div>
       )} */}
       {allTickets.length > 0 ? (
-        <Table columns={columns} data={allTickets} renderRow={renderRow} setFilterState={setFilterState}/>
+        <Table columns={columns} data={allTickets} renderRow={renderRow} handleChangeSortOrder={handleChangeSortOrder}/>
       ) : (
         <div className="text-center py-20">
           <h2 className="text-xl text-gray-600">

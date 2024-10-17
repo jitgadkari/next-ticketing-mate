@@ -7,10 +7,10 @@ interface TableProps<T> {
   columns: string[];
   data: T[];
   renderRow: (item: T) => JSX.Element;
-  setFilterState:(filter:any)=>void;
+  handleChangeSortOrder?:()=>void;
 }
 
-const Table = <T extends { [key: string]: any }>({ columns, data, renderRow ,setFilterState}: TableProps<T>) => {
+const Table = <T extends { [key: string]: any }>({ columns, data, renderRow ,handleChangeSortOrder}: TableProps<T>) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const sortedData = useMemo(() => {
@@ -48,10 +48,9 @@ const Table = <T extends { [key: string]: any }>({ columns, data, renderRow ,set
               onClick={() => {
                 // Check if the column is 'Created Date' and toggle sort order
                 if (column === 'Created Date') {
-                  setFilterState((prev: FilterState) => ({
-                    ...prev, 
-                    sort_order: !prev.sort_order, 
-                  }));
+                  if(handleChangeSortOrder){
+                    handleChangeSortOrder()
+                  }
                 }
               }}
               className={`px-6 py-4 border-b border-gray-200 bg-gray-50 text-left text-sm leading-4 font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-200 ${
