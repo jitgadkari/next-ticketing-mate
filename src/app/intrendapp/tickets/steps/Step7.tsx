@@ -314,7 +314,7 @@ const Step7: React.FC<Step7Props> = ({
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
             <p className="mb-4">
-              You haven't sent all messages yet. Would you like to proceed without sending ?
+              {`You haven't sent all messages yet. Would you like to proceed without sending ?`}
             </p>
             <div className="flex justify-end">
               <Button
