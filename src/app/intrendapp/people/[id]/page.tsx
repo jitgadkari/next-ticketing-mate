@@ -59,7 +59,7 @@ const PersonDetailsPage: React.FC = () => {
 
   const fetchCustomers = async (): Promise<void> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`);
       if (!response.ok) {
         throw new Error('Failed to fetch customers');
       }

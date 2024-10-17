@@ -37,9 +37,10 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
         );
         const data = await response.json();
+        console.log(data)
         setCustomers(data.customers);
       } catch (error) {
         console.error("Error fetching customers:", error);
@@ -152,9 +153,9 @@ const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
           <div
             className={`z-10 ${
               !showDropDown && "hidden"
-            } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+            } bg-white divide-y divide-gray-100 rounded-lg shadow w-full dark:bg-gray-700 overflow-auto max-h-40`}
           >
-            <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+            <ul className="py-2 text-sm text-gray-700 dark:text-gray-200 flex items-center  gap-3 flex-wrap">
               {customers.map((customer) => (
                 <li
                   key={customer._id}
