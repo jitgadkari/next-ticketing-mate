@@ -162,7 +162,7 @@ const Step4: React.FC<Step4Props> = ({
   const fetchVendors = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`
       );
       const data = await response.json();
       if (Array.isArray(data.vendors)) {

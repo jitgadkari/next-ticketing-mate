@@ -72,7 +72,7 @@ const PersonDetailsPage: React.FC = () => {
 
   const fetchVendors = async (): Promise<void> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`);
       if (!response.ok) {
         throw new Error('Failed to fetch vendors');
       }
