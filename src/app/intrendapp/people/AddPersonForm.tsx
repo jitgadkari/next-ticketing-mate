@@ -45,7 +45,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   }, [formData.linked_to]);
   const fetchCustomers = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`);
       const data = await response.json();
       setCustomers(data.customers);
     } catch (error) {
@@ -55,7 +55,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const fetchVendors = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`);
       const data = await response.json();
       setVendors(data.vendors);
     } catch (error) {
