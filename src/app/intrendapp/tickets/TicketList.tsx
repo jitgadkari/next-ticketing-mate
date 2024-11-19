@@ -132,7 +132,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
         );
         const data = await response.json();
         setCustomers(data.customers);
@@ -285,19 +285,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
                       Customer
                     </button>
                     {filterState.showCustomerDropDown && (
-                      <ul className="absolute left-0 w-48 mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
-                        <li
-                          onClick={() =>
-                            setFilterState((prev) => ({
-                              ...prev,
-                              filterByCustomer: "all",
-                              showCustomerDropDown: false,
-                            }))
-                          }
-                          className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
-                        >
-                          all
-                        </li>
+                      <ul className="absolute left-0 w-48 max-h-48 overflow-y-auto mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
                         {customers.map((customer) => (
                           <li
                             key={customer._id}

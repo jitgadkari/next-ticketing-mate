@@ -131,7 +131,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
         );
         const data = await response.json();
         setCustomers(data.customers);
@@ -339,7 +339,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             <div
               className={`z-10 ${
                 !filterState.showCustomerDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {customers.map((customer) => (

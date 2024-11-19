@@ -37,6 +37,7 @@ interface ScheduleDetails {
 }
 
 interface VendorDetails {
+  query: string
   rate: RateDetails;
   schedule: ScheduleDetails;
 }
@@ -57,11 +58,23 @@ const Step6: React.FC<Step6Props> = ({
   setActiveStep,
   ticket,
 }) => {
-  const [allDecodedMessages,setAllDecodedMessages]= useState(decodedMessages);
+  const [allDecodedMessages, setAllDecodedMessages] = useState(decodedMessages);
   const [selectedMessages, setSelectedMessages] =
     useState<DecodedMessages>(decodedMessages);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [includeVendorName, setIncludeVendorName] = useState(true);
+  const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
+
+
+  const toggleIncludeVendorName = () => {
+    setIncludeVendorName((prev) => !prev)
+  }
+
+  const toggleIncludeCustomerMessage = () => {
+    setIncludeCustomerMessage((prev) => !prev)
+  }
+
 
   const handleInputChange = (
     vendor: string,
@@ -92,6 +105,7 @@ const Step6: React.FC<Step6Props> = ({
     setActiveStep("Step 7 : Customer Message Template");
     toast.success("Step 6 completed")
   };
+
 
   const handleUpdate = async (updatedDecodedMessages: DecodedMessages) => {
     console.log("Updating Step 6 messages:", updatedDecodedMessages);
@@ -147,11 +161,13 @@ const Step6: React.FC<Step6Props> = ({
             client_name: customerName,
             customerMessage: originalMessage,
             vendor_delivery_info_json: JSON.stringify(selectedMessages),
-            ticket_number:ticket.ticket_number
+            ticket_number: ticket.ticket_number,
+            "send_vendor_name": includeVendorName,
+            "customerMessageRequired": includeCustomerMessage
           }),
         }
       );
-console.log(response)
+      console.log(response)
       if (!response.ok) {
         throw new Error("Failed to generate client message template");
       }
@@ -185,10 +201,10 @@ console.log(response)
   return (
     <div>
       <h3 className="text-xl font-bold my-4">Step 6: Decoded Messages from Vendors</h3>
-      <div className="flex justify-end items-center"  onClick={() => setIsEditing(!isEditing)}>
+      <div className="flex justify-end items-center" onClick={() => setIsEditing(!isEditing)}>
         <FaEdit
           className="text-black text-2xl"
-         
+
         />
       </div>
       {!loading &&
@@ -204,6 +220,7 @@ console.log(response)
                 return (
                   <div key={type} className="my-2">
                     <h4 className="font-semibold">{type}</h4>
+                    <h3 className="py-2"><span className="font-semibold ">Query: </span>{vendorDetails.query}</h3>
                     <div className="ml-4 flex md:flex-row flex-col md: gap-3">
                       <div className="bg-gray-100 px-3 py-2 rounded-md">
                         <h5 className="font-medium">Rate:</h5>
@@ -392,14 +409,31 @@ console.log(response)
         })}
 
       {loading && <h1>Loading...</h1>}
+      <div className="flex gap-4">
+        <Button
+          onClick={toggleIncludeCustomerMessage}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          {includeCustomerMessage
+            ? "Remove Customer Message"
+            : "Include Customer Message"}
+        </Button>
+        <Button
+          onClick={toggleIncludeVendorName}
+          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          {includeVendorName
+            ? "Remove Vendor Name"
+            : "Include Vendor Name"}
+        </Button>
+      </div>
       <div className="flex justify-end">
         <Button
           onClick={handleNextStep}
-          className={`mt-4 ml-2 font-bold py-2 px-4 rounded ${
-            isCurrentStep
-              ? "bg-green-500 hover:bg-green-700 text-white"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+          className={`mt-4 ml-2 font-bold py-2 px-4 rounded ${isCurrentStep
+            ? "bg-green-500 hover:bg-green-700 text-white"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           disabled={!isCurrentStep}
         >
           Next
@@ -407,6 +441,7 @@ console.log(response)
       </div>
     </div>
   );
+
 };
 
 export default Step6;

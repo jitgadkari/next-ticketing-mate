@@ -356,7 +356,7 @@ const TicketDetailsPage = () => {
 
       case "Step 7 : Customer Message Template":
         console.log("Step 7 data:", ticket.steps[step]); // Debug log
-
+        console.log("step 5",ticket.steps["Step 5: Messages from Vendors"])
         let customerTemplate = ticket.steps[step]?.text || "";
 
         // Ensure customerTemplate is a string
@@ -380,6 +380,7 @@ const TicketDetailsPage = () => {
             setActiveStep={setActiveStep}
             fetchTicket={fetchTicket}
             isCurrentStep={step === ticket.current_step}
+        
           />
         );
 

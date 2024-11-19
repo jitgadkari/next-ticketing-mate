@@ -46,6 +46,11 @@ const Step7: React.FC<Step7Props> = ({
     email: false,
   });
 
+  const step5Messages = ticket.steps["Step 5: Messages from Vendors"];
+
+  // Getting the keys
+  const keys = Object.keys(step5Messages);
+
   const handleNext = async () => {
     console.log("Handling next for Step 7");
     await fetch(
@@ -86,12 +91,14 @@ const Step7: React.FC<Step7Props> = ({
     fetchTicket(ticket._id);
   };
 
+
+
   useEffect(() => {
     setTemplate(customerTemplate);
   }, [customerTemplate]);
 
   const handleSave = async () => {
-    await handleUpdate(template);
+    await handleUpdate(template);//client message, vendor name 
   };
 
   const handleNextStep = async () => {
@@ -202,35 +209,35 @@ const Step7: React.FC<Step7Props> = ({
         >
           Save
         </Button>
-        <div className="md:flex gap-2 items-center">
-          <Button
-            onClick={() => handleSendMessage("whatsApp")}
-            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-              (!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
-            }`}
-            disabled={!isCurrentStep || isSending}
-          >
-            {isSending ? "Sending..." : "Send"}
-            <FaWhatsapp />
-          </Button>
-          <Button
-            onClick={() => handleSendMessage("email")}
-            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-              (!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
-            }`}
-            disabled={!isCurrentStep || isSending}
-          >
-            {isSending ? "Sending..." : "Send"}
-            <MdEmail />
-          </Button>
+        <div className="flex flex-col justify-center items-center gap-2">
+          <div className="md:flex gap-2 items-center">
+            <Button
+              onClick={() => handleSendMessage("whatsApp")}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
+                }`}
+              disabled={!isCurrentStep || isSending}
+            >
+              {isSending ? "Sending..." : "Send"}
+              <FaWhatsapp />
+            </Button>
+            <Button
+              onClick={() => handleSendMessage("email")}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
+                }`}
+              disabled={!isCurrentStep || isSending}
+            >
+              {isSending ? "Sending..." : "Send"}
+              <MdEmail />
+            </Button>
+          </div>
+     
         </div>
         <Button
           onClick={handleNextStep}
-          className={`font-bold py-2 px-4 rounded ${
-            isCurrentStep
-              ? "bg-blue-500 hover:bg-blue-700 text-white"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+          className={`font-bold py-2 px-4 rounded ${isCurrentStep
+            ? "bg-blue-500 hover:bg-blue-700 text-white"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           disabled={!isCurrentStep}
         >
           Next
@@ -239,11 +246,10 @@ const Step7: React.FC<Step7Props> = ({
 
       {sendingStatus && (
         <p
-          className={`mt-2 ${
-            sendingStatus.includes("success")
-              ? "text-green-600"
-              : "text-red-600"
-          }`}
+          className={`mt-2 ${sendingStatus.includes("success")
+            ? "text-green-600"
+            : "text-red-600"
+            }`}
         >
           {sendingStatus}
         </p>
