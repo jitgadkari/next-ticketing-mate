@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import pb from '@/lib/pocketbase';
+import Image from 'next/image';
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
     const [isMounted, setIsMounted] = useState(false);
@@ -33,115 +34,73 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                         <ul className="space-y-4">
                             <li>
                                 <Link href="/intrendapp/dashboard" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 4h16v16H4z"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/dashboard-4-svgrepo-com.svg"
+                                        alt="Dashboard"
+                                        width={24}
+                                        height={24}
+                                        className="min-w-[1.5rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Dashboard</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/intrendapp/tickets" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 12l2 2 4-4"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/tickets-ticket-svgrepo-com.svg"
+                                        alt="Tickets"
+                                        width={24}
+                                        height={24}
+                                        className="min-w-[1.5rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Tickets</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/intrendapp/customers" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M3 8a6 6 0 0112 0v6a6 6 0 01-12 0V8z"
-                                        />
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M16 10v2a2 2 0 11-4 0v-2a2 2 0 014 0z"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/icons8-customer-100.png"
+                                        alt="Customers"
+                                        width={28}
+                                        height={28}
+                                        className="min-w-[1.75rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Customers</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/intrendapp/vendors" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 6h12v12H6z"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/people-svgrepo-com.svg"
+                                        alt="Vendors"
+                                        width={20}
+                                        height={20}
+                                        className="min-w-[1.5rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Vendors</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/intrendapp/attributes" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M8 4v16m8-16v16m-4-12v8"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/edit-attributes-svgrepo-com.svg"
+                                        alt="Attributes"
+                                        width={24}
+                                        height={24}
+                                        className="min-w-[1.5rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Attributes</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/intrendapp/people" className={`flex items-center ${isExpanded ? 'justify-start space-x-2' : 'justify-center'} text-lg hover:bg-gray-700 p-2 rounded block`}>
-                                    <svg
-                                        className="w-6 h-6 min-w-[1.5rem]"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M10 4h4v4h-4V4zm2 8h4v8h-4v-8zm-6 0h4v8H6v-8z"
-                                        />
-                                    </svg>
+                                    <Image
+                                        src="/svg/users-svgrepo-com.svg"
+                                        alt="People"
+                                        width={28}
+                                        height={28}
+                                        className="min-w-[1.5rem] brightness-0 invert"
+                                    />
                                     <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>People</span>
                                 </Link>
                             </li>
