@@ -21,6 +21,7 @@ interface Ticket {
 
 interface TicketListProps {
   refreshList: () => void;
+  getOffset: () => number;
 }
 
 export interface FilterState {
@@ -46,7 +47,7 @@ const getOffset = () => {
   return offset ? parseInt(offset, 10) : 0;
 };
 
-const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
+const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
