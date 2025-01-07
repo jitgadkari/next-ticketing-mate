@@ -1,10 +1,11 @@
-'use client'
-import React, { useState } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { pageFilter, pageInfo, Person } from "./page";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
+
 interface PeopleMobileListProps {
   people: Person[];
   setPeople: (people: Person[]) => void;
@@ -25,6 +26,49 @@ export default function PeopleMobileList({
   onPageChange,
 }: PeopleMobileListProps) {
   const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
+  const [filterName, setFilterName] = useState<string>("");
+  const [allPeople, setAllPeople] = useState<Person[]>([]); // To store all people data
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchAllPeople = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people_all`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.people && Array.isArray(data.people)) {
+            setAllPeople(data.people); // Store all people in state
+            setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
+          } else {
+            setPeople([]);
+            toast.error("No people found");
+          }
+        } else {
+          const errorText = await response.text();
+          toast.error(`Failed to fetch people: ${errorText}`);
+        }
+      } catch (error) {
+        toast.error("Error fetching people");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllPeople();
+  }, [pageFilter.limit]);
+
+  useEffect(() => {
+    const filteredPeople = allPeople.filter((person) =>
+      person.name.toLowerCase().includes(filterName.toLowerCase())
+    );
+    setPeople(filteredPeople.slice(0, pageFilter.limit)); // Adjust based on limit
+  }, [filterName, allPeople, pageFilter.limit]);
 
   const handleDelete = async (personId: string): Promise<void> => {
     try {
@@ -36,8 +80,8 @@ export default function PeopleMobileList({
       );
       if (response.ok) {
         setPeople(people.filter((person) => person._id !== personId));
-        setDeletePersonId(null)
-        toast.success("Person deleted successfully")
+        setDeletePersonId(null);
+        toast.success("Person deleted successfully");
       } else {
         console.error("Failed to delete person");
       }
@@ -48,10 +92,37 @@ export default function PeopleMobileList({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:hidden">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">People List</h1>
+        <button
+          onClick={() => setShowFilter(!showFilter)}
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
+        >
+          {showFilter ? "Hide Filter" : "Show Filter"}
+        </button>
+      </div>
+
+      {showFilter && (
+        <div className="mb-6">
+          <input
+            type="text"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            placeholder="Search by Name"
+            className="p-2 w-full border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          />
+        </div>
+      )}
+
+      {isLoading && <p className="text-center">Loading people...</p>}
+
+      {!isLoading && people.length === 0 && (
+        <p className="text-center text-gray-500">No people found</p>
+      )}
+
       {people.map((person) => (
         <div key={person._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
           <div className="flex flex-col space-y-4 text-sm w-full">
-            
             <div className="flex justify-between items-center">
               <div className="flex">
                 <span className="font-semibold mr-2">Name:</span>
@@ -91,7 +162,8 @@ export default function PeopleMobileList({
           </div>
         </div>
       ))}
-        {deletePersonId && (
+
+      {deletePersonId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this person?</p>
@@ -111,7 +183,8 @@ export default function PeopleMobileList({
           </div>
         </dialog>
       )}
-         <Pagination
+
+      <Pagination
         limit={pageFilter.limit}
         offset={pageFilter.offset}
         total_items={pageInfo.total_items}
@@ -123,6 +196,5 @@ export default function PeopleMobileList({
         onPageChange={onPageChange}
       />
     </div>
-  
   );
 }
