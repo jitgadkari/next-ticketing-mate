@@ -15,6 +15,7 @@ interface Ticket {
   current_step: string;
   created_date: string;
   updated_date: string;
+  customer_message: string;
   status: string;
   final_decision: string;
 }
@@ -101,22 +102,27 @@ export default function TicketsMobileList({
 
       try {
         const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_ENDPOINT_URL
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL
           }/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
-        const parsedTickets = data.tickets.map((ticket: any) => ({
-          _id: ticket._id,
-          ticket_number: ticket.ticket_number,
-          customer_name: ticket.customer_name,
-          current_step: ticket.current_step,
-          created_date: ticket.created_date,
-          updated_date: ticket.updated_date,
-          status: ticket.steps["Step 9: Final Status"]?.status || "open",
-          final_decision:
-            ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
-        }));
+        console.log("Raw ticket data:", data.tickets);
+        const parsedTickets = data.tickets.map((ticket: any) => {
+          console.log("Ticket steps:", ticket.steps);
+          console.log("Step 1 text:", ticket.steps["Step 1 : Customer Message Received"]?.text);
+          return {
+            _id: ticket._id,
+            ticket_number: ticket.ticket_number,
+            customer_name: ticket.customer_name,
+            current_step: ticket.current_step,
+            created_date: ticket.created_date,
+            updated_date: ticket.updated_date,
+            customer_message: ticket.steps["Step 1 : Customer Message Received"]?.text || "",
+            status: ticket.steps["Step 9: Final Status"]?.status || "open",
+            final_decision:
+              ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+          }
+        });
         setAllTickets(parsedTickets);
         setPageInfo({
           total_tickets: data.total_tickets,
@@ -343,9 +349,8 @@ export default function TicketsMobileList({
               ))}
             </select> */}
             <div
-              className={`z-10 ${
-                !filterState.showCustomerDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showCustomerDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {customers.map((customer) => (
@@ -397,9 +402,8 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showStatusDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showStatusDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -461,9 +465,8 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showDecisionDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showDecisionDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -522,9 +525,8 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showStepDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showStepDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {stepsOrder.map((step, index) => {
@@ -654,7 +656,17 @@ export default function TicketsMobileList({
                 <span>{ticket.current_step}</span>
               </div>
             </div>
-
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Customer Message:</span>
+                {ticket.customer_message ? (
+                  <span className="line-clamp-2">{ticket.customer_message}</span>
+                ) : (
+                  <span className="text-gray-400">No message available</span>
+                )}
+              </div>
+            </div>
+            
             <div className="flex justify-between items-center">
               <div className="flex">
                 <span className="font-semibold mr-2">Updated Date:</span>
@@ -682,6 +694,7 @@ export default function TicketsMobileList({
                 className="text-red-500 cursor-pointer hover:text-red-700"
               />
             </div>
+
           </div>
         </div>
       ))}
