@@ -18,7 +18,10 @@ const TicketsPage = () => {
   const refreshList = useCallback(() => {
     setRefreshKey(prevKey => prevKey + 1);
   }, []);
-
+  const getOffset = () => {
+    const offset = localStorage.getItem("ticketListOffset");
+    return offset ? parseInt(offset, 10) : 0;
+  };
   return (
     <div className="p-8  bg-grey-100  rounded shadow text-black">
       <h1 className="text-2xl font-bold mb-4">Tickets</h1>
@@ -35,10 +38,10 @@ const TicketsPage = () => {
         </div>
       )}
       <div className='hidden md:block'>
-      <TicketList key={refreshKey} refreshList={refreshList} />
+      <TicketList key={refreshKey} refreshList={refreshList} getOffset={getOffset}/>
       </div>
       <div>
-        <TicketsMobileList key={refreshKey} refreshList={refreshList}/>
+        <TicketsMobileList key={refreshKey} refreshList={refreshList} getOffset={getOffset}/>
       </div>
     </div>
   );
