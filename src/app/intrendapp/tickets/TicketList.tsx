@@ -15,9 +15,9 @@ interface Ticket {
   customer_name: string;
   current_step: string;
   created_date: string;
-  updated_date: string;
   status: string;
   final_decision: string;
+  customer_message: string;
 }
 
 interface TicketListProps {
@@ -103,13 +103,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
           }/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
+        console.log(data)
         const parsedTickets = data.tickets.map((ticket: any) => ({
           _id: ticket._id,
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           current_step: ticket.current_step,
           created_date: ticket.created_date,
-          updated_date: ticket.updated_date,
+          customer_message: ticket.steps["Step 1 : Customer Message Received"]?.text || "",
           status: ticket.steps["Step 9: Final Status"]?.status || "open",
           final_decision:
             ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
@@ -183,7 +184,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     "Status",
     "Decision",
     "Created Date",
-    "Updated Date",
+    "Customer Message",
     "Actions",
   ];
   const handlePrevious = () => {
@@ -246,7 +247,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         </span>
       </td>
       <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
-      <td className="border p-2">{formatDateTime(ticket.updated_date)}</td>
+      <td className="border p-2">{ticket.customer_message}</td>
       <td className="border p-2 ">
         <ul className="h-full flex justify-center space-x-2">
           <Link href={`tickets/${ticket._id}`} passHref>

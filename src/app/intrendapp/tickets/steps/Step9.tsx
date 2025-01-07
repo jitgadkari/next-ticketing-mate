@@ -117,6 +117,10 @@ const Step9: React.FC<Step9Props> = ({
 
   return (
     <div className="space-y-4">
+       <div className="py-1 mb-4">
+            <h1 className="text-xl font-bold ">Customer Message</h1>
+            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+          </div>
       <h3 className="text-xl font-bold">Step 9: Final Status</h3>
       <div className="flex items-center gap-2">
       <label

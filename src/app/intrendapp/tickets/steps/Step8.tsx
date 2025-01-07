@@ -84,6 +84,10 @@ const Step8: React.FC<Step8Props> = ({
 
   return (
     <div>
+      <div className="py-1 mb-4">
+            <h1 className="text-xl font-bold ">Customer Message</h1>
+            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+          </div>
       <h3 className="text-xl font-bold mb-4">Step 8: Message Sent</h3>
      {!loading && <>
       <div className="bg-gray-100 p-4 rounded mb-4">
