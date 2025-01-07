@@ -177,6 +177,10 @@ const Step3: React.FC<Step3Props> = ({
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       {!loading && (
         <>
+          <div className="py-1 mb-4">
+            <h1 className="text-xl font-bold ">Customer Message</h1>
+            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+          </div>
           <h3 className="text-xl font-bold mb-4">
             Step 3: Message Template for Vendors
           </h3>
@@ -216,11 +220,10 @@ const Step3: React.FC<Step3Props> = ({
           </div>
           <Button
             onClick={handleNextStep}
-            className={`mt-4 font-bold py-2 px-4 rounded ${
-              isCurrentStep
+            className={`mt-4 font-bold py-2 px-4 rounded ${isCurrentStep
                 ? "bg-blue-500 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+              }`}
             disabled={!isCurrentStep}
           >
             Next Step

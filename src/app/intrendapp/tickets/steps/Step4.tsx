@@ -482,6 +482,10 @@ const Step4: React.FC<Step4Props> = ({
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       {!loading && (
         <>
+        <div className="py-1 mb-4">
+            <h1 className="text-xl font-bold ">Customer Message</h1>
+            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+          </div>
           <h3 className="text-xl font-bold mb-4">Step 4: Select Vendors</h3>
           <MultiSelect
             options={vendors}
