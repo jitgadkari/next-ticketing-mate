@@ -15,6 +15,7 @@ interface Ticket {
   current_step: string;
   created_date: string;
   updated_date: string;
+  customer_message: string;
   status: string;
   final_decision: string;
 }
@@ -38,7 +39,7 @@ interface FilterState {
   offset: number;
   start_date?: string;
   end_date?: string;
-  sort_order?:boolean;
+  sort_order?: boolean;
 }
 
 export default function TicketsMobileList({ refreshList }: TicketListProps) {
@@ -58,7 +59,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     offset: 0,
     start_date: "",
     end_date: "",
-    sort_order:false
+    sort_order: false
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -90,29 +91,34 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
         status: filterState.status || "",
         final_decision: filterState.final_decision || "",
         ticket_num: filterState.ticket_num || "",
-        start_date:filterState.start_date || "",
-        end_date:filterState.end_date || "",
-        sort_order: filterState.sort_order?'asc':'desc'
+        start_date: filterState.start_date || "",
+        end_date: filterState.end_date || "",
+        sort_order: filterState.sort_order ? 'asc' : 'desc'
       });
 
       try {
         const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_ENDPOINT_URL
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL
           }/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
-        const parsedTickets = data.tickets.map((ticket: any) => ({
-          _id: ticket._id,
-          ticket_number: ticket.ticket_number,
-          customer_name: ticket.customer_name,
-          current_step: ticket.current_step,
-          created_date: ticket.created_date,
-          updated_date: ticket.updated_date,
-          status: ticket.steps["Step 9: Final Status"]?.status || "open",
-          final_decision:
-            ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
-        }));
+        console.log("Raw ticket data:", data.tickets);
+        const parsedTickets = data.tickets.map((ticket: any) => {
+          console.log("Ticket steps:", ticket.steps);
+          console.log("Step 1 text:", ticket.steps["Step 1 : Customer Message Received"]?.text);
+          return {
+            _id: ticket._id,
+            ticket_number: ticket.ticket_number,
+            customer_name: ticket.customer_name,
+            current_step: ticket.current_step,
+            created_date: ticket.created_date,
+            updated_date: ticket.updated_date,
+            customer_message: ticket.steps["Step 1 : Customer Message Received"]?.text || "",
+            status: ticket.steps["Step 9: Final Status"]?.status || "open",
+            final_decision:
+              ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+          }
+        });
         setAllTickets(parsedTickets);
         setPageInfo({
           total_tickets: data.total_tickets,
@@ -178,7 +184,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
       ...prev,
       offset: Math.max(prev.offset - prev.limit, 0),
     }));
-  
+
   };
 
   const handleNext = () => {
@@ -205,10 +211,10 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             setFilterState((prevState) => ({
               ...prevState,
               showDropDown: !prevState.showDropDown,
-              showCustomerDropDown:false,
-              showDecisionDropDown:false,
-              showStatusDropDown:false,
-              showStepDropDown:false,
+              showCustomerDropDown: false,
+              showDecisionDropDown: false,
+              showStatusDropDown: false,
+              showStepDropDown: false,
               ticket_num: "",
               customer_name: "",
               current_step: "",
@@ -218,7 +224,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               offset: 0,
               start_date: "",
               end_date: "",
-              sort_order:false
+              sort_order: false
             }))
           }
         >
@@ -246,42 +252,42 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             />
           </div>
           <ul className="flex gap-2 items-center flex-wrap  py-2 bg-white text-gray-800 font-semibold rounded-lg  border-gray-100 hover:bg-gray-100 focus:outline-none">
-                    <h1>Start Date</h1>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        value={filterState.start_date}
-                        onChange={(e) =>
-                          setFilterState((prevState) => ({
-                            ...prevState,
-                            start_date: e.target.value,
-                          }))
-                        }
-                        className="w-10 h-10 opacity-0  absolute inset-0" 
-                      />
+            <h1>Start Date</h1>
+            <div className="relative">
+              <input
+                type="date"
+                value={filterState.start_date}
+                onChange={(e) =>
+                  setFilterState((prevState) => ({
+                    ...prevState,
+                    start_date: e.target.value,
+                  }))
+                }
+                className="w-10 h-10 opacity-0  absolute inset-0"
+              />
 
-                      <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">    
-                      <BsCalendar2DateFill className="text-black"/>
-                      </div>
-                    </div>
-                    <h1>End Date</h1>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        value={filterState.end_date}
-                        onChange={(e) =>
-                          setFilterState((prevState) => ({
-                            ...prevState,
-                            end_date: e.target.value,
-                          }))
-                        }
-                        className="w-10 h-10 opacity-0  absolute inset-0" 
-                      />
-                      <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
-                      <BsCalendar2DateFill className="text-black"/>
-                      </div>
-                    </div>
-                  </ul>
+              <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
+                <BsCalendar2DateFill className="text-black" />
+              </div>
+            </div>
+            <h1>End Date</h1>
+            <div className="relative">
+              <input
+                type="date"
+                value={filterState.end_date}
+                onChange={(e) =>
+                  setFilterState((prevState) => ({
+                    ...prevState,
+                    end_date: e.target.value,
+                  }))
+                }
+                className="w-10 h-10 opacity-0  absolute inset-0"
+              />
+              <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
+                <BsCalendar2DateFill className="text-black" />
+              </div>
+            </div>
+          </ul>
           <div className="mb-4">
             <div
               className="flex items-center"
@@ -337,9 +343,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               ))}
             </select> */}
             <div
-              className={`z-10 ${
-                !filterState.showCustomerDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showCustomerDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {customers.map((customer) => (
@@ -391,9 +396,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showStatusDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showStatusDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -423,7 +427,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               </ul>
             </div>
           </div>
-        
+
           <div className="mb-4">
             <div
               className="flex items-center"
@@ -455,9 +459,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showDecisionDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showDecisionDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -516,9 +519,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             </div>
 
             <div
-              className={`z-10 ${
-                !filterState.showStepDropDown && "hidden"
-              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${!filterState.showStepDropDown && "hidden"
+                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {stepsOrder.map((step, index) => {
@@ -542,17 +544,17 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
           </div>
           <div className="mb-4">
             <div
-              className="flex items-center " 
+              className="flex items-center "
             >
-              <button  onClick={() =>
+              <button onClick={() =>
                 setFilterState((prev) => ({
                   ...prev,
                   sort_order: !prev.sort_order,
                 }))
               } className="block text-sm font-semibold mb-2 bg-gray-200 rounded-md px-3 py-2">
-               Sort By Date
+                Sort By Date
               </button>
-            
+
             </div>
           </div>
 
@@ -647,7 +649,17 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
                 <span>{ticket.current_step}</span>
               </div>
             </div>
-
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <span className="font-semibold mr-2">Customer Message:</span>
+                {ticket.customer_message ? (
+                  <span className="line-clamp-2">{ticket.customer_message}</span>
+                ) : (
+                  <span className="text-gray-400">No message available</span>
+                )}
+              </div>
+            </div>
+            
             <div className="flex justify-between items-center">
               <div className="flex">
                 <span className="font-semibold mr-2">Updated Date:</span>
@@ -675,6 +687,7 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
                 className="text-red-500 cursor-pointer hover:text-red-700"
               />
             </div>
+
           </div>
         </div>
       ))}
