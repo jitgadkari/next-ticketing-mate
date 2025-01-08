@@ -33,10 +33,25 @@ const Step3: React.FC<Step3Props> = ({
   setActiveStep,
   ticket,
 }) => {
+  console.log(template);
   const [message, setMessage] = useState(template);
   const [includeCustomerName, setIncludeCustomerName] = useState(true);
   const [includeSampleQuery, setSampleQuery] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!template) {
+      fetchTicket(ticket._id);
+    }
+    let initialMessage = template;
+    if (includeCustomerName) {
+      if (!initialMessage.includes(`\n\nCustomer Name: ${customerName}`)) {
+        initialMessage += `\n\nCustomer Name: ${customerName}`;
+      }
+    }
+    setMessage(initialMessage);
+  }, []);
+  
   const handleNext = async () => {
     console.log("Handling next for Step 3");
     await fetch(
@@ -53,14 +68,13 @@ const Step3: React.FC<Step3Props> = ({
         }),
       }
     );
-    fetchTicket(ticket._id);
+    await fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 4 : Vendor Selection");
     toast.success("Step 3 completed");
   };
   const handleUpdate = async (updatedTemplate: string) => {
-    console.log("Updating Step 3 template:", updatedTemplate);
-    await fetch(
+    const response = await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
       {
         method: "PUT",
@@ -74,41 +88,9 @@ const Step3: React.FC<Step3Props> = ({
         }),
       }
     );
-    fetchTicket(ticket._id);
-  };
-
-  useEffect(() => {
-    fetchVendorTemplate();
-  }, []);
-
-  const fetchVendorTemplate = async () => {
-    try {
-      console.log(originalMessage);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            vendor_name: "{VENDOR}",
-            customerMessage: originalMessage,
-            ticket_number: ticket.ticket_number,
-          }),
-        }
-      );
-      const data = await response.json();
-      let initialMessage = data.vendor_message_template;
-
-      // If the customer name should be included by default, append it
-      if (includeCustomerName) {
-        initialMessage += `\n\nCustomer Name: ${customerName}`;
-      }
-      setMessage(initialMessage);
-    } catch (error) {
-      console.error("Error fetching vendor template:", error);
-    }
+    const jsonResponse = await response.json();
+    console.log(jsonResponse);
+    await fetchTicket(ticket._id);
   };
 
   const handleNextStep = async () => {
@@ -130,14 +112,14 @@ const Step3: React.FC<Step3Props> = ({
         }
       );
 
-      handleNext();
+      await handleNext();
     } catch (error) {
       console.error("Error updating ticket:", error);
     }
   };
 
-  const handleSave = () => {
-    handleUpdate(message);
+  const handleSave = async () => {
+    await handleUpdate(message);
   };
 
   const toggleCustomerName = () => {
@@ -155,9 +137,7 @@ const Step3: React.FC<Step3Props> = ({
   const toggleSampleQuery = () => {
     setSampleQuery(!includeSampleQuery);
     if (!includeSampleQuery) {
-      setMessage(
-        (prevMessage) => `${prevMessage}\n\nThis is a Sample Query`
-      );
+      setMessage((prevMessage) => `${prevMessage}\n\nThis is a Sample Query`);
     } else {
       setMessage((prevMessage) =>
         prevMessage.replace(`\n\nThis is a Sample Query`, "")
@@ -220,10 +200,11 @@ const Step3: React.FC<Step3Props> = ({
           </div>
           <Button
             onClick={handleNextStep}
-            className={`mt-4 font-bold py-2 px-4 rounded ${isCurrentStep
+            className={`mt-4 font-bold py-2 px-4 rounded ${
+              isCurrentStep
                 ? "bg-blue-500 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+            }`}
             disabled={!isCurrentStep}
           >
             Next Step
