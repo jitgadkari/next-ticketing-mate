@@ -383,11 +383,11 @@ const Step6: React.FC<Step6Props> = ({
                         ) : (
                           <>
                             <p>
-                              Delivery Method:{" "}
+                            Price Condition:{" "}
                               {vendorDetails.schedule.delivery_method}
                             </p>
                             <p>
-                              Delivery Time:{" "}
+                              Delivery Condition:{" "}
                               {vendorDetails.schedule.delivery_time}
                             </p>
                             <p>
