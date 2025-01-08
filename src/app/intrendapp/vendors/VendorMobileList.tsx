@@ -1,11 +1,13 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Vendor } from "./page";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { pageFilter, pageInfo } from "../people/page";
+
 interface VendorMobileListProps {
   vendors: Vendor[];
   setVendors: (vendors: Vendor[]) => void;
@@ -14,6 +16,11 @@ interface VendorMobileListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
+}
+
+interface FilterState {
+  name: string;
+  state: string;
 }
 
 export default function VendorMobileList({
@@ -26,6 +33,76 @@ export default function VendorMobileList({
   onPageChange,
 }: VendorMobileListProps) {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);  // State for all vendors
+  const [tempFilters, setTempFilters] = useState<FilterState>({ name: "", state: "" });
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showFilter, setShowFilter] = useState<boolean>(false); // State to toggle filter visibility
+
+  // Populate filter options for states
+  useEffect(() => {
+    const states = Array.from(new Set(vendors.map((vendor) => vendor.state))).filter(Boolean);
+    setAvailableStates(states);
+  }, [vendors]);
+
+  // Fetch all vendors once from the `/vendors_all` API
+  useEffect(() => {
+    const fetchAllVendors = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.vendors && Array.isArray(data.vendors)) {
+            setAllVendors(data.vendors);  // Store all vendors in state
+            setVendors(data.vendors.slice(0, pageFilter.limit)); // Display first page of vendors
+          } else {
+            toast.error("No vendors found");
+            setVendors([]);
+          }
+        } else {
+          const errorText = await response.text();
+          toast.error(`Failed to fetch vendors: ${errorText}`);
+          console.error("Vendor fetch error:", errorText);
+        }
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        toast.error("An error occurred while fetching vendors");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllVendors();
+  }, [pageFilter.limit]);
+
+  // Filter the vendors based on the selected filters
+  useEffect(() => {
+    const filteredVendors = allVendors.filter((vendor) => {
+      const matchesName = vendor.name.toLowerCase().includes(filters.name.toLowerCase());
+      const matchesState = filters.state ? vendor.state === filters.state : true;
+      return matchesName && matchesState;
+    });
+
+    setVendors(filteredVendors.slice(0, pageFilter.limit)); // Show filtered vendors on the current page
+  }, [filters, allVendors, pageFilter.limit]);
+
+  // Handle filter changes
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const newFilters = { ...tempFilters, [name]: value };
+    setTempFilters(newFilters);
+    setFilters(newFilters);  // Apply filter immediately
+  };
+
   const handleDelete = async (vendorId: string) => {
     try {
       const response = await fetch(
@@ -40,19 +117,64 @@ export default function VendorMobileList({
         toast.success("Vendor deleted successfully");
       } else {
         console.error("Failed to delete vendor");
+        toast.error("Failed to delete vendor");
       }
     } catch (error) {
       console.error("Error deleting vendor:", error);
+      toast.error("An error occurred while deleting the vendor");
     }
   };
 
   return (
     <div className="grid grid-cols-1 gap-4 md:hidden">
-      {vendors.map((vendor) => (
-        <div
-          key={vendor._id}
-          className="bg-white text-black p-4 rounded-lg shadow-lg"
+      {/* Header with filter toggle button */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Vendor List</h1>
+        <button
+          onClick={() => setShowFilter(!showFilter)}
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
         >
+          {showFilter ? "Hide Filter" : "Show Filter"}
+        </button>
+      </div>
+
+      {/* Filter UI with toggle visibility */}
+      {showFilter && (
+        <div className="flex space-x-4 mb-4">
+          <input
+            type="text"
+            name="name"
+            value={tempFilters.name}
+            onChange={handleFilterChange}
+            placeholder="Search by Name"
+            className="p-2 w-full border rounded"
+          />
+          <select
+            name="state"
+            value={tempFilters.state}
+            onChange={handleFilterChange}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">All States</option>
+            {availableStates.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Loading Indicator */}
+      {isLoading && (
+        <div className="text-center py-4">
+          <p>Loading vendors...</p>
+        </div>
+      )}
+
+      {/* Display vendor details */}
+      {vendors.map((vendor) => (
+        <div key={vendor._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
           <div className="flex flex-col space-y-4 text-sm w-full">
             <div className="flex justify-between items-center">
               <div className="flex">
@@ -100,6 +222,8 @@ export default function VendorMobileList({
           </div>
         </div>
       ))}
+
+      {/* Delete Confirmation */}
       {deleteVendorId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
@@ -120,6 +244,8 @@ export default function VendorMobileList({
           </div>
         </dialog>
       )}
+
+      {/* Pagination */}
       <Pagination
         limit={pageFilter.limit}
         offset={pageFilter.offset}

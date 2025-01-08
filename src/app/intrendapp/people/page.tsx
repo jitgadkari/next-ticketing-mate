@@ -11,6 +11,7 @@ export interface Person {
   phone: string;
   email: string;
   type_employee: string;
+  state?: string;
 }
 export interface pageFilter{
   offset:number,
