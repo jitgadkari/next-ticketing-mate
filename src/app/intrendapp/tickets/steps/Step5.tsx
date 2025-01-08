@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
+import { AiOutlineEdit } from "react-icons/ai";
 
 interface Step5Props {
   ticketNumber: string;
@@ -30,14 +31,15 @@ const Step5: React.FC<Step5Props> = ({
   ticket,
   step,
 }) => {
-  console.log(vendorMessages);
-  const [messages, setMessages] =
-    useState<Record<string, string>>(vendorMessages);
+  const [messages, setMessages] = useState<Record<string, string>>(vendorMessages);
   const [isDecoding, setIsDecoding] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showReminderPopup, setShowReminderPopup] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
-  console.log(vendorMessages);
+  const [editPopupVendor, setEditPopupVendor] = useState<string | null>(null);
+  const [editableVendors, setEditableVendors] = useState<Record<string, boolean>>({});
+
   const handleNext = async (data: any) => {
     console.log("Handling next for Step 5");
     const currentMessages = data.ticket.steps[step] as Record<string, string>;
@@ -109,6 +111,7 @@ const Step5: React.FC<Step5Props> = ({
       );
     }
   };
+
   const handleUpdate = async (updatedMessages: Record<string, string>) => {
     console.log("Updating Step 5 messages:", updatedMessages);
     await fetch(
@@ -127,6 +130,7 @@ const Step5: React.FC<Step5Props> = ({
     );
     fetchTicket(ticket._id);
   };
+
   useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
@@ -188,11 +192,24 @@ const Step5: React.FC<Step5Props> = ({
 
     toast.success(`Reminder sent to ${vendorName} successfully.`);
   };
+
   const handleReminderClick = (vendor: string) => {
     setSelectedVendor(vendor);
-    setShowPopup(true);
+    setShowReminderPopup(true);
   };
-  console.log(messages);
+
+  const handleEditClick = (vendor: string) => {
+    setEditPopupVendor(vendor);
+    setShowEditPopup(true);
+  };
+
+  const confirmEdit = (vendor: string) => {
+    setEditableVendors((prev) => ({
+      ...prev,
+      [vendor]: true
+    }));
+    setShowEditPopup(false);
+  };
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -207,22 +224,30 @@ const Step5: React.FC<Step5Props> = ({
             <label className="block text-gray-700 font-bold mb-2">
               {vendor}
             </label>
-
-            {message === "" && (
-              <Button
-                onClick={() => handleReminderClick(vendor)}
-                className="bg-gray-500 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
-                disabled={!isCurrentStep}
-              >
-                Send Reminder
-              </Button>
-            )}
+            <div className="flex space-x-2">
+              {message === "" && (
+                <Button
+                  onClick={() => handleReminderClick(vendor)}
+                  className="bg-gray-500 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
+                  disabled={!isCurrentStep}
+                >
+                  Send Reminder
+                </Button>
+              )}
+              {isCurrentStep && (
+                <AiOutlineEdit
+                  onClick={() => handleEditClick(vendor)}
+                  className="text-gray-500 hover:text-green-800 cursor-pointer"
+                  size={24}
+                />
+              )}
+            </div>
           </div>
           <textarea
             value={message}
             onChange={(e) => handleChange(vendor, e.target.value)}
             className="w-full h-32 p-2 border rounded"
-            readOnly={!isCurrentStep}
+            readOnly={!editableVendors[vendor]}
           />
         </div>
       ))}
@@ -245,7 +270,35 @@ const Step5: React.FC<Step5Props> = ({
           {isDecoding ? "Decoding..." : "Next"}
         </Button>
       </div>
-      {showPopup && (
+      
+      {/* Edit Confirmation Popup */}
+      {showEditPopup && editPopupVendor && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Edit Message</h2>
+            <p className="mb-4">
+              Are you sure you want to enable editing for {editPopupVendor}?
+            </p>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowEditPopup(false)}
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => confirmEdit(editPopupVendor)}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Confirmation Popup */}
+      {showReminderPopup && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Send Reminder</h2>
@@ -255,7 +308,7 @@ const Step5: React.FC<Step5Props> = ({
             </p>
             <div className="flex justify-end">
               <Button
-                onClick={() => setShowPopup(false)}
+                onClick={() => setShowReminderPopup(false)}
                 className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
               >
                 Cancel
@@ -263,7 +316,7 @@ const Step5: React.FC<Step5Props> = ({
               <Button
                 onClick={() => {
                   sendReminder(ticket.ticket_number, selectedVendor || "");
-                  setShowPopup(false);
+                  setShowReminderPopup(false);
                 }}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
