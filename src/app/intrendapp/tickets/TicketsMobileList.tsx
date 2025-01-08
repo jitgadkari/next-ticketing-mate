@@ -63,7 +63,9 @@ export default function TicketsMobileList({
     offset: getOffset(),
     start_date: "",
     end_date: "",
+
     sort_order: false,
+
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -97,7 +99,9 @@ export default function TicketsMobileList({
         ticket_num: filterState.ticket_num || "",
         start_date: filterState.start_date || "",
         end_date: filterState.end_date || "",
+
         sort_order: filterState.sort_order ? "asc" : "desc",
+
       });
 
       try {
@@ -188,6 +192,7 @@ export default function TicketsMobileList({
       ...prev,
       offset: Math.max(prev.offset - prev.limit, 0),
     }));
+
   };
 
   const handleNext = () => {
@@ -230,7 +235,9 @@ export default function TicketsMobileList({
               offset: 0,
               start_date: "",
               end_date: "",
+
               sort_order: false,
+
             }))
           }
         >
@@ -550,6 +557,7 @@ export default function TicketsMobileList({
             </div>
           </div>
           <div className="mb-4">
+
             <div className="flex items-center ">
               <button
                 onClick={() =>
@@ -562,6 +570,7 @@ export default function TicketsMobileList({
               >
                 Sort By Date
               </button>
+
             </div>
           </div>
 
