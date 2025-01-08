@@ -15,11 +15,14 @@ export interface Customer {
   country: string;
   code:string;
 }
-
+const getOffset = () => {
+  const offset = localStorage.getItem("customerListOffset");
+  return offset ? parseInt(offset, 10) : 0;
+};
 const CustomersPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [pageFilter,setPageFilter]=useState<pageFilter>({
-    offset:0,
+    offset:getOffset(),
     limit:10,
   })
   const [pageInfo,setPageInfo]=useState<pageInfo>({
@@ -77,7 +80,9 @@ const CustomersPage = () => {
       offset: (page - 1) * prev.limit,
     }));
   };
-
+useEffect(() => {
+  localStorage.setItem("customerListOffset", pageFilter.offset.toString());
+}, [pageFilter.offset]);
   return (
     <div className="p-8 bg-gray-100 rounded  text-black">
       <h1 className="text-2xl font-bold mb-4">Customers</h1>

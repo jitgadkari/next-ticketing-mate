@@ -22,6 +22,7 @@ interface Ticket {
 
 interface TicketListProps {
   refreshList: () => void;
+  getOffset: () => number;
 }
 
 interface FilterState {
@@ -42,7 +43,10 @@ interface FilterState {
   sort_order?: boolean;
 }
 
-export default function TicketsMobileList({ refreshList }: TicketListProps) {
+export default function TicketsMobileList({
+  refreshList,
+  getOffset,
+}: TicketListProps) {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
@@ -56,10 +60,12 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
     status: "",
     final_decision: "",
     limit: 10,
-    offset: 0,
+    offset: getOffset(),
     start_date: "",
     end_date: "",
-    sort_order: false
+
+    sort_order: false,
+
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -93,7 +99,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
         ticket_num: filterState.ticket_num || "",
         start_date: filterState.start_date || "",
         end_date: filterState.end_date || "",
-        sort_order: filterState.sort_order ? 'asc' : 'desc'
+
+        sort_order: filterState.sort_order ? "asc" : "desc",
+
       });
 
       try {
@@ -202,6 +210,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
 
     console.log(`Page: ${page}, Offset: ${(page - 1) * filterState.limit}`);
   };
+  useEffect(() => {
+    localStorage.setItem("ticketListOffset", String(filterState.offset));
+  }, [filterState.offset]);
   return (
     <div className="grid grid-cols-1 gap-4 md:hidden">
       <div className="flex justify-end items-center mb-4">
@@ -224,7 +235,9 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               offset: 0,
               start_date: "",
               end_date: "",
-              sort_order: false
+
+              sort_order: false,
+
             }))
           }
         >
@@ -525,7 +538,8 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {stepsOrder.map((step, index) => {
                   return (
-                    <li key={index}
+                    <li
+                      key={index}
                       className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
                       onClick={() =>
                         setFilterState((prev) => ({
@@ -543,15 +557,17 @@ export default function TicketsMobileList({ refreshList }: TicketListProps) {
             </div>
           </div>
           <div className="mb-4">
-            <div
-              className="flex items-center "
-            >
-              <button onClick={() =>
-                setFilterState((prev) => ({
-                  ...prev,
-                  sort_order: !prev.sort_order,
-                }))
-              } className="block text-sm font-semibold mb-2 bg-gray-200 rounded-md px-3 py-2">
+
+            <div className="flex items-center ">
+              <button
+                onClick={() =>
+                  setFilterState((prev) => ({
+                    ...prev,
+                    sort_order: !prev.sort_order,
+                  }))
+                }
+                className="block text-sm font-semibold mb-2 bg-gray-200 rounded-md px-3 py-2"
+              >
                 Sort By Date
               </button>
 

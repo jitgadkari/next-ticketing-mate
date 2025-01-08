@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { Customer } from "./AddTicketForm";
-import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { BsCalendar2DateFill } from "react-icons/bs";
@@ -22,6 +21,7 @@ interface Ticket {
 
 interface TicketListProps {
   refreshList: () => void;
+  getOffset: () => number;
 }
 
 export interface FilterState {
@@ -42,7 +42,12 @@ export interface FilterState {
   sort_order?:boolean;
 }
 
-const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
+const getOffset = () => {
+  const offset = localStorage.getItem("ticketListOffset");
+  return offset ? parseInt(offset, 10) : 0;
+};
+
+const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
@@ -56,7 +61,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     status: "",
     final_decision: "",
     limit: 10,
-    offset: 0,
+    offset: getOffset(),
     start_date: "",
     end_date: "",
     sort_order:false
@@ -95,7 +100,6 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
         end_date:filterState.end_date || "",
         sort_order: filterState.sort_order?'asc':'desc'
       });
-
       try {
         const response = await fetch(
           `${
@@ -195,6 +199,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
     console.log(filterState);
   };
 
+  useEffect(() => {
+    localStorage.setItem("ticketListOffset", String(filterState.offset));
+  }, [filterState.offset]);
+
   const handleNext = () => {
     setFilterState((prev) => ({
       ...prev,
@@ -207,7 +215,6 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList }) => {
       ...prev,
       offset: (page - 1) * prev.limit,
     }));
-
     console.log(`Page: ${page}, Offset: ${(page - 1) * filterState.limit}`);
   };
   const  handleChangeSortOrder= () => {

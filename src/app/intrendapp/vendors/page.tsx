@@ -16,11 +16,17 @@ export interface Vendor {
   country: string;
   code:string;
 }
+
+const getOffset = () => {
+  const offset = localStorage.getItem("vendorListOffset");
+  return offset ? parseInt(offset, 10) : 0;
+};
+
 const VendorsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [pageFilter,setPageFilter]=useState<pageFilter>({
-    offset:0,
+    offset:getOffset(),
     limit:10,
   })
   const [pageInfo,setPageInfo]=useState<pageInfo>({
@@ -78,6 +84,9 @@ const VendorsPage = () => {
       offset: (page - 1) * prev.limit,
     }));
   };
+  useEffect(() => {
+    localStorage.setItem("vendorListOffset", pageFilter.offset.toString());
+  }, [pageFilter.offset]);
   return (
     <div className="p-8 bg-grey-100 rounded  text-black">
       <h1 className="text-2xl font-bold mb-4">Vendors</h1>
@@ -94,7 +103,7 @@ const VendorsPage = () => {
         </div>
       )}
       <div className='hidden md:block'>
-      <VendorList vendors={vendors} setVendors={setVendors} pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
+      <VendorList vendors={vendors} setVendors={setVendors} pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious} />
       </div>
       <div className='md:hidden'>
         <VendorMobileList vendors={vendors} setVendors={setVendors} pageFilter={pageFilter} pageInfo={pageInfo} onPageChange={handlePageChange} onNext={handleNext} onPrevious={handlePrevious}/>
