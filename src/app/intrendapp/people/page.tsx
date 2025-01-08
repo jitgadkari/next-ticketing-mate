@@ -11,6 +11,7 @@ export interface Person {
   phone: string;
   email: string;
   type_employee: string;
+  state?: string;
 }
 export interface pageFilter{
   offset:number,
@@ -26,11 +27,15 @@ export interface pageInfo{
   total_pages?: number | null;
   has_next?: boolean | null;
 }
+const getOffset = () => {
+  const offset = localStorage.getItem("peopleListOffset");
+  return offset ? parseInt(offset, 10) : 0;
+};
 const PeoplePage: React.FC = () => {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [people, setPeople] = useState<Person[]>([]);
   const [pageFilter,setPageFilter]=useState<pageFilter>({
-    offset:0,
+    offset:getOffset(),
     limit:10,
   })
   const [pageInfo,setPageInfo]=useState<pageInfo>({
@@ -90,6 +95,10 @@ const PeoplePage: React.FC = () => {
       offset: (page - 1) * prev.limit,
     }));
   };
+  
+  useEffect(() => {
+    localStorage.setItem("peopleListOffset", pageFilter.offset.toString());
+  }, [pageFilter.offset]);
 
   return (
     <div className="p-8 bg-gray-100  text-black">

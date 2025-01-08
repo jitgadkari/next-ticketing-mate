@@ -37,7 +37,7 @@ const Step2: React.FC<Step2Props> = ({
   const [loading, setLoading] = useState(false);
   const handleNext = async () => {
     console.log("Handling next for Step 2");
-    fetchTicket(ticket._id);
+   await fetchTicket(ticket._id);
     setLoading(false);
     setActiveStep("Step 3 : Message Template for vendors");
     toast.success("Step 2 completed");
@@ -73,7 +73,7 @@ const Step2: React.FC<Step2Props> = ({
     } catch (error) {
       console.error("Error during fetch:", error);
     }
-    fetchTicket(ticket._id);
+     fetchTicket(ticket._id);
   };
 
   useEffect(() => {

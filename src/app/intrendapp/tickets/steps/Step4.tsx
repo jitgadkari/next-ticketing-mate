@@ -180,7 +180,12 @@ const Step4: React.FC<Step4Props> = ({
       console.error("Error fetching vendors:", error);
     }
   };
-
+  const handleVendorMessageChange = (vendorName: string, message: string) => {
+    setVendorMessages((prev) => ({
+      ...prev,
+      [vendorName]: message,
+    }));
+  };
   const generateVendorMessages = async () => {
     const messages: Record<string, string> = {};
     for (const option of selectedOptions) {
@@ -502,7 +507,9 @@ const Step4: React.FC<Step4Props> = ({
                   </label>
                   <textarea
                     value={vendorMessages[option.value] || ""}
-                    readOnly
+                    onChange={(e) =>
+                      handleVendorMessageChange(option.value, e.target.value)
+                    }
                     className="w-full h-32 p-2 border rounded"
                   />
                   {emailSendingStatus[option.value] && (
