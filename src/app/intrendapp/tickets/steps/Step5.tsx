@@ -198,20 +198,21 @@ const Step5: React.FC<Step5Props> = ({
     }
   };
   const sendReminderToAllRemainingVendors = async () => {
-    const fetchedVendors = await fetchVendors();
-    const remainingVendors = fetchedVendors.vendors.filter(
-      (vendor: any) => !messages[vendor.name]
-    );
-    remainingVendors.forEach((vendor: any) => {
-      sendReminder(ticket.ticket_number, vendor.name);
+    Object.entries(messages).map(async ([vendor, message]) => {
+      const fetchedVendors = await fetchVendors();
+      const vendors = fetchedVendors.vendors.filter(
+        (fetchedVendor: any) => fetchedVendor.name === vendor
+      );
+      if (vendors.length > 0) {
+        if (!message) {
+          sendReminder(ticket.ticket_number, vendor);
+        }
+      }
     });
   };
   const sendReminder = async (ticket_number: string, vendorName: string) => {
     try {
-      console.log(`Reminder sent to ${vendorName} for ticket ${ticket_number}`);
-      // Here, you would add an API call to send the reminder
       const fetchedVendors = await fetchVendors();
-      console.log(fetchedVendors);
       const vendor = fetchedVendors.vendors.find(
         (vendor: any) => vendor.name === vendorName
       );
