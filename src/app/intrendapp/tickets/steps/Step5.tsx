@@ -220,7 +220,7 @@ const Step5: React.FC<Step5Props> = ({
       if (!getGroup) {
         throw new Error("Group not found");
       }
-      const vendorMessage = `Hello dear vendor ${vendorName} , you havent replied to this message yet. Please reply to this message to continue the conversation. query from customer :${ticket.steps["Step 1 : Customer Message Received"].text} with ticket number ${ticket_number}`;
+      const vendorMessage = `Hello ${vendorName} \n \nWe are still waiting for your response on the ticket number ${ticket_number}.\n \nPlease respond as soon as possible.`;
       if (!vendor) {
         console.error(`Vendor ${vendorName} not found`);
         return;
