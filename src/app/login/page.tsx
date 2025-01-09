@@ -20,13 +20,20 @@ const Login = () => {
     // Cleanup the listener on component unmount
     return () => unsubscribe();
   }, []);
-  if (authValid) {
-    router.push("/intrendapp/tickets");
-  }
+  useEffect(() => {
+    if (authValid) {
+      router.push("/intrendapp/tickets");
+    }
+  }, [authValid, router]); // Include router in the dependency array
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await pb.collection("users").authWithPassword(email, password);
+     const result= await pb.collection("users").authWithPassword(email, password);
+     console.log(result);
+     if(!result){
+      console.log("error in login");
+     }
       router.push("/intrendapp/dashboard");
     } catch (err) {
       setError("Invalid email or password");
