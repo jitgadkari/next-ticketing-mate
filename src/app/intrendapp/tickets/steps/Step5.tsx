@@ -185,12 +185,63 @@ const Step5: React.FC<Step5Props> = ({
       console.error("Error fetching ticket:", error);
     }
   };
-
-  const sendReminder = (ticket_number: string, vendorName: string) => {
-    console.log(`Reminder sent to ${vendorName} for ticket ${ticket_number}`);
-    // Here, you would add an API call to send the reminder
-
-    toast.success(`Reminder sent to ${vendorName} successfully.`);
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`
+      );
+      const data = await response.json();
+      console.log(data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching vendors:", error);
+    }
+  };
+  const sendReminderToAllRemainingVendors = async () => {
+    Object.entries(messages).map(async ([vendor, message]) => {
+      const fetchedVendors = await fetchVendors();
+      const vendors = fetchedVendors.vendors.filter(
+        (fetchedVendor: any) => fetchedVendor.name === vendor
+      );
+      if (vendors.length > 0) {
+        if (!message) {
+          sendReminder(ticket.ticket_number, vendor);
+        }
+      }
+    });
+  };
+  const sendReminder = async (ticket_number: string, vendorName: string) => {
+    try {
+      const fetchedVendors = await fetchVendors();
+      const vendor = fetchedVendors.vendors.find(
+        (vendor: any) => vendor.name === vendorName
+      );
+      const getGroup = Object.values(vendor.group)[0];
+      if (!getGroup) {
+        throw new Error("Group not found");
+      }
+      const vendorMessage = `Hello ${vendorName} \n \nWe are still waiting for your response on the ticket number ${ticket_number}.\n \nPlease respond as soon as possible.`;
+      if (!vendor) {
+        console.error(`Vendor ${vendorName} not found`);
+        return;
+      }
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: getGroup,
+            message: vendorMessage,
+          }),
+        }
+      );
+      toast.success(`Reminder sent to ${vendorName} successfully.`);
+    } catch (error) {
+      toast.error(`Failed to send reminder to ${vendorName}.`);
+    }
   };
 
   const handleReminderClick = (vendor: string) => {
@@ -217,7 +268,17 @@ const Step5: React.FC<Step5Props> = ({
         <h1 className="text-xl font-bold ">Customer Message</h1>
         <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
       </div>
-      <h3 className="text-xl font-bold mb-4">Step 5: Messages from Vendors</h3>
+      <div className="flex justify-between py-2">
+        <h3 className="text-xl font-bold mb-4">
+          Step 5: Messages from Vendors
+        </h3>
+        <Button
+          onClick={sendReminderToAllRemainingVendors}
+          className="bg-gray-500 hover:bg-green-800 text-white font-bold  px-2 rounded"
+        >
+          Remind all
+        </Button>
+      </div>
       {Object.entries(messages).map(([vendor, message]) => (
         <div key={vendor} className="mb-4">
           <div className=" flex justify-between items-center">
@@ -237,7 +298,7 @@ const Step5: React.FC<Step5Props> = ({
               {isCurrentStep && (
                 <AiOutlineEdit
                   onClick={() => handleEditClick(vendor)}
-                  className="text-gray-500 hover:text-green-800 cursor-pointer"
+                  className="text-gray-500 hover:text-green-800 cursor-pointer mt-3"
                   size={24}
                 />
               )}
@@ -261,10 +322,11 @@ const Step5: React.FC<Step5Props> = ({
         </Button>
         <Button
           onClick={handleNextStep}
-          className={`font-bold py-2 px-4 rounded ${isCurrentStep
+          className={`font-bold py-2 px-4 rounded ${
+            isCurrentStep
               ? "bg-green-500 hover:bg-green-700 text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+          }`}
           disabled={!isCurrentStep || isDecoding}
         >
           {isDecoding ? "Decoding..." : "Next"}
