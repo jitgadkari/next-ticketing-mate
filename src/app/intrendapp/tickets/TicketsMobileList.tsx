@@ -694,7 +694,7 @@ export default function TicketsMobileList({
 
             <div className="flex justify-end space-x-4">
               <Link href={`tickets/${ticket._id}`} passHref>
-                <span className="text-blue-500 hover:text-blue-700">
+                <span className="text-blue-500 mr-7 hover:text-blue-700">
                   <FaEye />
                 </span>
               </Link>

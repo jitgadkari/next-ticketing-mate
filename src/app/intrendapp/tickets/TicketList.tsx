@@ -42,10 +42,6 @@ export interface FilterState {
   sort_order?:boolean;
 }
 
-const getOffset = () => {
-  const offset = localStorage.getItem("ticketListOffset");
-  return offset ? parseInt(offset, 10) : 0;
-};
 
 const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
