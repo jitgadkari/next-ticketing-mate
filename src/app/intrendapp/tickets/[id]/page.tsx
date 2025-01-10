@@ -65,7 +65,7 @@ const TicketDetailsPage = () => {
   console.log(activeStep)
   const listOfStepsWhereRefreshIsntAllowed = [
     "Step 1 : Customer Message Received",
-    "Step 5: Messages from Vendors",
+    // "Step 5: Messages from Vendors",
     "Step 6 : Vendor Message Decoded",
     "Step 7 : Customer Message Template",
   ];
