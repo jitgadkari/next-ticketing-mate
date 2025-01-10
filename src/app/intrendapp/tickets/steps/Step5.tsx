@@ -50,8 +50,31 @@ const Step5: React.FC<Step5Props> = ({
       let formatmsg = `query from customer :${ticket.steps["Step 1 : Customer Message Received"].text} vendor reply :${message}`;
       console.log(formatmsg);
       if (message.trim() !== "") {
+        // generating null message
+        const nullMessage = {
+          "Bulk 1": {
+            "query": "Not Found",
+            "rate": {
+              "price_per_meter": "Not Found",
+              "currency": "INR",
+              "quantity": "Not Found",
+              "additional_charges": "Not Found",
+              "other_info": "Not Found"
+            },
+            "schedule": {
+              "delivery_time": "Not Found",
+              "delivery_point": "Not Found",
+              "delivery_method": "Not Found"
+            }
+          }
+        }
         // Only decode non-empty messages
         try {
+
+          
+          
+
+          // fetching decoded message
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode_groq`,
             {
@@ -63,15 +86,19 @@ const Step5: React.FC<Step5Props> = ({
             }
           );
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // throw new Error(`HTTP error! status: ${response.status}`);
+            // adding null message if error occurs
+            vendorDecodedMessages[vendor] = nullMessage
           }
           const decodedMessage = await response.json();
           vendorDecodedMessages[vendor] = decodedMessage;
         } catch (error) {
           console.error(`Error decoding message for ${vendor}:`, error);
-          vendorDecodedMessages[vendor] = {
-            error: "Failed to decode message",
-          };
+          // vendorDecodedMessages[vendor] = {
+          //   error: "Failed to decode message",
+          // };
+
+          vendorDecodedMessages[vendor] = nullMessage
         }
       } else {
         console.log(`Skipping empty message for ${vendor}`);
