@@ -227,6 +227,64 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                   </span>
                 </Link>
               </li>
+              <li
+                onClick={() => {
+                  handleLinkClick("customer-dashboard");
+                }}
+              >
+                <Link
+                  href="/intrendapp/customersDashboard"
+                  className={`flex items-center ${
+                    isExpanded ? "justify-start space-x-2" : "justify-center"
+                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                >
+                  <Image
+                    src="/svg/dashboard-4-svgrepo-com.svg"
+                    alt="Dashboard"
+                    width={24}
+                    height={24}
+                    className="min-w-[1.5rem] brightness-0 invert"
+                  />
+                  <span
+                    className={`transition-opacity duration-300 ${
+                      isExpanded
+                        ? "opacity-100"
+                        : "opacity-0 w-0 overflow-hidden"
+                    }`}
+                  >
+                    Customer Dashboard
+                  </span>
+                </Link>
+              </li>
+              <li
+                onClick={() => {
+                  handleLinkClick("customer-dashboard");
+                }}
+              >
+                <Link
+                  href="/intrendapp/vendorsDashboard"
+                  className={`flex items-center ${
+                    isExpanded ? "justify-start space-x-2" : "justify-center"
+                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                >
+                <Image
+                    src="/svg/dashboard-4-svgrepo-com.svg"
+                    alt="Dashboard"
+                    width={24}
+                    height={24}
+                    className="min-w-[1.5rem] brightness-0 invert"
+                  />
+                  <span
+                    className={`transition-opacity duration-300 ${
+                      isExpanded
+                        ? "opacity-100"
+                        : "opacity-0 w-0 overflow-hidden"
+                    }`}
+                  >
+                    Vendors Dashboard
+                  </span>
+                </Link>
+              </li>
             </ul>
           </nav>
         </aside>
