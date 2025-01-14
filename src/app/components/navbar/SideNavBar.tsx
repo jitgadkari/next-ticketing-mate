@@ -68,9 +68,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               <li onClick={() => handleLinkClick("dashboard")}>
                 <Link
                   href="/intrendapp/dashboard"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/dashboard-4-svgrepo-com.svg"
@@ -80,11 +79,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     Dashboard
                   </span>
@@ -97,9 +95,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               >
                 <Link
                   href="/intrendapp/tickets"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/tickets-ticket-svgrepo-com.svg"
@@ -109,11 +106,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     Tickets
                   </span>
@@ -122,9 +118,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               <li onClick={() => handleLinkClick("customer")}>
                 <Link
                   href="/intrendapp/customers"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/icons8-customer-100.png"
@@ -134,11 +129,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.75rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     Customers
                   </span>
@@ -151,9 +145,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               >
                 <Link
                   href="/intrendapp/vendors"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/people-svgrepo-com.svg"
@@ -163,11 +156,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     Vendors
                   </span>
@@ -176,9 +168,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               <li>
                 <Link
                   href="/intrendapp/attributes"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/edit-attributes-svgrepo-com.svg"
@@ -188,11 +179,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     Attributes
                   </span>
@@ -205,9 +195,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
               >
                 <Link
                   href="/intrendapp/people"
-                  className={`flex items-center ${
-                    isExpanded ? "justify-start space-x-2" : "justify-center"
-                  } text-lg hover:bg-gray-700 p-2 rounded block`}
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
                 >
                   <Image
                     src="/svg/users-svgrepo-com.svg"
@@ -217,16 +206,74 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${
-                      isExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
-                    }`}
+                    className={`transition-opacity duration-300 ${isExpanded
+                      ? "opacity-100"
+                      : "opacity-0 w-0 overflow-hidden"
+                      }`}
                   >
                     People
                   </span>
                 </Link>
               </li>
+              <li
+                onClick={() => {
+                  handleLinkClick("customer-dashboard");
+                }}
+              >
+                <Link
+                  href="/intrendapp/customersDashboard"
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
+                >
+                  <Image
+                    src="/svg/dashboard-4-svgrepo-com.svg"
+                    alt="Dashboard"
+                    width={24}
+                    height={24}
+                    className="min-w-[1.5rem] brightness-0 invert"
+                  />
+                  <span
+                    className={`duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                  >
+                    Customer
+                  </span>
+                  <span
+                    className={`duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                  >
+                    Dashboard
+                  </span>
+                </Link>
+              </li>
+              <li
+                onClick={() => {
+                  handleLinkClick("vendor-dashboard");
+                }}
+              >
+                <Link
+                  href="/intrendapp/vendorsDashboard"
+                  className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"
+                    } text-lg hover:bg-gray-700 p-2 rounded block`}
+                >
+                  <Image
+                    src="/svg/dashboard-4-svgrepo-com.svg"
+                    alt="Dashboard"
+                    width={24}
+                    height={24}
+                    className="min-w-[1.5rem] brightness-0 invert"
+                  />
+                  <span
+                    className={`  duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                  >
+                    Vendors
+                  </span>
+                  <span
+                    className={`  duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                  >
+                    Dashboard
+                  </span>
+                </Link>
+              </li>
+
             </ul>
           </nav>
         </aside>
