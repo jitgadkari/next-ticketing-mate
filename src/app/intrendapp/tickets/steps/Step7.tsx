@@ -158,6 +158,11 @@ const Step7: React.FC<Step7Props> = ({
             toast.error("Please select a contact");
             return;
           }
+          if (!selectedPersonPhone) {
+            toast.error("No phone number available for this contact");
+            return;
+          }
+          console.log('Sending WhatsApp message to:', selectedPersonPhone);
           targetNumber = selectedPersonPhone;
         } else {
           if (!selectedGroup) {
@@ -172,8 +177,9 @@ const Step7: React.FC<Step7Props> = ({
           message: template,
         };
         
+        console.log('Sending message with payload:', payload);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/whatsapp/send`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
           {
             method: "POST",
             headers: {
@@ -183,7 +189,6 @@ const Step7: React.FC<Step7Props> = ({
           }
         );
         const data = await response.json();
-        console.log('WhatsApp API Response:', data);
         setSendingStatus("WhatsApp message sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -225,15 +230,18 @@ const Step7: React.FC<Step7Props> = ({
     setSelectedContact(personName);
     if (personName) {
       try {
+        console.log('Fetching details for person:', personName);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/${encodeURIComponent(personName)}`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/name/?person=${encodeURIComponent(personName)}`
         );
         const data = await response.json();
-        console.log('Person details:', data);
+        console.log('Person data:', data);
         if (data.person && data.person.phone) {
+          console.log('Setting phone number:', data.person.phone);
           setSelectedPersonPhone(data.person.phone);
         } else {
           setSelectedPersonPhone('');
+          toast.error('No phone number found for this person');
         }
       } catch (error) {
         console.error('Error fetching person details:', error);
