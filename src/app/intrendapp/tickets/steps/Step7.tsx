@@ -4,7 +4,6 @@ import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { FaWhatsapp } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
-
 interface Step7Props {
   ticketNumber: string;
   customerTemplate: string;
@@ -35,7 +34,8 @@ const Step7: React.FC<Step7Props> = ({
 }) => {
   const [template, setTemplate] = useState(customerTemplate);
   const [showPopup, setShowPopup] = useState({
-    whatsApp: false,
+    whatsAppPerson: false,
+    whatsAppGroup: false,
     email: false,
     sendReminder: false,
   });
@@ -46,13 +46,52 @@ const Step7: React.FC<Step7Props> = ({
     email: false,
   });
 
+  const [selectedContact, setSelectedContact] = useState<string>('');
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [customerData, setCustomerData] = useState<any>(null);
+  const [peopleOptions, setPeopleOptions] = useState<string[]>([]);
+  const [groupOptions, setGroupOptions] = useState<{[key: string]: string}>({});
+  const [selectedPersonPhone, setSelectedPersonPhone] = useState<string>('');
+
+  const handleGroupSelect = (groupId: string) => {
+    setSelectedGroup(groupId);
+    // Find the group name from groupOptions
+    const selectedGroupName = Object.entries(groupOptions).find(([name, id]) => id === groupId)?.[0];
+    console.log('Selected Group Details:', {
+      groupName: selectedGroupName,
+      groupId: groupId
+    });
+  };
+
+  useEffect(() => {
+    setTemplate(customerTemplate);
+    fetchCustomerDetails();
+  }, [customerTemplate]);
+
+  const fetchCustomerDetails = async () => {
+    try {
+      const customerName = ticket.customer_name;
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers/?name=${encodeURIComponent(customerName)}`
+      );
+      const data = await response.json();
+      if (data.customers && data.customers.length > 0) {
+        const customer = data.customers[0];
+        setCustomerData(customer);
+        setPeopleOptions(customer.people || []);
+        setGroupOptions(customer.group || {});
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      toast.error('Failed to fetch customer details');
+    }
+  };
+
   const step5Messages = ticket.steps["Step 5: Messages from Vendors"];
 
-  // Getting the keys
   const keys = Object.keys(step5Messages);
 
   const handleNext = async () => {
-    console.log("Handling next for Step 7");
     await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
       {
@@ -73,7 +112,6 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleUpdate = async (updatedTemplate: string) => {
-    console.log("Updating Step 7 template:", updatedTemplate);
     await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
       {
@@ -91,14 +129,8 @@ const Step7: React.FC<Step7Props> = ({
     fetchTicket(ticket._id);
   };
 
-
-
-  useEffect(() => {
-    setTemplate(customerTemplate);
-  }, [customerTemplate]);
-
   const handleSave = async () => {
-    await handleUpdate(template);//client message, vendor name 
+    await handleUpdate(template);
   };
 
   const handleNextStep = async () => {
@@ -113,50 +145,77 @@ const Step7: React.FC<Step7Props> = ({
     }
   };
 
-  const handleSendMessage = (type: "whatsApp" | "email") => {
+  const handleSendMessage = (type: "whatsAppPerson" | "whatsAppGroup" | "email") => {
     setShowPopup((prev) => ({
       ...prev,
       [type]: true,
     }));
   };
 
-  const handlePopupConfirm = async (type: "whatsApp" | "email") => {
+  const handlePopupConfirm = async (type: "whatsAppPerson" | "whatsAppGroup" | "email") => {
     setShowPopup((prev) => ({
       ...prev,
       [type]: false,
     }));
     setIsSending(true);
-    setSendingStatus(null);
 
     try {
-      if (type === "whatsApp") {
-        const fromNumberRegex = /^91.*@c\.us$/;
-        const fromGroupRegex = /^.*@g\.us$/;
+      if (type === "whatsAppPerson" || type === "whatsAppGroup") {
+        let targetNumber = '';
+        
+        if (type === "whatsAppPerson") {
+          if (!selectedContact) {
+            toast.error("Please select a contact");
+            return;
+          }
+          if (!selectedPersonPhone) {
+            toast.error("No phone number available for this contact");
+            return;
+          }
+          // Add @c.us suffix for person if not already present
+          targetNumber = selectedPersonPhone.endsWith('@c.us') 
+            ? selectedPersonPhone 
+            : `${selectedPersonPhone}@c.us`;
+          console.log('Sending WhatsApp message to person:', targetNumber);
+        } else {
+          if (!selectedGroup) {
+            toast.error("Please select a group");
+            return;
+          }
+          // Add @g.us suffix for group if not already present
+          targetNumber = selectedGroup.endsWith('@g.us') 
+            ? selectedGroup 
+            : `${selectedGroup}@g.us`;
+          console.log('Sending WhatsApp message to group:', targetNumber);
+        }
 
-        if (
-          !fromNumberRegex.test(ticket.from_number) &&
-          !fromGroupRegex.test(ticket.from_number)
-        ) {
-          toast.error("Invalid 'phone or group number'");
+        // Validate message content
+        if (!template || template.trim() === '') {
+          toast.error("Message content cannot be empty");
           return;
         }
 
-        const sendMessageResponse = await fetch(
+        console.log('Message template content:', template);
+        
+        const payload = {
+          to: targetNumber,
+          message: template.trim(),
+          type: "text"
+        };
+        
+        console.log('Sending message with payload:', payload);
+        const response = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              to: ticket.from_number,
-              message: template,
-            }),
+            body: JSON.stringify(payload),
           }
         );
-
-        const sendMessageData = await sendMessageResponse.json();
-        console.log("WhatsApp message sent:", sendMessageData);
+        const data = await response.json();
+        console.log("Whatsapp message response:", data)
         setSendingStatus("WhatsApp message sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -179,7 +238,7 @@ const Step7: React.FC<Step7Props> = ({
         );
 
         const sendEmailData = await sendEmailResponse.json();
-        console.log("Email sent:", sendEmailData);
+        console.log('Email API Response:', sendEmailData);
         setSendingStatus("Email sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -191,6 +250,33 @@ const Step7: React.FC<Step7Props> = ({
       setSendingStatus(`Failed to send ${type} message`);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handlePersonSelect = async (personName: string) => {
+    setSelectedContact(personName);
+    if (personName) {
+      try {
+        console.log('Fetching details for person:', personName);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/name/?person=${encodeURIComponent(personName)}`
+        );
+        const data = await response.json();
+        console.log('Person data:', data);
+        if (data.person && data.person.phone) {
+          console.log('Setting phone number:', data.person.phone);
+          setSelectedPersonPhone(data.person.phone);
+        } else {
+          setSelectedPersonPhone('');
+          toast.error('No phone number found for this person');
+        }
+      } catch (error) {
+        console.error('Error fetching person details:', error);
+        toast.error('Failed to fetch person details');
+        setSelectedPersonPhone('');
+      }
+    } else {
+      setSelectedPersonPhone('');
     }
   };
 
@@ -216,18 +302,24 @@ const Step7: React.FC<Step7Props> = ({
         <div className="flex flex-col justify-center items-center gap-2">
           <div className="md:flex gap-2 items-center">
             <Button
-              onClick={() => handleSendMessage("whatsApp")}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
-                }`}
+              onClick={() => handleSendMessage("whatsAppPerson")}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
               disabled={!isCurrentStep || isSending}
             >
-              {isSending ? "Sending..." : "Send"}
+              {isSending ? "Sending..." : "Send to Person"}
+              <FaWhatsapp />
+            </Button>
+            <Button
+              onClick={() => handleSendMessage("whatsAppGroup")}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
+              disabled={!isCurrentStep || isSending}
+            >
+              {isSending ? "Sending..." : "Send to Group"}
               <FaWhatsapp />
             </Button>
             <Button
               onClick={() => handleSendMessage("email")}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"
-                }`}
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
               disabled={!isCurrentStep || isSending}
             >
               {isSending ? "Sending..." : "Send"}
@@ -259,19 +351,43 @@ const Step7: React.FC<Step7Props> = ({
         </p>
       )}
 
-      {showPopup.whatsApp && (
+      {showPopup.whatsAppPerson && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-5 rounded-lg shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Sending WhatsApp Message...</h2>
-            <p className="mb-4">
-              Are you sure you want to send this WhatsApp message to the customer?
-            </p>
+          <div className="bg-white p-5 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Send WhatsApp Message to Person</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Contact
+              </label>
+              <select
+                value={selectedContact}
+                onChange={(e) => handlePersonSelect(e.target.value)}
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a contact...</option>
+                {peopleOptions.map((person, index) => (
+                  <option key={index} value={person}>
+                    {person}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message Preview
+              </label>
+              <div className="py-1 mb-4">
+                <div className="bg-gray-50 p-4 rounded border whitespace-pre-wrap h-48 overflow-y-auto">
+                  {template}
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end">
               <Button
                 onClick={() =>
                   setShowPopup((prev) => ({
                     ...prev,
-                    whatsApp: false,
+                    whatsAppPerson: false,
                   }))
                 }
                 className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
@@ -279,10 +395,64 @@ const Step7: React.FC<Step7Props> = ({
                 Cancel
               </Button>
               <Button
-                onClick={() => handlePopupConfirm("whatsApp")}
+                onClick={() => handlePopupConfirm("whatsAppPerson")}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
-                OK
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPopup.whatsAppGroup && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-5 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Send WhatsApp Message to Group</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Group
+              </label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => handleGroupSelect(e.target.value)}
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a group...</option>
+                {Object.entries(groupOptions).map(([groupName, groupId]) => (
+                  <option key={groupId} value={groupId}>
+                    {groupName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message Preview
+              </label>
+              <div className="py-1 mb-4">
+                <div className="bg-gray-50 p-4 rounded border whitespace-pre-wrap h-48 overflow-y-auto">
+                  {template}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={() =>
+                  setShowPopup((prev) => ({
+                    ...prev,
+                    whatsAppGroup: false,
+                  }))
+                }
+                className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handlePopupConfirm("whatsAppGroup")}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Send
               </Button>
             </div>
           </div>
