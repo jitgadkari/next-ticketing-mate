@@ -53,6 +53,16 @@ const Step7: React.FC<Step7Props> = ({
   const [groupOptions, setGroupOptions] = useState<{[key: string]: string}>({});
   const [selectedPersonPhone, setSelectedPersonPhone] = useState<string>('');
 
+  const handleGroupSelect = (groupId: string) => {
+    setSelectedGroup(groupId);
+    // Find the group name from groupOptions
+    const selectedGroupName = Object.entries(groupOptions).find(([name, id]) => id === groupId)?.[0];
+    console.log('Selected Group Details:', {
+      groupName: selectedGroupName,
+      groupId: groupId
+    });
+  };
+
   useEffect(() => {
     setTemplate(customerTemplate);
     fetchCustomerDetails();
@@ -162,19 +172,35 @@ const Step7: React.FC<Step7Props> = ({
             toast.error("No phone number available for this contact");
             return;
           }
-          console.log('Sending WhatsApp message to:', selectedPersonPhone);
-          targetNumber = selectedPersonPhone;
+          // Add @c.us suffix for person if not already present
+          targetNumber = selectedPersonPhone.endsWith('@c.us') 
+            ? selectedPersonPhone 
+            : `${selectedPersonPhone}@c.us`;
+          console.log('Sending WhatsApp message to person:', targetNumber);
         } else {
           if (!selectedGroup) {
             toast.error("Please select a group");
             return;
           }
-          targetNumber = selectedGroup;
+          // Add @g.us suffix for group if not already present
+          targetNumber = selectedGroup.endsWith('@g.us') 
+            ? selectedGroup 
+            : `${selectedGroup}@g.us`;
+          console.log('Sending WhatsApp message to group:', targetNumber);
         }
 
+        // Validate message content
+        if (!template || template.trim() === '') {
+          toast.error("Message content cannot be empty");
+          return;
+        }
+
+        console.log('Message template content:', template);
+        
         const payload = {
           to: targetNumber,
-          message: template,
+          message: template.trim(),
+          type: "text"
         };
         
         console.log('Sending message with payload:', payload);
@@ -189,6 +215,7 @@ const Step7: React.FC<Step7Props> = ({
           }
         );
         const data = await response.json();
+        console.log("Whatsapp message response:", data)
         setSendingStatus("WhatsApp message sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -388,7 +415,7 @@ const Step7: React.FC<Step7Props> = ({
               </label>
               <select
                 value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
+                onChange={(e) => handleGroupSelect(e.target.value)}
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select a group...</option>
