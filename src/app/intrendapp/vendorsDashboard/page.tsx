@@ -207,28 +207,20 @@ export default function VendorsDashboard() {
     "Vendor's Reply",
   ];
 
-  const renderRow = (ticket: Ticket) => (
-    <>
-      <td className="border p-2">{ticket.ticket_number}</td>
-      <td className="border p-2">{ticket.customer_message}</td>
-      <td className="border p-2">
-        <div className="space-y-2">
-          {Object.entries(ticket.vendor_replies).length > 0 ? (
-            Object.entries(ticket.vendor_replies).map(([vendor, reply], index) => (
-              <div key={vendor} className={index !== 0 ? "border-t pt-2" : ""}>
-                <div className="font-semibold text-gray-700 mb-1">{vendor}:</div>
-                <div className={reply.trim() === "" ? "text-yellow-600 font-medium" : ""}>
-                  {reply.trim() === "" ? "Yet to Reply" : reply}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-yellow-600 font-medium">No Vendors Assigned</div>
-          )}
-        </div>
-      </td>
-    </>
-  );
+  const renderRow = (ticket: Ticket) => {
+    const vendorReply = ticket.vendor_replies[selectedVendor] || "";
+    return (
+      <>
+        <td className="border p-2">{ticket.ticket_number}</td>
+        <td className="border p-2">{ticket.customer_message}</td>
+        <td className="border p-2">
+          <div className={vendorReply.trim() === "" ? "text-yellow-600 font-medium" : ""}>
+            {vendorReply.trim() === "" ? "Yet to Reply" : vendorReply}
+          </div>
+        </td>
+      </>
+    );
+  };
 
   return (
     <div className="p-8 bg-grey-100 rounded shadow text-black">
