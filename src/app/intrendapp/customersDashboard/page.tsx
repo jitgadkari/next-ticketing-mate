@@ -246,7 +246,7 @@ export default function CustomerDashboard() {
 
       {showForm && (
         <div className="mb-4">
-          <AddTicketForm onAdd={handleAdd} />
+          <AddTicketForm onAdd={handleAdd} initialCustomer={selectedCustomer} />
         </div>
       )}
 

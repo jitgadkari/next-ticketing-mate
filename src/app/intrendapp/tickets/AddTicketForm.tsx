@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 
 interface AddTicketFormProps {
   onAdd: () => void;
+  initialCustomer?: string;
 }
 
 export interface Customer {
@@ -21,11 +22,11 @@ interface Person {
   phone: string;
 }
 
-const AddTicketForm = ({ onAdd }: AddTicketFormProps) => {
+const AddTicketForm = ({ onAdd, initialCustomer }: AddTicketFormProps) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [showPersonDropDown, setShowPersonDropDown] = useState(false);
   const [formData, setFormData] = useState({
-    customer_name: "",
+    customer_name: initialCustomer || "",
     person_name: "",
     message: "",
     from_number: "",
