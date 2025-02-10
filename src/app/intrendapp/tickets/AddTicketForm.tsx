@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 interface AddTicketFormProps {
   onAdd: () => void;
   initialCustomer?: string;
+  disableCustomerSelect?: boolean;
 }
 
 export interface Customer {
@@ -22,7 +23,7 @@ interface Person {
   phone: string;
 }
 
-const AddTicketForm = ({ onAdd, initialCustomer }: AddTicketFormProps) => {
+const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTicketFormProps) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [showPersonDropDown, setShowPersonDropDown] = useState(false);
   const [formData, setFormData] = useState({
@@ -57,6 +58,15 @@ const AddTicketForm = ({ onAdd, initialCustomer }: AddTicketFormProps) => {
       setPeople([]); // Reset people when no customer is selected
     }
   }, [formData.customer_name]);
+
+  useEffect(() => {
+    if (initialCustomer) {
+      setFormData(prev => ({
+        ...prev,
+        customer_name: initialCustomer
+      }));
+    }
+  }, [initialCustomer]);
 
   const fetchPeople = async (customerName: string) => {
     try {
@@ -132,6 +142,7 @@ const AddTicketForm = ({ onAdd, initialCustomer }: AddTicketFormProps) => {
             className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             type="button"
             onClick={() => setShowDropDown(!showDropDown)}
+            disabled={disableCustomerSelect}
           >
             {formData.customer_name || "Select Customer"}
             <svg

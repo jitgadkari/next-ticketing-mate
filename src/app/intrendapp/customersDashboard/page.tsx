@@ -231,22 +231,29 @@ export default function CustomerDashboard() {
     <div className="p-8 bg-grey-100 rounded shadow text-black">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Customer Dashboard</h1>
-        <div>
-          {!showForm ? (
-            <Button onClick={() => setShowForm(true)}>
-              Add Ticket
-            </Button>
-          ) : (
-            <Button onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
-          )}
-        </div>
+        {selectedCustomer && (
+          <div>
+            {!showForm ? (
+              <Button onClick={() => setShowForm(true)}>
+                Add Ticket
+              </Button>
+            ) : (
+              <Button onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && selectedCustomer && (
         <div className="mb-4">
-          <AddTicketForm onAdd={handleAdd} initialCustomer={selectedCustomer} />
+          <AddTicketForm 
+            key={selectedCustomer} 
+            onAdd={handleAdd} 
+            initialCustomer={selectedCustomer} 
+            disableCustomerSelect={true} 
+          />
         </div>
       )}
 

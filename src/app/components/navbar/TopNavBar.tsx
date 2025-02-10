@@ -115,6 +115,16 @@ export default function TopNavBar() {
                                     People
                                 </Link>
                             </li>
+                            <li>
+                                <Link href="/intrendapp/customersDashboard" className="text-lg hover:text-gray-300">
+                                    Customer Dashboard
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/intrendapp/vendorsDashboard" className="text-lg hover:text-gray-300">
+                                    Vendor Dashboard
+                                </Link>
+                            </li>
                                 <li>
                                     <button
                                         onClick={() => {

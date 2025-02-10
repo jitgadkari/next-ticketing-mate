@@ -207,6 +207,42 @@ export default function VendorsDashboard() {
     "Vendor's Reply",
   ];
 
+  const [replyTicket, setReplyTicket] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+
+  const handleReply = async (ticketNumber: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_number: ticketNumber,
+            step_number: "Step 5: Messages from Vendors",
+            step_info: {
+              [selectedVendor]: replyMessage
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Reply sent successfully");
+        setReplyTicket(null);
+        setReplyMessage("");
+        fetchTickets(); // Refresh the tickets
+      } else {
+        toast.error("Failed to send reply");
+      }
+    } catch (error) {
+      console.error("Error sending reply:", error);
+      toast.error("Error sending reply");
+    }
+  };
+
   const renderRow = (ticket: Ticket) => {
     const vendorReply = ticket.vendor_replies[selectedVendor] || "";
     return (
@@ -214,9 +250,47 @@ export default function VendorsDashboard() {
         <td className="border p-2">{ticket.ticket_number}</td>
         <td className="border p-2">{ticket.customer_message}</td>
         <td className="border p-2">
-          <div className={vendorReply.trim() === "" ? "text-yellow-600 font-medium" : ""}>
-            {vendorReply.trim() === "" ? "Yet to Reply" : vendorReply}
-          </div>
+          {replyTicket === ticket.ticket_number ? (
+            <div className="space-y-2">
+              <textarea
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                className="w-full p-2 border rounded"
+                rows={3}
+                placeholder="Type your reply here..."
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleReply(ticket.ticket_number)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Send
+                </button>
+                <button
+                  onClick={() => {
+                    setReplyTicket(null);
+                    setReplyMessage("");
+                  }}
+                  className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={vendorReply.trim() === "" ? "text-yellow-600 font-medium" : ""}>
+              {vendorReply.trim() === "" ? (
+                <button
+                  onClick={() => setReplyTicket(ticket.ticket_number)}
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Click to Reply
+                </button>
+              ) : (
+                vendorReply
+              )}
+            </div>
+          )}
         </td>
       </>
     );
