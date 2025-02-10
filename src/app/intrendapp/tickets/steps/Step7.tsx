@@ -33,6 +33,7 @@ const Step7: React.FC<Step7Props> = ({
   ticket,
 }) => {
   const [template, setTemplate] = useState(customerTemplate);
+  console.log(template)
   const [showPopup, setShowPopup] = useState({
     whatsAppPerson: false,
     whatsAppGroup: false,
@@ -292,6 +293,7 @@ const Step7: React.FC<Step7Props> = ({
         onChange={(e) => setTemplate(e.target.value)}
         className="w-full h-64 p-2 border rounded"
       />
+     
       <div className="flex justify-between mt-4">
         <Button
           onClick={handleSave}
