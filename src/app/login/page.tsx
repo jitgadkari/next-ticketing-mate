@@ -2,41 +2,58 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import pb from "../../lib/pocketbase";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
-
   useEffect(() => {
-    const unsubscribe = pb.authStore.onChange(() => {
-      setIsAuthValid(pb.authStore.isValid);
-    });
-
-    // Cleanup the listener on component unmount
-    return () => unsubscribe();
-  }, []);
-  useEffect(() => {
-    if (authValid) {
-      router.push("/intrendapp/tickets");
-    }
-  }, [authValid, router]); // Include router in the dependency array
+    // Check if user is already authenticated
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push("/intrendapp/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [router]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+    setError(""); // Clear any previous errors
+    setIsLoading(true);
+    
     try {
-     const result= await pb.collection("users").authWithPassword(email, password);
-     console.log(result);
-     if(!result){
-      console.log("error in login");
-     }
-      router.push("/intrendapp/dashboard");
-    } catch (err) {
-      setError("Invalid email or password");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        // Session is automatically handled by Supabase
+        router.push("/intrendapp/dashboard");
+      } else {
+        setError("Authentication failed. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Invalid email or password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,6 +70,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="mb-4">
@@ -63,14 +81,18 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
-          {error && <p className="text-red-500">{error}</p>}
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
           <button
             type="submit"
-            className="w-full p-2 text-white bg-blue-500 rounded"
+            className={`w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>
