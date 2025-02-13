@@ -1,56 +1,84 @@
 "use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import pb from '../../lib/pocketbase';
+import { useSignup } from '@/contexts/SignupContext';
+import Link from 'next/link';
 
 const Signup = () => {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const router = useRouter();
-
-  const handleSignup = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      await pb.collection('users').create({ email, password });
-      await pb.collection('users').authWithPassword(email, password);
-      console.log('User created and authenticated:', pb.authStore.isValid);
-      router.push('/intrendapp');
-    } catch (err) {
-      setError('Signup failed. Please try again.');
-    }
-  };
+  const { formData, error, handleChange, handleSignup } = useSignup();
 
   return (
     <div className="flex items-center justify-end min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded shadow-md">
         <h2 className="text-2xl font-bold text-center">Sign Up</h2>
-        <form onSubmit={handleSignup}>
-          <div className="mb-4">
+        <form onSubmit={handleSignup} className="space-y-4">
+          <div>
             <label className="block text-gray-700">Email</label>
             <input
               type="email"
-              className="w-full p-2 border border-gray-300 rounded mt-1"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              className="w-full p-2 border text-black border-gray-300 rounded mt-1"
+              value={formData.email}
+              onChange={handleChange}
               required
             />
           </div>
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700">Password</label>
             <input
               type="password"
-              className="w-full p-2 border border-gray-300 rounded mt-1"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              className="w-full p-2 border text-black border-gray-300 rounded mt-1"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700">Full Name</label>
+            <input
+              type="text"
+              name="name"
+              className="w-full p-2 border text-black border-gray-300 rounded mt-1"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700">Username</label>
+            <input
+              type="text"
+              name="username"
+              className="w-full p-2 border text-black border-gray-300 rounded mt-1"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700">Phone</label>
+            <input
+              type="tel"
+              name="phone"
+              className="w-full p-2 border text-black border-gray-300 rounded mt-1"
+              value={formData.phone}
+              onChange={handleChange}
               required
             />
           </div>
           {error && <p className="text-red-500">{error}</p>}
-          <button type="submit" className="w-full p-2 text-white bg-blue-500 rounded">
+          <button 
+            type="submit" 
+            className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
+          >
             Sign Up
           </button>
+          <p className="text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link href="/login" className="text-blue-500 hover:text-blue-600">
+              Login here
+            </Link>
+          </p>
         </form>
       </div>
     </div>
@@ -58,3 +86,4 @@ const Signup = () => {
 };
 
 export default Signup;
+

@@ -2,27 +2,41 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import pb from '@/lib/pocketbase'; 
+import { supabase } from '@/lib/supabase';
 
 export default function TopNavBar() {
+
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         setIsMounted(true);
-        const unsubscribe = pb.authStore.onChange(() => {
-            setIsAuthValid(pb.authStore.isValid);
+        
+        // Check initial auth state
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setIsAuthenticated(!!session);
+        };
+        checkAuth();
+
+        // Subscribe to auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setIsAuthenticated(!!session);
         });
 
-        // Cleanup the listener on component unmount
-        return () => unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
-    const handleLogout = () => {
-        pb.authStore.clear();
-        router.push('/');
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        // The middleware will handle the redirect to login page
+        router.push('/login');
     };
+
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -55,7 +69,7 @@ export default function TopNavBar() {
 
                 {isMounted && (
                     <div className="hidden md:flex items-center space-x-6">
-                        {authValid ? (
+                        {isAuthenticated ? (
                             <button
                                 onClick={handleLogout}
                                 className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors"
@@ -83,7 +97,7 @@ export default function TopNavBar() {
             {isMounted && (
                 <div className={`md:hidden ${isMobileMenuOpen ? 'block fixed w-full' : 'hidden'} bg-gray-700 text-white`}>
                     <ul className="flex flex-col p-4 space-y-2">
-                        {authValid ? (
+                        {isAuthenticated ? (
                             <>
                                 <li>
                                     <Link href="/intrendapp/dashboard" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>

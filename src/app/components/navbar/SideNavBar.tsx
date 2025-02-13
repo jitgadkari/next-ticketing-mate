@@ -1,22 +1,32 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import pb from "@/lib/pocketbase";
 import Image from "next/image";
+import { supabase } from '@/lib/supabase';
+
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
+  const [authValid, setIsAuthValid] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    const unsubscribe = pb.authStore.onChange(() => {
-      setIsAuthValid(pb.authStore.isValid);
+    
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthValid(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthValid(!!session);
     });
 
-    // Cleanup the listener on component unmount
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (!isMounted) return null;

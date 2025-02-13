@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from '@supabase/supabase-js';
 
+
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -24,7 +25,6 @@ const Login = () => {
         router.push("/intrendapp/dashboard");
       }
     };
-    
     checkSession();
   }, [router]);
 
@@ -39,12 +39,18 @@ const Login = () => {
         password,
       });
 
-      if (error) {
+        if (error) {
         throw error;
-      }
+        }
 
-      if (data.session) {
-        // Session is automatically handled by Supabase
+        if (data.session) {
+        // Store the access token in a cookie
+        document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${data.session.expires_in}`;
+        
+        // Store user metadata if needed
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Redirect to dashboard
         router.push("/intrendapp/dashboard");
       } else {
         setError("Authentication failed. Please try again.");
