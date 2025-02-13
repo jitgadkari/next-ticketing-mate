@@ -9,6 +9,7 @@ export default function TopNavBar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -70,12 +71,43 @@ export default function TopNavBar() {
                 {isMounted && (
                     <div className="hidden md:flex items-center space-x-6">
                         {isAuthenticated ? (
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors"
-                            >
-                                Logout
-                            </button>
+                            <div className="flex items-center space-x-4">
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                                        className="w-10 h-10 rounded-full bg-gray-600/80 hover:bg-gray-500 flex items-center justify-center transition-all duration-300 transform hover:scale-105"
+                                    >
+                                        <svg
+                                            className="w-6 h-6 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                            ></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    {isProfileDropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-md shadow-lg py-1 z-50 border border-gray-700">
+                                            <button
+                                                onClick={() => {
+                                                    handleLogout();
+                                                    setIsProfileDropdownOpen(false);
+                                                }}
+                                                className="block w-full text-left px-4 py-2 text-white hover:bg-red-500 transition-colors"
+                                            >
+                                                Logout
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         ) : (
                             <>
                                 <Link href="/about" className="text-lg hover:text-gray-300 transition-colors">
@@ -140,15 +172,41 @@ export default function TopNavBar() {
                                 </Link>
                             </li>
                                 <li>
+                                <div className="relative profile-dropdown-container">
                                     <button
-                                        onClick={() => {
-                                            handleLogout();
-                                            toggleMobileMenu();
-                                        }}
-                                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors w-full text-left"
+                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                                        className="w-10 h-10 rounded-full bg-gray-600/80 hover:bg-gray-500 flex items-center justify-center transition-all duration-300 ml-2 transform hover:scale-105"
                                     >
-                                        Logout
+                                        <svg
+                                            className="w-6 h-6 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                            ></path>
+                                        </svg>
                                     </button>
+                                    
+                                    {isProfileDropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-md shadow-lg py-1 z-50 border border-gray-700 transform transition-all duration-300">
+                                            <button
+                                                onClick={() => {
+                                                    handleLogout();
+                                                    setIsProfileDropdownOpen(false);
+                                                }}
+                                                className="block w-full text-left px-4 text-white hover:bg-red-500 transition-colors"
+                                            >
+                                                Logout
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                                 </li>
                             </>
                         ) : (
