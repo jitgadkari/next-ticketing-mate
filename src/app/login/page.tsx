@@ -94,19 +94,19 @@ const Login = () => {
         </div>
         </div>
 
-      {/* Right section with form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
+        {/* Right section with form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Intrend</h1>
-            <div className="text-2xl font-semibold text-black">
-              Welcome Back
-            </div>
-            <div className="text-base text-gray-600 mt-1">
-              Sign in to continue to your account
-            </div>
+          <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Intrend</h1>
+          <div className="text-xl sm:text-2xl font-semibold text-black">
+            Welcome Back
           </div>
-          <form className="mt-8" onSubmit={handleLogin}>
+          <div className="text-sm sm:text-base text-gray-600 mt-1">
+            Sign in to continue to your account
+          </div>
+          </div>
+          <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleLogin}>
             <div className="space-y-4">
               <div>
                 <span className="px-1 text-sm text-gray-600">Email</span>

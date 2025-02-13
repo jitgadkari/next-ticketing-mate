@@ -46,19 +46,19 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right section with form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
+        {/* Right section with form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Intrend</h1>
-            <div className="text-2xl font-semibold text-black">
-              Create Account
-            </div>
-            <div className="text-base text-gray-600 mt-1">
-              Fill in your details to get started
-            </div>
+          <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Intrend</h1>
+          <div className="text-xl sm:text-2xl font-semibold text-black">
+            Create Account
           </div>
-          <form className="mt-8" onSubmit={handleSignup}>
+          <div className="text-sm sm:text-base text-gray-600 mt-1">
+            Fill in your details to get started
+          </div>
+          </div>
+          <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleSignup}>
             <div className="space-y-4">
               <div>
                 <span className="px-1 text-sm text-gray-600">Email</span>
