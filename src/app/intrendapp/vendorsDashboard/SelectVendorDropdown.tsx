@@ -18,7 +18,7 @@ export default function SelectVendorDropdown({ onSelect }: SelectVendorDropdownP
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const response = await fetch("http://139.59.53.5:8000/vendors_all/");
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all/`);
         const data = await response.json();
         setVendors(data.vendors);
       } catch (error) {

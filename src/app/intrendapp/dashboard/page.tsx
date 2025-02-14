@@ -154,32 +154,28 @@ const Dashboard = () => {
         </div>
       </div>
       <DashboardDetailInput />
-        <div className="mt-8">
+      <div className="mt-8">
         <h2 className="text-2xl font-bold text-black mb-4">
           Response Time for Closed Tickets
         </h2>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {dashboardData.response_time_for_closed_tickets.map(
-            (ticket: ResponseTime, index: number) => (
-            <li 
-              key={index} 
-              className="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
-            >
-              <div className="text-lg font-semibold text-gray-700">
-              {ticket.ticket_number}
-              </div>
-              <div className="text-sm text-gray-500">
-              <span className="font-medium">{ticket.days}</span> days,{' '}
-              <span className="font-medium">{ticket.hours}</span> hours,{' '}
-              <span className="font-medium">{ticket.minutes}</span> minutes
-              </div>
-            </li>
-            )
-          )}
+        <div className=" p-4 rounded-lg shadow-md">
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dashboardData.response_time_for_closed_tickets.map(
+              (ticket: any, index: any) => (
+                <li key={index} className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="text-lg font-semibold text-gray-700">
+                    {ticket.ticket_number}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {ticket.days} days, {ticket.hours} hours, {ticket.minutes}{" "}
+                    minutes
+                  </div>
+                </li>
+              )
+            )}
           </ul>
         </div>
-        </div>
+      </div>
       </div>
     </div>
   );

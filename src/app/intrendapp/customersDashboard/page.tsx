@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import SelectCustomerDropdown from "./SelectCustomerDropdown";
+import CustomerDashboardMobileList from './CustomerDashboardMobileList';
 import Pagination from "@/app/components/Pagination";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
@@ -69,9 +70,9 @@ export default function CustomerDashboard() {
         queryParams.append('ticket_num', filterState.ticket_number);
       }
 
-      const response = await fetch(
-        `http://139.59.53.5:8000/tickets/?${queryParams.toString()}`
-      );
+        const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/?${queryParams.toString()}`
+        );
       const data: ApiResponse = await response.json();
       console.log("Fetched Data:", data);
 
@@ -228,7 +229,12 @@ export default function CustomerDashboard() {
   );
 
   return (
-    <div className="p-8 bg-grey-100 rounded shadow text-black">
+    <>
+      <CustomerDashboardMobileList 
+        selectedCustomer={selectedCustomer}
+        onCustomerSelect={handleCustomerSelect}
+      />
+      <div className="p-8 bg-grey-100 rounded shadow text-black hidden md:block">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Customer Dashboard</h1>
         {selectedCustomer && (
@@ -321,6 +327,7 @@ export default function CustomerDashboard() {
       ) : (
         <p className="text-center py-20 text-gray-500">No tickets found for this customer.</p>
       )}
-    </div>
-  );
+      </div>
+    </>
+    );
 }

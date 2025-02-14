@@ -222,12 +222,12 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
 
   const renderRow = (ticket: Ticket) => (
     <>
-      <td className="border p-2">{ticket.ticket_number}</td>
-      <td className="border p-2">{ticket.customer_name}</td>
-      <td className="border p-2">{ticket.current_step}</td>
-      <td className="border p-2">
+      <td className="border rounded-lg p-2">{ticket.ticket_number}</td>
+      <td className="border rounded-lg p-2">{ticket.customer_name}</td>
+      <td className="border rounded-lg p-2">{ticket.current_step}</td>
+      <td className="border rounded-lg p-2">
         <span
-          className={`px-2 py-1 rounded ${
+          className={`px-2 py-1 rounded-lg ${
             ticket.status === "closed"
               ? "bg-red-200 text-red-800"
               : "bg-green-200 text-green-800"
@@ -236,9 +236,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           {ticket.status}
         </span>
       </td>
-      <td className="border p-2">
+      <td className="border rounded-lg p-2">
         <span
-          className={`px-2 py-1 rounded ${
+          className={`px-2 py-1 rounded-lg ${
             ticket.final_decision === "approved"
               ? "bg-green-200 text-green-800"
               : ticket.final_decision === "denied"
@@ -249,9 +249,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           {ticket.final_decision}
         </span>
       </td>
-      <td className="border p-2">{formatDateTime(ticket.created_date)}</td>
-      <td className="border p-2">{ticket.customer_message}</td>
-      <td className="border p-2 ">
+      <td className="border rounded-lg p-2">{formatDateTime(ticket.created_date)}</td>
+      <td className="border rounded-lg p-2">{ticket.customer_message}</td>
+      <td className="border rounded-lg p-2">
         <ul className="h-full flex justify-center space-x-2">
           <Link href={`tickets/${ticket._id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
@@ -268,7 +268,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   );
 
   return (
-    <div className="p-8  bg-white rounded shadow text-black overflow-x-scroll">
+    <div className="p-8 rounded-2xl bg-white rounded shadow text-black overflow-x-scroll">
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-3xl font-bold mb-4 text-gray-800">Tickets List</h1>
         <div className="relative">

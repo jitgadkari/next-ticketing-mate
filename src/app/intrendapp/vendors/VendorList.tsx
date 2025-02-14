@@ -155,7 +155,7 @@ const VendorList = ({
   );
 
   return (
-    <div className="p-8 bg-white rounded shadow text-black">
+    <div className="p-8 bg-white rounded-2xl shadow text-black">
     <div className="flex justify-between items-center mb-4">
       <h1 className="text-2xl font-bold">Vendor List</h1>
       <button
