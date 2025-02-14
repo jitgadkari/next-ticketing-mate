@@ -129,7 +129,7 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 	};
 
 	return (
-		<div className="grid grid-cols-1 gap-4 md:hidden">
+		<div className="grid grid-cols-1 gap-4 md:hidden px-4">
 			<div className="bg-white p-4 rounded-lg text-black shadow-lg">
 				<h1 className="text-2xl font-bold mb-4">Customer Dashboard</h1>
 				<div className="mb-4">
@@ -166,7 +166,7 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 					</div>
 
 					{showForm && (
-						<div className="mb-4">
+						<div className="mb-4 bg-white p-4 rounded-lg shadow-lg">
 							<AddTicketForm 
 								key={selectedCustomer} 
 								onAdd={handleAdd} 
@@ -244,6 +244,18 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 									Sort By Date
 								</button>
 							</div>
+						</div>
+					)}
+
+					{!selectedCustomer && (
+						<div className="bg-white p-4 rounded-lg shadow-lg text-center text-gray-500">
+							Please select a customer to view tickets.
+						</div>
+					)}
+
+					{tickets.length === 0 && selectedCustomer && (
+						<div className="bg-white p-4 rounded-lg shadow-lg text-center text-gray-500">
+							No tickets found for this customer.
 						</div>
 					)}
 

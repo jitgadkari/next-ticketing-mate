@@ -229,7 +229,7 @@ export default function VendorDashboardMobileList({ selectedVendor, onVendorSele
 
 
 	return (
-		<div className="grid grid-cols-1 gap-4 md:hidden">
+		<div className="grid grid-cols-1 gap-4 md:hidden px-4">
 			<div className="bg-white p-4 rounded-lg text-black shadow-lg">
 				<h1 className="text-2xl font-bold mb-4">Vendor Dashboard</h1>
 				<div className="mb-4">
