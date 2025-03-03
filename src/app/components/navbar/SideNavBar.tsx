@@ -1,22 +1,32 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import pb from "@/lib/pocketbase";
 import Image from "next/image";
+import { supabase } from '@/lib/supabase';
+
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
+  const [authValid, setIsAuthValid] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    const unsubscribe = pb.authStore.onChange(() => {
-      setIsAuthValid(pb.authStore.isValid);
+    
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthValid(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthValid(!!session);
     });
 
-    // Cleanup the listener on component unmount
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (!isMounted) return null;
@@ -60,7 +70,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
         <aside
           onMouseEnter={() => setIsExpanded(true)}
           onMouseLeave={() => setIsExpanded(false)}
-          className={`bg-gray-800 text-white hidden md:block sticky top-16 h-[calc(100vh-4rem)] transition-all duration-300
+            className={`bg-gray-800 text-white hidden md:block sticky top-16 h-[calc(100vh-4rem)] transition-all duration-500
                     ${isExpanded ? "w-64" : "w-16"}`}
         >
           <nav className="p-4">
@@ -79,7 +89,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -106,7 +116,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -129,7 +139,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.75rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -156,7 +166,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -179,7 +189,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -206,7 +216,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`transition-opacity duration-300 ${isExpanded
+                    className={`transition-opacity duration-500 ${isExpanded
                       ? "opacity-100"
                       : "opacity-0 w-0 overflow-hidden"
                       }`}
@@ -233,12 +243,12 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                    className={`duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
                     Customer
                   </span>
                   <span
-                    className={`duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                    className={`duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
                     Dashboard
                   </span>
@@ -262,12 +272,12 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     className="min-w-[1.5rem] brightness-0 invert"
                   />
                   <span
-                    className={`  duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                    className={`  duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
                     Vendors
                   </span>
                   <span
-                    className={`  duration-300 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
+                    className={`  duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
                     Dashboard
                   </span>

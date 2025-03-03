@@ -1,31 +1,25 @@
-'use client'
-import pb from "@/lib/pocketbase";
+"use client";
+
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from "react";
+import { supabase } from '@/lib/supabase';
 
-const Home = () => {
-  const [authValid, setIsAuthValid] = useState(pb.authStore.isValid);
-  const router= useRouter()
+export default function Home() {
+  const router = useRouter();
+
   useEffect(() => {
-      const unsubscribe = pb.authStore.onChange(() => {
-          setIsAuthValid(pb.authStore.isValid);
-      });
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/intrendapp');
+      } else {
+        router.push('/login');
+      }
+    };
 
-      // Cleanup the listener on component unmount
-      return () => unsubscribe();
-  }, []);
-if(authValid){
-router.push('/intrendapp/tickets')
+    checkAuth();
+  }, [router]);
+
+  return null; // or a loading spinner if you prefer
 }
-  return(
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-    <h1 className="text-6xl font-extrabold text-center text-gray-800 mb-4">
-      Welcome
-    </h1>
-    <h2 className="text-2xl font-medium text-center text-gray-600">
-      to the client portal
-    </h2>
-  </div>
-);
-}
-export default Home;
+

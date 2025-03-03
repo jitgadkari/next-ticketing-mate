@@ -23,8 +23,7 @@ const TicketsPage = () => {
     return offset ? parseInt(offset, 10) : 0;
   };
   return (
-    <div className="p-8  bg-grey-100  rounded shadow text-black">
-      <h1 className="text-2xl font-bold mb-4">Tickets</h1>
+    <div className="p-2 rounded text-black">
       <div className="flex justify-end mb-4">
         {!showForm?<Button onClick={() => setShowForm(true)}>
         Add Ticket

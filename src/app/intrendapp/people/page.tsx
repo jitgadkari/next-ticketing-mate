@@ -101,8 +101,7 @@ const PeoplePage: React.FC = () => {
   }, [pageFilter.offset]);
 
   return (
-    <div className="p-8 bg-gray-100  text-black">
-      <h1 className="text-2xl font-bold mb-4">People</h1>
+    <div className="p-2 bg-gray-100  text-black">
       <div className="flex justify-end mb-4">
         {!showForm ? (
           <Button onClick={() => setShowForm(true)}>Add Person</Button>

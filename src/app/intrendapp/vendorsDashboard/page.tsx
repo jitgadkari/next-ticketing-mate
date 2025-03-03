@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import SelectVendorDropdown from "./SelectVendorDropdown";
+import VendorDashboardMobileList from './VendorDashboardMobileList';
 import Pagination from "@/app/components/Pagination";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
@@ -80,9 +81,9 @@ export default function VendorsDashboard() {
   const fetchTickets = async () => {
     if (!selectedVendor) return;
     try {
-      const response = await fetch(
-        `http://139.59.53.5:8000/vendor_tickets/?vendor_name=${encodeURIComponent(selectedVendor)}&limit=0`
-      );
+        const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor_tickets/?vendor_name=${encodeURIComponent(selectedVendor)}&limit=0`
+        );
       const data: ApiResponse = await response.json();
       console.log("Fetched Data:", data);
 
@@ -297,7 +298,13 @@ export default function VendorsDashboard() {
   };
 
   return (
-    <div className="p-8 bg-grey-100 rounded shadow text-black">
+    <>
+        <VendorDashboardMobileList 
+          selectedVendor={selectedVendor}
+          onVendorSelect={handleVendorSelect}
+        />
+
+      <div className="p-8 bg-grey-100 rounded shadow text-black hidden md:block">
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-2xl font-bold mb-4">Vendor Dashboard</h1>
       </div>
@@ -366,6 +373,7 @@ export default function VendorsDashboard() {
           {selectedVendor ? "No tickets found for this vendor." : "Please select a vendor to view tickets."}
         </p>
       )}
-    </div>
-  );
+      </div>
+    </>
+    );
 }
