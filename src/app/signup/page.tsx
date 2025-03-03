@@ -68,7 +68,7 @@ const Signup = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -79,7 +79,7 @@ const Signup = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -90,7 +90,7 @@ const Signup = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -101,7 +101,7 @@ const Signup = () => {
                   value={formData.username}
                   onChange={handleChange}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
                 />
               </div>
               <div>
@@ -112,7 +112,7 @@ const Signup = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
                 />
               </div>
               {error && (
