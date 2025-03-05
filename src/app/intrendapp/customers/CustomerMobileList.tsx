@@ -42,7 +42,7 @@ export default function CustomerMobileList({
     const fetchAllCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
         );
         if (response.ok) {
           const data = await response.json();
@@ -57,7 +57,6 @@ export default function CustomerMobileList({
         }
       } catch (error) {
         console.error("Error fetching customers:", error);
-        toast.error("An error occurred while fetching customers");
       }
     };
 
@@ -93,7 +92,7 @@ export default function CustomerMobileList({
       );
       if (response.ok) {
         setCustomers(
-          customers.filter((customer) => customer._id !== customerId)
+          customers.filter((customer) => customer.id !== customerId)
         );
         setDeleteCustomerId(null);
         toast.success("Customer deleted successfully");
@@ -146,7 +145,7 @@ export default function CustomerMobileList({
 
       {customers.map((customer) => (
         <div
-          key={customer._id}
+          key={customer.id}
           className="bg-white text-black p-4 rounded-lg shadow-lg"
         >
           <div className="flex flex-col space-y-4 text-sm w-full">
@@ -171,13 +170,13 @@ export default function CustomerMobileList({
               <span>{customer.state}</span>
             </div>
             <div className="flex justify-end space-x-4">
-              <Link href={`customers/${customer._id}`} passHref>
+              <Link href={`customers/${customer.id}`} passHref>
                 <span className="text-blue-500 hover:text-blue-700">
                   <FaEye />
                 </span>
               </Link>
               <FaTrash
-                onClick={() => setDeleteCustomerId(customer._id)}
+                onClick={() => setDeleteCustomerId(customer.id)}
                 className="text-red-500 cursor-pointer hover:text-red-700"
               />
             </div>

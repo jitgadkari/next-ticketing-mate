@@ -9,7 +9,7 @@ import { FaEdit } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 interface Vendor {
-  _id: string;
+  id: string;
   name: string;
   fabric_type: string[];
   width: string[];

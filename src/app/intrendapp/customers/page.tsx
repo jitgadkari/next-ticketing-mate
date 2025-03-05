@@ -7,7 +7,7 @@ import Button from '../../components/Button';
 import CustomerMobileList from './CustomerMobileList';
 import { pageFilter, pageInfo } from '../people/page';
 export interface Customer {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -77,7 +77,7 @@ const CustomersPage = () => {
   const handlePageChange = (page: number) => {
     setPageFilter((prev) => ({
       ...prev,
-      offset: (page - 1) * prev.limit,
+      offset: (Number(page) - 1) * prev.limit,
     }));
   };
 useEffect(() => {

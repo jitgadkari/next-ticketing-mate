@@ -22,13 +22,17 @@ interface Customer {
   gst_number: string;
   delivery_destination: string;
   delivery_terms: string[];
+  payment_terms: string[];
   pan_number: string;
-  group: Record<string, string>;
+  group: string | Record<string, string>;
   address: string;
   remarks: string;
   additional_info: string;
-  code:string;
-  mark_up:string;
+  code: string;
+  mark_up: string;
+  status?: string;
+  created_date?: string;
+  updated_date?: string;
 }
 
 export interface Attributes {
@@ -36,6 +40,7 @@ export interface Attributes {
   certifications: string[];
   approvals: string[];
   delivery_terms: string[];
+  paymnent_terms: string[]; // Note the typo in the API response
   group: Record<string, string>;
 }
 
@@ -65,10 +70,13 @@ const CustomerDetailsPage: React.FC = () => {
     certifications: [],
     approvals: [],
     delivery_terms: [],
+    payment_terms: [],
     people: [],
     group: {},
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [error, setError] = useState<string | null>(null); // Add error state
 
   useEffect(() => {
     if (id) {
@@ -79,46 +87,77 @@ const CustomerDetailsPage: React.FC = () => {
   }, [id]);
 
   const fetchCustomer = async (customerId: string) => {
+    console.log('[CustomerDetails] Fetching customer data:', customerId);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`
       );
       const data = await response.json();
+      console.log('[CustomerDetails] Customer data received:', data);
+      console.log(data.customer[0]);
       setCustomer(data.customer);
       setSelectedAttributes({
-        fabric_type: data.customer.fabric_type,
-        certifications: data.customer.certifications,
-        approvals: data.customer.approvals,
-        delivery_terms: data.customer.delivery_terms,
-        people: data.customer.people,
-        group: data.customer.group,
+        fabric_type: data.customer.fabric_type || [],
+        certifications: data.customer.certifications || [],
+        approvals: data.customer.approvals || [],
+        delivery_terms: data.customer.delivery_terms || [],
+        payment_terms: data.customer.payment_terms || [],
+        people: data.customer.people || [],
+        group: typeof data.customer.group === 'string' ? {} : data.customer.group || {},
       });
     } catch (error) {
-      console.error("Error fetching customer:", error);
+      setError('Error fetching customer');
+      console.error('[CustomerDetails] Error fetching customer:', error);
+    } finally {
+      setIsLoading(false); // Set loading to false after fetching
     }
   };
 
   const fetchDefaultAttributes = async () => {
+    console.log('[CustomerDetails] Fetching default attributes');
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`
       );
       const data = await response.json();
-      setDefaultAttributes(data.attributes.DefaultAttributes);
+      console.log('[CustomerDetails] Default attributes received:', data);
+
+      const defaultAttrs = {
+        fabric_type: data?.attributes?.DefaultAttributes?.fabric_type || [],
+        certifications: data?.attributes?.DefaultAttributes?.certifications || [],
+        approvals: data?.attributes?.DefaultAttributes?.approvals || [],
+        delivery_terms: data?.attributes?.DefaultAttributes?.delivery_terms || [],
+        paymnent_terms: data?.attributes?.DefaultAttributes?.paymnent_terms || [],
+        group: data?.attributes?.DefaultAttributes?.group || {}
+      };
+      setDefaultAttributes(defaultAttrs);
     } catch (error) {
-      console.error("Error fetching default attributes:", error);
+      setError('Error fetching default attributes');
+      console.error('[CustomerDetails] Error fetching default attributes:', error);
+      setDefaultAttributes({
+        fabric_type: [],
+        certifications: [],
+        approvals: [],
+        delivery_terms: [],
+        paymnent_terms: [],
+        group: {}
+      });
     }
   };
 
   const fetchUnlinkedPeople = async () => {
+    console.log('[CustomerDetails] Fetching unlinked people');
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people/?linked=No`
       );
       const data = await response.json();
-      setUnlinkedPeople(data.people);
+      console.log('[CustomerDetails] Unlinked people received:', data);
+      setUnlinkedPeople(data);
     } catch (error) {
-      console.error("Error fetching unlinked people:", error);
+      setError('Error fetching unlinked people');
+      console.error('[CustomerDetails] Error fetching unlinked people:', error);
+      setUnlinkedPeople([]);
     }
   };
 
@@ -126,12 +165,14 @@ const CustomerDetailsPage: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    console.log('[CustomerDetails] Input change:', { name, value });
     if (customer) {
       setCustomer({ ...customer, [name]: value });
     }
   };
 
   const handleMultiSelectChange = (name: string, selected: Option[]) => {
+    console.log('[CustomerDetails] Multi-select change:', { name, selected });
     setSelectedAttributes((prevState) => ({
       ...prevState,
       [name]: selected.map((option: Option) => option.value),
@@ -139,6 +180,7 @@ const CustomerDetailsPage: React.FC = () => {
   };
 
   const handleGroupChange = (key: string, value: string) => {
+    console.log('[CustomerDetails] Group change:', { key, value });
     setSelectedAttributes((prevState) => ({
       ...prevState,
       group: { ...(prevState.group as Record<string, string>), [key]: value },
@@ -162,56 +204,71 @@ const CustomerDetailsPage: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    console.log('[CustomerDetails] Form submission started');
     if (customer) {
       try {
+        const { _id, ...customerData } = customer;
+        const updateData = {
+          customer_id: _id,
+          update_dict: {
+            ...customerData,
+            ...selectedAttributes,
+            group: Object.keys(selectedAttributes.group as Record<string, string>).length === 0
+              ? ""
+              : selectedAttributes.group
+          },
+        };
+        console.log('[CustomerDetails] Submitting update:', updateData);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/?user_id=1&user_agent=user-test`,
           {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              name: customer.name,
-              update_dict: {
-                ...customer,
-                ...selectedAttributes,
-              },
-            }),
+            body: JSON.stringify(updateData),
           }
         );
-
+        const responseData = await response.json();
+        console.log("Response", responseData);
         if (response.ok) {
+          console.log('[CustomerDetails] Update successful');
           setIsEditing(false);
           router.push("/intrendapp/customers");
-          toast.success("Customer updated successfully")
+          toast.success("Customer updated successfully");
         } else {
-          const errorData = await response.json();
-          console.error("Failed to update customer", errorData);
+          console.error('[CustomerDetails] Failed to update customer:', responseData);
         }
       } catch (error) {
-        console.error("Error updating customer:", error);
+        console.error('[CustomerDetails] Error updating customer:', error);
       }
     }
   };
 
-  if (!customer || !defaultAttributes) return <div>Loading...</div>;
+  console.log('[CustomerDetails] States:', { customer, defaultAttributes, unlinkedPeople });
+
+  if (isLoading) return <div>Loading...</div>; // Display loading state
+
+  if (error) return <div>{error}</div>; // Display error state
+
+  if (!customer || !defaultAttributes || !unlinkedPeople) return <div className="p-4">Loading...</div>;
 
   const attributeOptions = (attribute: string): Option[] => {
     if (attribute === "people") {
       return unlinkedPeople.map((person) => ({
         label: `${person.name} (${person.email})`,
-        value: person.name,
+        value: person._id,
       }));
     }
     if (attribute === "group") {
-      return Object.entries(defaultAttributes.group).map(([key, value]) => ({
+      return Object.entries(defaultAttributes?.group || {}).map(([key, value]) => ({
         label: `${key}: ${value}`,
         value: key,
       }));
     }
+    const attributeKey = attribute === "payment_terms" ? "paymnent_terms" : attribute;
     return (
-      (defaultAttributes[attribute as keyof Attributes] as string[]) || []
+      (defaultAttributes?.[attributeKey as keyof Attributes] as string[] || [])
     ).map((value) => ({
       label: value,
       value,
@@ -311,6 +368,10 @@ const CustomerDetailsPage: React.FC = () => {
         value={customer.code}
         onChange={handleInputChange}
       />
+      <div className="flex justify-start items-center gap-2">
+        <label className="text-gray-700 ">Status</label>
+        <h1 className="font-bold text-lg">{customer.status}</h1>
+      </div>
       {Object.entries(selectedAttributes).map(([key, values]) => (
         <div key={key}>
           <label className="block text-gray-700">
@@ -319,39 +380,39 @@ const CustomerDetailsPage: React.FC = () => {
           <div className="flex flex-wrap gap-2 mb-2">
             {key === "group"
               ? Object.entries(values as Record<string, string>).map(
-                  ([groupKey, groupValue]) => (
-                    <div
-                      key={groupKey}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2"
-                    >
-                      <span>
-                        {groupKey}: {groupValue}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveBubble(key, groupKey)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  )
-                )
-              : (values as string[]).map((value: string) => (
+                ([groupKey, groupValue]) => (
                   <div
-                    key={value}
+                    key={groupKey}
                     className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2"
                   >
-                    <span>{value}</span>
+                    <span>
+                      {groupKey}: {groupValue}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveBubble(key, value)}
+                      onClick={() => handleRemoveBubble(key, groupKey)}
                       className="text-red-500 hover:text-red-700"
                     >
                       &times;
                     </button>
                   </div>
-                ))}
+                )
+              )
+              : (values as string[]).map((value: string) => (
+                <div
+                  key={value}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2"
+                >
+                  <span>{value}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveBubble(key, value)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
           </div>
           {key === "group" ? (
             <div>
@@ -364,7 +425,7 @@ const CustomerDetailsPage: React.FC = () => {
                 className="w-full p-2 border border-gray-300 rounded mt-1"
               >
                 <option value="">Select a group</option>
-                {Object.entries(defaultAttributes.group).map(
+                {defaultAttributes?.group && Object.entries(defaultAttributes.group).map(
                   ([groupKey, groupValue]) => (
                     <option key={groupKey} value={`${groupKey}:${groupValue}`}>
                       {groupKey}: {groupValue}
@@ -373,14 +434,30 @@ const CustomerDetailsPage: React.FC = () => {
                 )}
               </select>
             </div>
+          ) : key === "people" ? (
+            <select
+              name="people"
+              value={Array.isArray(values) ? values[0] || '' : ''}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                handleMultiSelectChange(key, [{ label: e.target.options[e.target.selectedIndex].text, value: e.target.value }]);
+              }}
+              className="w-full p-2 border border-gray-300 rounded mt-1"
+            >
+              <option value="">Select a person</option>
+              {unlinkedPeople && unlinkedPeople.map(person => (
+                <option key={person._id} value={person._id}>
+                  {person.name} ({person.email})
+                </option>
+              ))}
+            </select>
           ) : (
             <MultiSelect
               options={attributeOptions(key)}
               value={(values as string[]).map((value: string) => ({
                 label:
                   key === "people"
-                    ? unlinkedPeople.find((p) => p.name === value)?.name ||
-                      value
+                    ? unlinkedPeople.find((p) => p._id === value)?.name ||
+                    value
                     : value,
                 value,
               }))}
@@ -413,67 +490,36 @@ const CustomerDetailsPage: React.FC = () => {
   const renderDetails = () => (
     <div className="space-y-4 text-black">
       <div className="grid grid-cols-2 gap-4">
-        <p>
-          <strong>Name:</strong> {customer.name}
-        </p>
-        <p>
-          <strong>Email:</strong> {customer.email}
-        </p>
-        <p>
-          <strong>Phone:</strong> {customer.phone}
-        </p>
-        <p>
-          <strong>State:</strong> {customer.state}
-        </p>
-        <p>
-          <strong>Country:</strong> {customer.country}
-        </p>
-        <p>
-          <strong>MarkUP:</strong> {customer.mark_up}
-        </p>
-        <p>
-          <strong>GST Number:</strong> {customer.gst_number}
-        </p>
-        <p>
-          <strong>PAN Number:</strong> {customer.pan_number}
-        </p>
-        <p>
-          <strong>Delivery Destination:</strong> {customer.delivery_destination}
-        </p>
-        <p>
-          <strong>Address:</strong> {customer.address}
-        </p>
-        <p>
-          <strong>Remarks:</strong> {customer.remarks}
-        </p>
-        <p>
-          <strong>Additional Info:</strong> {customer.additional_info}
-        </p>
-        <p>
-          <strong>Code:</strong> {customer.code}
-        </p>
+        <p><strong>Name:</strong> {customer.name}</p>
+        <p><strong>Email:</strong> {customer.email}</p>
+        <p><strong>Phone:</strong> {customer.phone}</p>
+        <p><strong>State:</strong> {customer.state}</p>
+        <p><strong>Country:</strong> {customer.country}</p>
+        <p><strong>Mark Up:</strong> {customer.mark_up}</p>
+        <p><strong>GST Number:</strong> {customer.gst_number}</p>
+        <p><strong>PAN Number:</strong> {customer.pan_number}</p>
+        <p><strong>Delivery Destination:</strong> {customer.delivery_destination}</p>
+        <p><strong>Address:</strong> {customer.address}</p>
+        <p><strong>Remarks:</strong> {customer.remarks}</p>
+        <p><strong>Additional Info:</strong> {customer.additional_info}</p>
+        <p><strong>Code:</strong> {customer.code}</p>
+        <p><strong>Status:</strong> {customer.status}</p>
+        <p><strong>Created Date:</strong> {customer.created_date}</p>
+        <p><strong>Updated Date:</strong> {customer.updated_date}</p>
         {Object.entries(selectedAttributes).map(([key, values]) => (
           <p key={key}>
-            <strong>
-              {key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}:
-            </strong>{" "}
+            <strong>{key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
             {key === "group"
               ? Object.entries(values as Record<string, string>)
-                  .map(([groupKey, groupValue]) => `${groupKey}`)
-                  .join(", ")
-              : key === "people"
-              ? (values as string[])
-                  .map((value) => {
-                    const person = unlinkedPeople.find((p) => p.name === value);
-                    return person ? `${person.name} (${person.email})` : value;
-                  })
-                  .join(", ")
-              : (values as string[]).join(", ")}
+                .map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`)
+                .join(", ") || "None"
+              : Array.isArray(values) ? values.join(", ") || "None" : "None"}
           </p>
         ))}
       </div>
     </div>
   );
+
 
   return (
     <div className="p-3 md:p-8 bg-white rounded shadow text-black text-xs md:text-base">

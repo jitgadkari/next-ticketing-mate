@@ -43,16 +43,18 @@ const VendorList = ({
 
   // Populate filter options for states
   useEffect(() => {
-    const states = Array.from(new Set(vendors.map((vendor) => vendor.state))).filter(Boolean);
-    setAvailableStates(states);
+    if (Array.isArray(vendors)) {
+      const states = Array.from(new Set(vendors.map((vendor) => vendor.state))).filter(Boolean);
+      setAvailableStates(states);
+    }
   }, [vendors]);
-
+  
   // Fetch all vendors once from the `/vendors_all` API
   useEffect(() => {
     const fetchAllVendors = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -104,16 +106,16 @@ const VendorList = ({
     setFilters(newFilters);  // Apply filter immediately
   };
 
-  const handleDelete = async (vendorId: string) => {
+  const handleDelete = async (vendor_id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendor_id}?user_id=1&user_agent=user-test`,
         {
           method: "DELETE",
         }
       );
       if (response.ok) {
-        setVendors(vendors.filter((vendor) => vendor._id !== vendorId));
+        setVendors(vendors.filter((vendor) => vendor.id !== vendor_id));
         setDeleteVendorId(null);
         toast.success("Vendor deleted successfully");
       } else {
@@ -140,13 +142,13 @@ const VendorList = ({
       <td className="border p-2 hidden md:table-cell">{vendor.code}</td>
       <td className="border p-2">
         <div className="h-full flex justify-center space-x-2">
-          <Link href={`vendors/${vendor._id}`} passHref>
+          <Link href={`vendors/${vendor.id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
               <FaEye />
             </span>
           </Link>
           <FaTrash
-            onClick={() => setDeleteVendorId(vendor._id)}
+            onClick={() => setDeleteVendorId(vendor.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </div>

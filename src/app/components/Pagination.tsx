@@ -3,7 +3,7 @@ import React from "react";
 interface PaginationProps {
   limit: number;
   offset: number;
-  total_items?: string | null;
+  total_items?: number | string | null; 
   current_page?: number | null;
   total_pages?: number | null;
   has_next?: boolean | null;
@@ -122,7 +122,7 @@ function Pagination({
           <p className="text-sm text-gray-700">
             Showing <span className="font-medium">{offset + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(offset + limit, parseInt(total_items || "0"))}
+            {Math.min(offset + limit, typeof total_items === "string" ? parseInt(total_items, 10) : total_items || 0)}
             </span>{" "}
             of <span className="font-medium">{total_items}</span> results
           </p>
@@ -159,7 +159,7 @@ function Pagination({
     <p className="sm:hidden text-sm text-gray-700 text-center pb-2">
             Showing <span className="font-medium">{offset + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(offset + limit, parseInt(total_items || "0"))}
+            {Math.min(offset + limit, typeof total_items === "string" ? parseInt(total_items, 10) : total_items || 0)}
             </span>{" "}
             of <span className="font-medium">{total_items}</span> results
           </p>
