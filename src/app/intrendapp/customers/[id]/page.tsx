@@ -9,14 +9,15 @@ import { FaEdit } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 interface Customer {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   phone: string;
-  fabric_type: string[];
+  attributes: {}; // Contains approvals, fabric_type, payment_terms, certifications, delivery_terms, etc.
+  fabric_type: string[]; // These might be redundant if stored in attributes
   certifications: string[];
   approvals: string[];
-  people: string[];
+  customer_people_list: {}[];
   state: string;
   country: string;
   gst_number: string;
@@ -41,11 +42,11 @@ export interface Attributes {
   approvals: string[];
   delivery_terms: string[];
   paymnent_terms: string[]; // Note the typo in the API response
-  group: Record<string, string>;
+  // group: Record<string, string>;
 }
 
 interface Person {
-  _id: string;
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -63,20 +64,24 @@ const CustomerDetailsPage: React.FC = () => {
     null
   );
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string[] | Record<string, string>>
-  >({
+  const [selectedAttributes, setSelectedAttributes] = useState<{
+    fabric_type: string[];
+    certifications: string[];
+    approvals: string[];
+    delivery_terms: string[];
+    payment_terms: string[];
+    customer_people_list: { id: string; name: string }[];
+  }>({
     fabric_type: [],
     certifications: [],
     approvals: [],
     delivery_terms: [],
     payment_terms: [],
-    people: [],
-    group: {},
+    customer_people_list: [],
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
-  const [error, setError] = useState<string | null>(null); // Add error state
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -87,76 +92,76 @@ const CustomerDetailsPage: React.FC = () => {
   }, [id]);
 
   const fetchCustomer = async (customerId: string) => {
-    console.log('[CustomerDetails] Fetching customer data:', customerId);
+    console.log("[CustomerDetails] Fetching customer data:", customerId);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`
       );
       const data = await response.json();
-      console.log('[CustomerDetails] Customer data received:', data);
-      console.log(data.customer[0]);
+      console.log("[CustomerDetails] Customer data received:", data.customer);
       setCustomer(data.customer);
+      // Here we read the attribute values from customer.attributes
       setSelectedAttributes({
-        fabric_type: data.customer.fabric_type || [],
-        certifications: data.customer.certifications || [],
-        approvals: data.customer.approvals || [],
-        delivery_terms: data.customer.delivery_terms || [],
-        payment_terms: data.customer.payment_terms || [],
-        people: data.customer.people || [],
-        group: typeof data.customer.group === 'string' ? {} : data.customer.group || {},
+        fabric_type: data.customer.attributes?.fabric_type || [],
+        certifications: data.customer.attributes?.certifications || [],
+        approvals: data.customer.attributes?.approvals || [],
+        delivery_terms: data.customer.attributes?.delivery_terms || [],
+        payment_terms: data.customer.attributes?.payment_terms || [],
+        customer_people_list: data.customer.customer_people_list || [],
       });
     } catch (error) {
-      setError('Error fetching customer');
-      console.error('[CustomerDetails] Error fetching customer:', error);
+      setError("Error fetching customer");
+      console.error("[CustomerDetails] Error fetching customer:", error);
     } finally {
-      setIsLoading(false); // Set loading to false after fetching
+      setIsLoading(false);
     }
   };
 
   const fetchDefaultAttributes = async () => {
-    console.log('[CustomerDetails] Fetching default attributes');
+    console.log("[CustomerDetails] Fetching default attributes");
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`
       );
       const data = await response.json();
-      console.log('[CustomerDetails] Default attributes received:', data);
-
+      console.log("[CustomerDetails] Default attributes received:", data);
       const defaultAttrs = {
-        fabric_type: data?.attributes?.DefaultAttributes?.fabric_type || [],
-        certifications: data?.attributes?.DefaultAttributes?.certifications || [],
-        approvals: data?.attributes?.DefaultAttributes?.approvals || [],
-        delivery_terms: data?.attributes?.DefaultAttributes?.delivery_terms || [],
-        paymnent_terms: data?.attributes?.DefaultAttributes?.paymnent_terms || [],
-        group: data?.attributes?.DefaultAttributes?.group || {}
+        fabric_type: data?.attributes?.fabric_type || [],
+        certifications: data?.attributes?.certifications || [],
+        approvals: data?.attributes?.approvals || [],
+        delivery_terms: data?.attributes?.delivery_terms || [],
+        paymnent_terms: data?.attributes?.paymnent_terms || [],
       };
       setDefaultAttributes(defaultAttrs);
+      console.log("[CustomerDetails] Default attributes set:", defaultAttrs);
     } catch (error) {
-      setError('Error fetching default attributes');
-      console.error('[CustomerDetails] Error fetching default attributes:', error);
+      setError("Error fetching default attributes");
+      console.error(
+        "[CustomerDetails] Error fetching default attributes:",
+        error
+      );
       setDefaultAttributes({
         fabric_type: [],
         certifications: [],
         approvals: [],
         delivery_terms: [],
         paymnent_terms: [],
-        group: {}
       });
     }
   };
 
   const fetchUnlinkedPeople = async () => {
-    console.log('[CustomerDetails] Fetching unlinked people');
+    console.log("[CustomerDetails] Fetching unlinked people");
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/unlinked_people/?linked=No`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/unlinked`
       );
       const data = await response.json();
-      console.log('[CustomerDetails] Unlinked people received:', data);
-      setUnlinkedPeople(data);
+      console.log("[CustomerDetails] Unlinked people received:", data);
+      setUnlinkedPeople(data.data);
     } catch (error) {
-      setError('Error fetching unlinked people');
-      console.error('[CustomerDetails] Error fetching unlinked people:', error);
+      setError("Error fetching unlinked people");
+      console.error("[CustomerDetails] Error fetching unlinked people:", error);
       setUnlinkedPeople([]);
     }
   };
@@ -165,111 +170,94 @@ const CustomerDetailsPage: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    console.log('[CustomerDetails] Input change:', { name, value });
+    console.log("[CustomerDetails] Input change:", { name, value });
     if (customer) {
       setCustomer({ ...customer, [name]: value });
     }
   };
 
   const handleMultiSelectChange = (name: string, selected: Option[]) => {
-    console.log('[CustomerDetails] Multi-select change:', { name, selected });
+    console.log("[CustomerDetails] Multi-select change:", { name, selected });
     setSelectedAttributes((prevState) => ({
       ...prevState,
       [name]: selected.map((option: Option) => option.value),
     }));
   };
 
-  const handleGroupChange = (key: string, value: string) => {
-    console.log('[CustomerDetails] Group change:', { key, value });
-    setSelectedAttributes((prevState) => ({
-      ...prevState,
-      group: { ...(prevState.group as Record<string, string>), [key]: value },
-    }));
-  };
-
-  const handleRemoveBubble = (name: string, value: string) => {
-    if (name === "group") {
-      setSelectedAttributes((prevState) => {
-        const newGroup = { ...(prevState.group as Record<string, string>) };
-        delete newGroup[value];
-        return { ...prevState, group: newGroup };
-      });
-    } else {
-      setSelectedAttributes((prevState) => ({
-        ...prevState,
-        [name]: (prevState[name] as string[]).filter((item) => item !== value),
-      }));
-    }
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('[CustomerDetails] Form submission started');
+    console.log("[CustomerDetails] Form submission started");
     if (customer) {
       try {
-        const { _id, ...customerData } = customer;
-        const updateData = {
-          customer_id: _id,
-          update_dict: {
-            ...customerData,
-            ...selectedAttributes,
-            group: Object.keys(selectedAttributes.group as Record<string, string>).length === 0
-              ? ""
-              : selectedAttributes.group
+        const { id, ...customerData } = customer;
+        console.log("id", id);
+        console.log("[CustomerDetails] Customer data:", customerData);
+        console.log(
+          "[CustomerDetails] Selected attributes:",
+          selectedAttributes
+        );
+        const update_dict = {
+          ...customerData,
+          customer_people_list: selectedAttributes.customer_people_list,
+          attributes: {
+            ...customerData.attributes,
+            fabric_type: selectedAttributes.fabric_type,
+            certifications: selectedAttributes.certifications,
+            approvals: selectedAttributes.approvals,
+            delivery_terms: selectedAttributes.delivery_terms,
+            payment_terms: selectedAttributes.payment_terms,
           },
         };
-        console.log('[CustomerDetails] Submitting update:', updateData);
+        console.log("[CustomerDetails] Submitting update:", update_dict);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/?user_id=1&user_agent=user-test`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/?customer_id=${id}&user_id=1&user_agent=user-test`,
           {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(updateData),
+            body: JSON.stringify({ update_dict }),
           }
         );
         const responseData = await response.json();
         console.log("Response", responseData);
         if (response.ok) {
-          console.log('[CustomerDetails] Update successful');
+          console.log("[CustomerDetails] Update successful");
           setIsEditing(false);
           router.push("/intrendapp/customers");
           toast.success("Customer updated successfully");
         } else {
-          console.error('[CustomerDetails] Failed to update customer:', responseData);
+          console.error(
+            "[CustomerDetails] Failed to update customer:",
+            responseData
+          );
         }
       } catch (error) {
-        console.error('[CustomerDetails] Error updating customer:', error);
+        console.error("[CustomerDetails] Error updating customer:", error);
       }
     }
   };
 
-  console.log('[CustomerDetails] States:', { customer, defaultAttributes, unlinkedPeople });
+  console.log("[CustomerDetails] States:", {
+    customer,
+    defaultAttributes,
+    unlinkedPeople,
+  });
 
-  if (isLoading) return <div>Loading...</div>; // Display loading state
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!customer || !defaultAttributes || !unlinkedPeople)
+    return <div className="p-4">Loading...</div>;
 
-  if (error) return <div>{error}</div>; // Display error state
-
-  if (!customer || !defaultAttributes || !unlinkedPeople) return <div className="p-4">Loading...</div>;
-
+  // Build options for attributes. Merging default options with any currently selected values.
   const attributeOptions = (attribute: string): Option[] => {
-    if (attribute === "people") {
-      return unlinkedPeople.map((person) => ({
-        label: `${person.name} (${person.email})`,
-        value: person._id,
-      }));
-    }
-    if (attribute === "group") {
-      return Object.entries(defaultAttributes?.group || {}).map(([key, value]) => ({
-        label: `${key}: ${value}`,
-        value: key,
-      }));
-    }
-    const attributeKey = attribute === "payment_terms" ? "paymnent_terms" : attribute;
-    return (
-      (defaultAttributes?.[attributeKey as keyof Attributes] as string[] || [])
-    ).map((value) => ({
+    const attributeKey =
+      attribute === "payment_terms" ? "paymnent_terms" : attribute;
+    const defaultOpts =
+      (defaultAttributes?.[attributeKey as keyof Attributes] as string[]) || [];
+    const customerValues = selectedAttributes[attribute] as string[];
+    const allOptions = Array.from(new Set([...defaultOpts, ...customerValues]));
+    return allOptions.map((value) => ({
       label: value,
       value,
     }));
@@ -277,9 +265,8 @@ const CustomerDetailsPage: React.FC = () => {
 
   const renderForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* <Input label="Name" type="text" name="name" value={customer.name} onChange={handleInputChange} required /> */}
       <div className="flex justify-start items-center gap-2">
-        <label className="text-gray-700 ">Name</label>
+        <label className="text-gray-700">Name</label>
         <h1 className="font-bold text-lg">{customer.name}</h1>
       </div>
       <Input
@@ -320,13 +307,6 @@ const CustomerDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <Input
-        label="PAN Number"
-        type="text"
-        name="pan_number"
-        value={customer.pan_number}
-        onChange={handleInputChange}
-      />
-      <Input
         label="Mark Up"
         type="text"
         name="mark_up"
@@ -355,13 +335,6 @@ const CustomerDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <Input
-        label="Additional Info"
-        type="text"
-        name="additional_info"
-        value={customer.additional_info}
-        onChange={handleInputChange}
-      />
-      <Input
         label="Code"
         type="text"
         name="code"
@@ -369,106 +342,61 @@ const CustomerDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <div className="flex justify-start items-center gap-2">
-        <label className="text-gray-700 ">Status</label>
+        <label className="text-gray-700">Status</label>
         <h1 className="font-bold text-lg">{customer.status}</h1>
       </div>
-      {Object.entries(selectedAttributes).map(([key, values]) => (
-        <div key={key}>
-          <label className="block text-gray-700">
-            {key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}
-          </label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {key === "group"
-              ? Object.entries(values as Record<string, string>).map(
-                ([groupKey, groupValue]) => (
-                  <div
-                    key={groupKey}
-                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2"
-                  >
-                    <span>
-                      {groupKey}: {groupValue}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveBubble(key, groupKey)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                )
-              )
-              : (values as string[]).map((value: string) => (
-                <div
-                  key={value}
-                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center space-x-2"
-                >
-                  <span>{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBubble(key, value)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    &times;
-                  </button>
-                </div>
-              ))}
-          </div>
-          {key === "group" ? (
-            <div>
-              <select
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                  const [selectedKey, selectedValue] =
-                    e.target.value.split(":");
-                  handleGroupChange(selectedKey.trim(), selectedValue.trim());
-                }}
-                className="w-full p-2 border border-gray-300 rounded mt-1"
-              >
-                <option value="">Select a group</option>
-                {defaultAttributes?.group && Object.entries(defaultAttributes.group).map(
-                  ([groupKey, groupValue]) => (
-                    <option key={groupKey} value={`${groupKey}:${groupValue}`}>
-                      {groupKey}: {groupValue}
-                    </option>
-                  )
-                )}
-              </select>
+      {/*
+        Render MultiSelect for attributes (excluding customer_people_list)
+      */}
+      {Object.entries(selectedAttributes).map(([key, values]) => {
+        if (key !== "customer_people_list") {
+          return (
+            <div key={key}>
+              <label className="block text-gray-700">
+                {key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                <MultiSelect
+                  options={attributeOptions(key)}
+                  value={(values as string[]).map((value: string) => ({
+                    label: value,
+                    value,
+                  }))}
+                  onChange={(selected: Option[]) =>
+                    handleMultiSelectChange(key, selected)
+                  }
+                  labelledBy={`Select ${key.replace("_", " ")}`}
+                />
+              </div>
             </div>
-          ) : key === "people" ? (
-            <select
-              name="people"
-              value={Array.isArray(values) ? values[0] || '' : ''}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                handleMultiSelectChange(key, [{ label: e.target.options[e.target.selectedIndex].text, value: e.target.value }]);
-              }}
-              className="w-full p-2 border border-gray-300 rounded mt-1"
-            >
-              <option value="">Select a person</option>
-              {unlinkedPeople && unlinkedPeople.map(person => (
-                <option key={person._id} value={person._id}>
-                  {person.name} ({person.email})
-                </option>
-              ))}
-            </select>
-          ) : (
-            <MultiSelect
-              options={attributeOptions(key)}
-              value={(values as string[]).map((value: string) => ({
-                label:
-                  key === "people"
-                    ? unlinkedPeople.find((p) => p._id === value)?.name ||
-                    value
-                    : value,
-                value,
-              }))}
-              onChange={(selected: Option[]) =>
-                handleMultiSelectChange(key, selected)
-              }
-              labelledBy={`Select ${key.replace("_", " ")}`}
-            />
-          )}
-        </div>
-      ))}
+          );
+        }
+        return null;
+      })}
+      {/*
+        Render a dedicated MultiSelect for Customer People
+      */}
+      <div>
+        <label className="block text-gray-700">Select Customer People</label>
+        <MultiSelect
+          options={unlinkedPeople.map((person) => ({
+            label: `${person.name} (${person.email})`,
+            value: JSON.stringify({ id: person.id, name: person.name }),
+          }))}
+          value={selectedAttributes.customer_people_list.map((person) => ({
+            label: person.name,
+            value: JSON.stringify(person),
+          }))}
+          onChange={(selected: Option[]) => {
+            const people = selected.map((option) => JSON.parse(option.value));
+            setSelectedAttributes((prev) => ({
+              ...prev,
+              customer_people_list: people,
+            }));
+          }}
+          labelledBy="Select Customer People"
+        />
+      </div>
       <div className="flex justify-end space-x-4">
         <Button
           type="button"
@@ -490,36 +418,94 @@ const CustomerDetailsPage: React.FC = () => {
   const renderDetails = () => (
     <div className="space-y-4 text-black">
       <div className="grid grid-cols-2 gap-4">
-        <p><strong>Name:</strong> {customer.name}</p>
-        <p><strong>Email:</strong> {customer.email}</p>
-        <p><strong>Phone:</strong> {customer.phone}</p>
-        <p><strong>State:</strong> {customer.state}</p>
-        <p><strong>Country:</strong> {customer.country}</p>
-        <p><strong>Mark Up:</strong> {customer.mark_up}</p>
-        <p><strong>GST Number:</strong> {customer.gst_number}</p>
-        <p><strong>PAN Number:</strong> {customer.pan_number}</p>
-        <p><strong>Delivery Destination:</strong> {customer.delivery_destination}</p>
-        <p><strong>Address:</strong> {customer.address}</p>
-        <p><strong>Remarks:</strong> {customer.remarks}</p>
-        <p><strong>Additional Info:</strong> {customer.additional_info}</p>
-        <p><strong>Code:</strong> {customer.code}</p>
-        <p><strong>Status:</strong> {customer.status}</p>
-        <p><strong>Created Date:</strong> {customer.created_date}</p>
-        <p><strong>Updated Date:</strong> {customer.updated_date}</p>
-        {Object.entries(selectedAttributes).map(([key, values]) => (
-          <p key={key}>
-            <strong>{key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
-            {key === "group"
-              ? Object.entries(values as Record<string, string>)
-                .map(([groupKey, groupValue]) => `${groupKey}: ${groupValue}`)
-                .join(", ") || "None"
-              : Array.isArray(values) ? values.join(", ") || "None" : "None"}
-          </p>
-        ))}
+        <p>
+          <strong>Name:</strong> {customer.name}
+        </p>
+        <p>
+          <strong>Email:</strong> {customer.email}
+        </p>
+        <p>
+          <strong>Phone:</strong> {customer.phone}
+        </p>
+        <p>
+          <strong>State:</strong> {customer.state}
+        </p>
+        <p>
+          <strong>Country:</strong> {customer.country}
+        </p>
+        <p>
+          <strong>Mark Up:</strong> {customer.mark_up}
+        </p>
+        <p>
+          <strong>GST Number:</strong> {customer.gst_number}
+        </p>
+        <p>
+          <strong>PAN Number:</strong> {customer.pan_number}
+        </p>
+        <p>
+          <strong>Delivery Destination:</strong> {customer.delivery_destination}
+        </p>
+        <p>
+          <strong>Address:</strong> {customer.address}
+        </p>
+        <p>
+          <strong>Remarks:</strong> {customer.remarks}
+        </p>
+        <p>
+          <strong>Additional Info:</strong>{" "}
+          {typeof customer.additional_info === "object" &&
+          Object.keys(customer.additional_info).length > 0
+            ? JSON.stringify(customer.additional_info)
+            : "None"}
+        </p>
+        <p>
+          <strong>Attributes:</strong>{" "}
+          {customer.attributes &&
+          Object.keys(customer.attributes).length > 0 ? (
+            <ul>
+              {Object.entries(customer.attributes).map(([key, value]) => (
+                <li key={key}>
+                  <strong>{key}:</strong>{" "}
+                  {Array.isArray(value) ? value.join(", ") : String(value)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            "None"
+          )}
+        </p>
+        <p>
+          <strong>Customer People:</strong>{" "}
+          {customer.customer_people_list &&
+          customer.customer_people_list.length > 0 ? (
+            <ul>
+              {customer.customer_people_list.map(
+                (person: any, index: number) => (
+                  <li key={index}>
+                    <strong>Name:</strong> {person.name}
+                  </li>
+                )
+              )}
+            </ul>
+          ) : (
+            "None"
+          )}
+        </p>
+        <p>
+          <strong>Code:</strong> {customer.code}
+        </p>
+        <p>
+          <strong>Status:</strong> {customer.status}
+        </p>
+        <p>
+          <strong>Created Date:</strong> {customer.created_date}
+        </p>
+        <p>
+          <strong>Updated Date:</strong> {customer.updated_date}
+        </p>
       </div>
     </div>
   );
-
 
   return (
     <div className="p-3 md:p-8 bg-white rounded shadow text-black text-xs md:text-base">
@@ -529,7 +515,6 @@ const CustomerDetailsPage: React.FC = () => {
           className="flex justify-end items-center"
           onClick={() => setIsEditing(true)}
         >
-          {" "}
           <FaEdit className="text-blue-500 text-2xl" />
         </div>
       )}
