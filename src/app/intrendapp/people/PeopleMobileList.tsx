@@ -35,7 +35,7 @@ export default function PeopleMobileList({
     const fetchAllPeople = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/?status=Active&limit=10&offset=0`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
