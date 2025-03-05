@@ -1,63 +1,35 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  ChangeEvent,
-  KeyboardEvent,
-  FormEvent,
-} from "react";
+import React, { useState, useEffect, ChangeEvent, KeyboardEvent, FormEvent } from "react";
 import TagInput from "../../components/TagInput";
 import Button from "../../components/Button";
 import { FaEdit } from "react-icons/fa";
 
 interface Attributes {
-  fiber: string[];
-  width: string[];
-  content: string[];
-  type: string[];
-  certifications: string[];
-  approvals: string[];
-  weave: string[];
-  weave_type: string[];
-  designs: string[];
-  paymnent_terms: string[];
-  delivery_destination: string[];
-  delivery_terms: string[];
-  group: Record<string, string>;
-  fabric_type: string[];
+  [key: string]: string[];
+}
+
+interface AttributeVersion {
+  attributes: Attributes;
+  timestamp: string;
+  version_note?: string;
 }
 
 interface AttributeResponse {
-  attributes: {
-    _id: string;
-    DefaultAttributes: Attributes;
-  };
+  latest: AttributeVersion;
+  versions: AttributeVersion[];
 }
 
 const AttributesPage: React.FC = () => {
   const [attributes, setAttributes] = useState<Attributes | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState<Attributes>({
-    fiber: [],
-    width: [],
-    content: [],
-    type: [],
-    certifications: [],
-    approvals: [],
-    weave: [],
-    weave_type: [],
-    designs: [],
-    paymnent_terms: [],
-    delivery_destination: [],
-    delivery_terms: [],
-    group: {},
-    fabric_type: [],
-  });
+  const [formData, setFormData] = useState<Attributes>({});
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [showPopup, setShowPopup] = useState(false);
-  const [newGroupKey, setNewGroupKey] = useState("");
-  const [newGroupValue, setNewGroupValue] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const [attributeHistory, setAttributeHistory] = useState<AttributeVersion[]>([]);
+  const [newAttributeKey, setNewAttributeKey] = useState("");
+  const [newAttributeValue, setNewAttributeValue] = useState("");
 
   useEffect(() => {
     fetchAttributes();
@@ -68,10 +40,12 @@ const AttributesPage: React.FC = () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`
       );
-      const data: AttributeResponse = await response.json();
-      setAttributes(data.attributes.DefaultAttributes);
-      setFormData(data.attributes.DefaultAttributes);
-      initializeInputValues(data.attributes.DefaultAttributes);
+      const data = await response.json();
+      if (data && data.attributes) {
+        setAttributes(data.attributes);
+        setFormData(data.attributes);
+        initializeInputValues(data.attributes);
+      }
     } catch (error) {
       console.error("Error fetching attributes:", error);
     }
@@ -80,9 +54,7 @@ const AttributesPage: React.FC = () => {
   const initializeInputValues = (attrs: Attributes) => {
     const newInputValues: Record<string, string> = {};
     Object.keys(attrs).forEach((key) => {
-      if (key !== "group") {
-        newInputValues[key] = "";
-      }
+      newInputValues[key] = "";
     });
     setInputValues(newInputValues);
   };
@@ -92,89 +64,55 @@ const AttributesPage: React.FC = () => {
     setInputValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleChange = (category: keyof Attributes, value: string) => {
-    if (category !== "group") {
-      setFormData((prev) => ({
-        ...prev,
-        [category]: [...(prev[category] as string[]), value],
-      }));
-      setInputValues((prev) => ({ ...prev, [category]: "" }));
-    }
+  const handleChange = (category: string, value: string) => {
+    if (!value.trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      [category]: [...(prev[category] || []), value.trim()],
+    }));
+    setInputValues((prev) => ({ ...prev, [category]: "" }));
   };
 
-  const handleDeleteTag = (category: keyof Attributes, index: number) => {
-    if (category !== "group") {
+  const handleDeleteTag = (category: string, index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [category]: (prev[category] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAddNewAttribute = () => {
+    if (newAttributeKey && newAttributeValue) {
       setFormData((prev) => ({
         ...prev,
-        [category]: (prev[category] as string[]).filter((_, i) => i !== index),
+        [newAttributeKey]: [newAttributeValue],
       }));
+      setNewAttributeKey("");
+      setNewAttributeValue("");
     }
   };
 
   const handleUpdate = async () => {
     try {
-      // Check if group has been modified
-      const groupChanged =
-        JSON.stringify(attributes?.group) !== JSON.stringify(formData.group);
-
-      if (groupChanged) {
-        // Update group
-        const groupResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/update_group/`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ update_dict: formData.group }),
-          }
-        );
-        if (!groupResponse.ok) {
-          throw new Error("Failed to update group");
-        }
-      }
-
-      // Prepare data for attribute update
-      const attributeUpdateData = { ...formData };
-
-      // Type guard function
-      const isArrayAttribute = (
-        key: keyof Attributes
-      ): key is Exclude<keyof Attributes, "group"> => {
-        return key !== "group";
-      };
-
-      // Iterate over keys and update array attributes
-      (Object.keys(attributeUpdateData) as Array<keyof Attributes>).forEach(
-        (key) => {
-          if (isArrayAttribute(key)) {
-            attributeUpdateData[key] = Array.from(
-              new Set(attributeUpdateData[key])
-            );
-          }
+      const versionNote = `Updated attributes on ${new Date().toLocaleString()}`;
+      const method = attributes ? 'PUT' : 'POST';
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes?user_id=1&user_agent=user-test`,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            attributes: formData,
+            version_note: versionNote
+          }),
         }
       );
       
-      // Update all attributes
-      const attributeResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ attributes: attributeUpdateData }),
-        }
-      );
-      if (!attributeResponse.ok) {
+      if (!response.ok) {
         throw new Error("Failed to update attributes");
       }
-      fetchAttributes()
-      const updatedAttributes: AttributeResponse =
-        await attributeResponse.json();
-      if (
-        updatedAttributes.attributes &&
-        updatedAttributes.attributes.DefaultAttributes
-      ) {
-        setAttributes(updatedAttributes.attributes.DefaultAttributes);
-      }
 
+      await fetchAttributes();
       setEditMode(false);
       setShowPopup(true);
     } catch (error) {
@@ -182,216 +120,197 @@ const AttributesPage: React.FC = () => {
     }
   };
 
-  const handleAddNewGroup = () => {
-    if (newGroupKey && newGroupValue) {
-      setFormData((prev) => ({
-        ...prev,
-        group: { ...prev.group, [newGroupKey]: newGroupValue },
-      }));
-      setNewGroupKey("");
-      setNewGroupValue("");
+  const closePopup = () => setShowPopup(false);
+
+  const fetchAttributeHistory = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes/history`
+      );
+      const data = await response.json();
+      console.log(data);
+      setAttributeHistory(data.versions);
+    } catch (error) {
+      console.error("Error fetching attribute history:", error);
     }
   };
 
-  const closePopup = () => setShowPopup(false);
+  const switchToVersion = (version: AttributeVersion) => {
+    setAttributes(version.attributes);
+    setFormData(version.attributes);
+    initializeInputValues(version.attributes);
+    setShowHistory(false);
+    setEditMode(false);
+  };
 
   if (!attributes) return <div>Loading...</div>;
 
   return (
     <div className="p-8 bg-white rounded shadow text-black">
-      <div
-        className="flex justify-between items-center text-white font-bold py-2  rounded "
-       
-      >
-        {editMode ? (
-          <>
-            <h1 className="text-2xl font-bold mb-4 text-black">Attributes</h1>
-            <div className="flex justify-end items-center text-black font-bold py-2  rounded cursor-pointer" onClick={() => setEditMode(!editMode)}>
-              Cancel
-            </div>
-          </>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold mb-4 text-black">Attributes</h1>
-            <FaEdit className="text-black text-2xl"  onClick={() => setEditMode(!editMode)}/>
-          </>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Attributes Management</h1>
+          <Button onClick={() => {
+            setShowHistory(!showHistory);
+            if (!showHistory) {
+              fetchAttributeHistory();
+            }
+          }}>
+            {showHistory ? "Hide History" : "Show Version History"}
+          </Button>
+        </div>
+        {!showHistory && (
+          <Button onClick={() => setEditMode(!editMode)}>
+            {editMode ? "Cancel" : "Edit Attributes"}
+          </Button>
         )}
       </div>
-      {editMode ? (
-        <form
-          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-          onSubmit={(e: FormEvent) => e.preventDefault()}
-        >
-          {Object.entries(formData).map(([category, value]) => (
-            <div
-              key={category}
-              className="p-4 bg-[#F3F4F6] rounded-lg shadow-md"
-            >
-              <label className="text-xl font-semibold mb-6 text-gray-800 pb-4">
-                {category}
-              </label>
-              {category !== "group" ? (
-                <>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {(value as string[]).map((item, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-200 px-3 py-1 rounded-full text-sm font-medium text-blue-800 flex items-center"
-                      >
-                        {item}
-                        <button
-                          type="button"
-                          className="ml-2 text-red-500"
-                          onClick={() =>
-                            handleDeleteTag(category as keyof Attributes, index)
-                          }
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <input
-                    name={category}
-                    value={inputValues[category]}
-                    placeholder={`Add a new ${category}`}
-                    onChange={handleInputChange}
-                    className="px-2 rounded-md"
-                    onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (inputValues[category]?.trim()) {
-                          handleChange(
-                            category as keyof Attributes,
-                            inputValues[category].trim()
-                          );
-                        }
-                      }
-                    }}
-                  />
-                </>
-              ) : (
-                <div className="w-full overflow-x-scroll">
-                  {Object.entries(value as Record<string, string>).map(
-                    ([key, val]) => (
-                      <div key={key} className="flex items-center mb-2">
-                        <input
-                          type="text"
-                          value={key}
-                          onChange={(e) => {
-                            const newGroup = { ...formData.group };
-                            delete newGroup[key];
-                            newGroup[e.target.value] = val;
-                            setFormData((prev) => ({
-                              ...prev,
-                              group: newGroup,
-                            }));
-                          }}
-                          className=" mr-2 p-2 border rounded"
-                        />
-                        <input
-                          type="text"
-                          value={val}
-                          onChange={(e) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              group: { ...prev.group, [key]: e.target.value },
-                            }));
-                          }}
-                          className=" mr-2 p-2 border rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newGroup = { ...formData.group };
-                            delete newGroup[key];
-                            setFormData((prev) => ({
-                              ...prev,
-                              group: newGroup,
-                            }));
-                          }}
-                          className="text-red-500"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    )
+
+      {showHistory ? (
+        <div className="space-y-4">
+          {attributeHistory.map((version, index) => (
+            <div key={index} className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <span className="font-semibold">
+                    Version from {new Date(version.timestamp).toLocaleString()}
+                  </span>
+                  {version.version_note && (
+                    <p className="text-gray-600 text-sm mt-1">
+                      Note: {version.version_note}
+                    </p>
                   )}
-                  <div className="flex items-center mt-2">
-                    <input
-                      type="text"
-                      value={newGroupKey}
-                      onChange={(e) => setNewGroupKey(e.target.value)}
-                      placeholder="New group key"
-                      className="  mr-2 p-2 border rounded"
-                    />
-                    <input
-                      type="text"
-                      value={newGroupValue}
-                      onChange={(e) => setNewGroupValue(e.target.value)}
-                      placeholder="New group value"
-                      className="  mr-2 p-2 border rounded"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddNewGroup}
-                      className="text-green-500"
-                    >
-                      +
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
-          ))}
-          <div className="col-span-full">
-            <Button type="button" onClick={handleUpdate} className="w-full">
-              Update Attributes
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(attributes).map(([category, value]) => (
-            <div
-              key={category}
-              className="p-4 bg-[#F3F4F6] rounded-lg shadow-md"
-            >
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                {category}
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {category !== "group"
-                  ? (value as string[]).map((item, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-200 px-3 py-1 rounded-full text-sm font-medium text-blue-800"
-                      >
-                        {item}
-                      </span>
-                    ))
-                  : Object.entries(value as Record<string, string>).map(
-                      ([key, val]) => (
+                <Button onClick={() => switchToVersion(version)}>
+                  Switch to This Version
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(version.attributes).map(([category, values]) => (
+                  <div key={category} className="p-3 bg-white rounded shadow-sm">
+                    <h4 className="font-medium mb-2">{category}</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {values.map((value, i) => (
                         <span
-                          key={key}
-                          className="bg-green-200 px-3 py-1 rounded-full text-sm font-medium text-green-800"
+                          key={i}
+                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs"
                         >
-                          {key}: {val}
+                          {value}
                         </span>
-                      )
-                    )}
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
+      ) : (
+        <>
+          {editMode ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(formData).map(([category, values]) => (
+                  <div key={category} className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold mb-2">{category}</h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {values.map((value, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center"
+                        >
+                          {value}
+                          <button
+                            onClick={() => handleDeleteTag(category, index)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        name={category}
+                        value={inputValues[category]}
+                        onChange={handleInputChange}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleChange(category, inputValues[category]);
+                          }
+                        }}
+                        placeholder={`Add to ${category}`}
+                        className="flex-1 p-2 border rounded"
+                      />
+                      <Button
+                        onClick={() => handleChange(category, inputValues[category])}
+                        className="px-4"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-4">Add New Attribute Category</h3>
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    value={newAttributeKey}
+                    onChange={(e) => setNewAttributeKey(e.target.value)}
+                    placeholder="New category name"
+                    className="flex-1 p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newAttributeValue}
+                    onChange={(e) => setNewAttributeValue(e.target.value)}
+                    placeholder="Initial value"
+                    className="flex-1 p-2 border rounded"
+                  />
+                  <Button onClick={handleAddNewAttribute}>Add Category</Button>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <Button onClick={handleUpdate} className="w-full">
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(attributes).map(([category, values]) => (
+                <div key={category} className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-semibold mb-2">{category}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {values.map((value, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+                      >
+                        {value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
+
       {showPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-4 rounded shadow-lg">
-            <h2 className="text-lg font-bold mb-2">
-              Attributes updated successfully!
-            </h2>
-            <Button onClick={closePopup}>OK</Button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg">
+            <h2 className="text-xl font-bold mb-4">Success!</h2>
+            <p>Attributes have been updated successfully.</p>
+            <Button onClick={closePopup} className="mt-4">
+              Close
+            </Button>
           </div>
         </div>
       )}

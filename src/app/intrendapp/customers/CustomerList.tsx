@@ -9,7 +9,7 @@ import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
 
 interface Customer {
-  _id: string;
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -61,7 +61,7 @@ const CustomerList = ({
     const fetchAllCustomers = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ const CustomerList = ({
 
         if (response.ok) {
           const data = await response.json();
-
+    console.log(data)
           if (data.customers && Array.isArray(data.customers)) {
             setAllCustomers(data.customers); // Store all customers in state
             setCustomers(data.customers.slice(0, pageFilter.limit)); // Display first page of customers
@@ -113,16 +113,18 @@ const CustomerList = ({
     setFilters(newFilters); // Apply filter immediately
   };
 
-  const handleDelete = async (customerId: string) => {
+  const handleDelete = async (customer_id: string) => {
+    console.log(customer_id)
+
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customer_id}?user_id=1&user_agent=user-test`,
         {
           method: "DELETE",
         }
       );
       if (response.ok) {
-        setCustomers(customers.filter((customer) => customer._id !== customerId));
+        setCustomers(customers.filter((customer) => customer.id !== customer_id));
         setDeleteCustomerId(null);
         toast.success("Customer deleted successfully");
       } else {
@@ -149,15 +151,19 @@ const CustomerList = ({
       <td className="border p-2 hidden md:table-cell">{customer.code}</td>
       <td className="border p-2">
         <div className="h-full flex justify-center space-x-2">
-          <Link href={`customers/${customer._id}`} passHref>
+          <Link href={`customers/${customer.id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
               <FaEye />
             </span>
           </Link>
           <FaTrash
-            onClick={() => setDeleteCustomerId(customer._id)}
+            onClick={() => {
+              console.log("Delete button clicked for customer ID:", customer.id); // Debugging log
+              setDeleteCustomerId(customer.id);
+            }}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
+
         </div>
       </td>
     </>
@@ -212,16 +218,17 @@ const CustomerList = ({
       )}
 
       {/* Table */}
-      <Table 
-        columns={columns} 
-        data={customers} 
-        renderRow={renderRow} 
+      <Table
+        columns={columns}
+        data={customers}
+        renderRow={renderRow}
       />
 
       {deleteCustomerId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to delete this customer?</p>
+          <p className="text-gray-500 text-sm">Customer ID: {deleteCustomerId}</p> {/* Debugging */}
           <div className="flex justify-end mt-4">
             <button
               onClick={() => setDeleteCustomerId(null)}

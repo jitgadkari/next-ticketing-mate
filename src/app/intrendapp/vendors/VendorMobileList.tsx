@@ -40,18 +40,22 @@ export default function VendorMobileList({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showFilter, setShowFilter] = useState<boolean>(false); // State to toggle filter visibility
 
-  // Populate filter options for states
   useEffect(() => {
+    if (!vendors || !Array.isArray(vendors)) {
+      console.warn("Vendors data is not an array or is undefined:", vendors);
+      return;
+    }
     const states = Array.from(new Set(vendors.map((vendor) => vendor.state))).filter(Boolean);
     setAvailableStates(states);
   }, [vendors]);
+  
 
   // Fetch all vendors once from the `/vendors_all` API
   useEffect(() => {
     const fetchAllVendors = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -173,55 +177,58 @@ export default function VendorMobileList({
       )}
 
       {/* Display vendor details */}
-      {vendors.map((vendor) => (
-        <div key={vendor._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
-          <div className="flex flex-col space-y-4 text-sm w-full">
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Name:</span>
-                <span>{vendor.name}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Email:</span>
-                <span>{vendor.email}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Phone:</span>
-                <span>{vendor.phone}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">State:</span>
-                <span>{vendor.state}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Code:</span>
-                <span>{vendor.code}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Link href={`vendors/${vendor._id}`} passHref>
-                <span className="text-blue-500 hover:text-blue-700">
-                  <FaEye />
-                </span>
-              </Link>
-              <FaTrash
-                onClick={() => setDeleteVendorId(vendor._id)}
-                className="text-red-500 cursor-pointer hover:text-red-700"
-              />
-            </div>
+      {Array.isArray(vendors) && vendors.length > 0 ? (
+  vendors.map((vendor) => (
+    <div key={vendor._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
+      <div className="flex flex-col space-y-4 text-sm w-full">
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <span className="font-semibold mr-2">Name:</span>
+            <span>{vendor.name}</span>
           </div>
         </div>
-      ))}
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <span className="font-semibold mr-2">Email:</span>
+            <span>{vendor.email}</span>
+          </div>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <span className="font-semibold mr-2">Phone:</span>
+            <span>{vendor.phone}</span>
+          </div>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <span className="font-semibold mr-2">State:</span>
+            <span>{vendor.state}</span>
+          </div>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <span className="font-semibold mr-2">Code:</span>
+            <span>{vendor.code}</span>
+          </div>
+        </div>
+        <div className="flex justify-end space-x-4">
+          <Link href={`vendors/${vendor._id}`} passHref>
+            <span className="text-blue-500 hover:text-blue-700">
+              <FaEye />
+            </span>
+          </Link>
+          <FaTrash
+            onClick={() => setDeleteVendorId(vendor._id)}
+            className="text-red-500 cursor-pointer hover:text-red-700"
+          />
+        </div>
+      </div>
+    </div>
+  ))
+) : (
+  <p className="text-gray-500 text-center">No vendors available</p>
+)}
+
 
       {/* Delete Confirmation */}
       {deleteVendorId && (

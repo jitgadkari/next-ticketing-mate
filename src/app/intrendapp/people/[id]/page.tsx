@@ -8,7 +8,7 @@ import { FaEdit } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 interface Person {
-  _id: string;
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -19,12 +19,12 @@ interface Person {
 }
 
 interface Customer {
-  _id: string;
+  id: string;
   name: string;
 }
 
 interface Vendor {
-  _id: string;
+  id: string;
   name: string;
 }
 
@@ -44,14 +44,15 @@ const PersonDetailsPage: React.FC = () => {
     }
   }, [id]);
 
-  const fetchPerson = async (personId: string): Promise<void> => {
+  const fetchPerson = async (person_id: string): Promise<void> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/${personId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${person_id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch person');
       }
       const data = await response.json();
-      setPerson(data.person);
+      console.log(data.person[0])
+      setPerson(data.person[0]);
     } catch (error) {
       console.error('Error fetching person:', error);
     }
@@ -59,7 +60,7 @@ const PersonDetailsPage: React.FC = () => {
 
   const fetchCustomers = async (): Promise<void> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
       if (!response.ok) {
         throw new Error('Failed to fetch customers');
       }
@@ -72,7 +73,7 @@ const PersonDetailsPage: React.FC = () => {
 
   const fetchVendors = async (): Promise<void> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
       if (!response.ok) {
         throw new Error('Failed to fetch vendors');
       }
@@ -118,7 +119,7 @@ const PersonDetailsPage: React.FC = () => {
     if (person) {
       try {
         console.log('person: ', person);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${person.id}?user_id=1&user_agent=user-test`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ const PersonDetailsPage: React.FC = () => {
             <p><strong>Phone:</strong> {person.phone}</p>
             <p><strong>Email:</strong> {person.email}</p>
             <p><strong>Type of Employee:</strong> {person.type_employee}</p>
-            <p><strong>Linked:</strong> {person.linked}</p>
+            <p><strong>Linked:</strong> {person.linked ? 'Yes' : 'No'}</p>
             {person.linked === 'Yes' && (
               <>
                 <p><strong>Linked To:</strong> {person.linked_to}</p>

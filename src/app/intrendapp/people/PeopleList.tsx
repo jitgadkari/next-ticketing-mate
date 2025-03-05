@@ -5,8 +5,9 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { pageFilter, pageInfo } from "../people/page";
+import { pageFilter, pageInfo } from "./page";
 import Pagination from "@/app/components/Pagination";
+import { useParams } from "next/navigation";
 
 interface PeopleListProps {
   people: any[];
@@ -37,13 +38,14 @@ const PeopleList = ({
     const fetchAllPeople = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people_all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
 
         if (response.ok) {
           const data = await response.json();
+          console.log(data)
           if (data.people && Array.isArray(data.people)) {
             setAllPeople(data.people); // Store all people in state
             setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
@@ -72,14 +74,14 @@ const PeopleList = ({
     setPeople(filteredPeople.slice(0, pageFilter.limit)); // Adjust based on limit
   }, [filterName, allPeople, pageFilter.limit]);
 
-  const handleDelete = async (peopleId: string) => {
+  const handleDelete = async (persons_id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/${peopleId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${persons_id}?user_id=1&user_agent=user-test`,
         { method: "DELETE" }
       );
       if (response.ok) {
-        setPeople(people.filter((person) => person._id !== peopleId));
+        setPeople(people.filter((person) => person.id !== persons_id));
         setDeletePeopleId(null);
         toast.success("People entry deleted successfully");
       } else {
@@ -95,18 +97,20 @@ const PeopleList = ({
   const renderRow = (person: any) => (
     <>
       <td className="border p-2">{person.name}</td>
-      <td className="border p-2 hidden md:table-cell">{person.phone}</td>
+      <td className="border p-2 hidden md:table-cell">
+        {person.phone ? person.phone : "N/A"}
+      </td>
       <td className="border p-2">{person.email}</td>
       <td className="border p-2 hidden md:table-cell">{person.type_employee}</td>
       <td className="border p-2">
         <div className="flex justify-center space-x-2">
-          <Link href={`people/${person._id}`} passHref>
+          <Link href={`people/${person.id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
               <FaEye />
             </span>
           </Link>
           <FaTrash
-            onClick={() => setDeletePeopleId(person._id)}
+            onClick={() => setDeletePeopleId(person.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </div>
@@ -125,7 +129,7 @@ const PeopleList = ({
           {showFilter ? "Hide Filter" : "Show Filter"}
         </button>
       </div>
-  
+
       {showFilter && (
         <div className="mb-6">
           <input
@@ -140,10 +144,9 @@ const PeopleList = ({
 
       {isLoading && <p className="text-center">Loading people...</p>}
 
-      {!isLoading && people.length === 0 && (
+      {!isLoading && Array.isArray(people) && people.length === 0 && (
         <p className="text-center text-gray-500">No people found</p>
       )}
-
       <Table columns={columns} data={people} renderRow={renderRow} />
 
       {deletePeopleId && (

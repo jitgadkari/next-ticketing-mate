@@ -45,8 +45,9 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   }, [formData.linked_to]);
   const fetchCustomers = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
       const data = await response.json();
+      console.log(data.customers)
       setCustomers(data.customers);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -55,8 +56,9 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const fetchVendors = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
       const data = await response.json();
+      console.log(data.vendors)
       setVendors(data.vendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
@@ -64,12 +66,23 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value,
-      ...(name === 'type_employee' && value === 'Internal' ? { linked: 'No', linked_to: null, linked_to_id: null } : {}),
-    }));
+  
+    setFormData(prevData => {
+      let updatedData: Partial<FormData> = { [name]: value };
+  
+      if (name === 'linked_to_id') {
+        try {
+          updatedData = { linked_to_id: JSON.parse(value) }; // Parse back into object
+        } catch (error) {
+          console.error("Invalid JSON in linked_to_id", error);
+        }
+      }
+  
+      return { ...prevData, ...updatedData };
+    });
   };
+
+  
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -84,16 +97,16 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
       linked_to: formData.type_employee === 'External' && formData.linked === 'Yes' ? formData.linked_to : null,
       linked_to_id: formData.type_employee === 'External' && formData.linked === 'Yes' ? formData.linked_to_id : null,
     };
-
+    console.log("Submitting Data:", submitData);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons?user_id=1&user_agent=user-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(submitData),
       });
-
+      console.log(response)
       if (response.ok) {
         onAdd();
         toast.success("Person added successfully");
@@ -135,7 +148,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
         required
         placeholder='abc@gmail.com'
       />
-      <div >
+      {/* <div >
         <label className="block text-gray-700">Type of Employee</label>
         <select
           name="type_employee"
@@ -147,8 +160,8 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
           <option value="Internal">Internal</option>
           <option value="External">External</option>
         </select>
-      </div>
-      {formData.type_employee === 'External' && (
+      </div> */}
+      {/* {formData.type_employee === 'External' && (
         <>
           <div>
             <label className="block text-gray-700">Linked</label>
@@ -190,8 +203,8 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
                     required
                   >
                     <option value="">Select...</option>
-                    {(formData.linked_to === 'Customer' ? customers : vendors).map((option) => (
-                      <option key={option._id} value={option.name}>
+                    {(formData.linked_to === 'Customer' ? customers || [] : vendors || []).map((option) => (
+                     <option key={option.id} value={JSON.stringify({ id: option.id, name: option.name })}>
                         {option.name}
                       </option>
                     ))}
@@ -201,7 +214,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
             </>
           )}
         </>
-      )}
+      )} */}
       <Button type="submit" className="w-full">
         Add Person
       </Button>

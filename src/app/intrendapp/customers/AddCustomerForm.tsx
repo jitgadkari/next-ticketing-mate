@@ -30,21 +30,8 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     email: '',
     phone: '',
     code:'',
-    group: '',
-    fabric_type: [],
-    certifications: [],
-    approvals: [],
-    people: [],
     state: '',
-    country: '',
-    gst_number: '',
-    delivery_destination: '',
-    delivery_terms: [],
-    payment_terms: [],
-    pan_number: '',
-    address: '',
-    remarks: '',
-    additional_info: ''
+    country: ''
   });
 
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
@@ -83,7 +70,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/new/`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/new/?user_id=1&user_agent=user-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,21 +86,8 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
           email: '',
           phone: '',
           code:'',
-          group: '',
-          fabric_type: [],
-          certifications: [],
-          approvals: [],
-          people: [],
           state: '',
-          country: '',
-          gst_number: '',
-          delivery_destination: '',
-          delivery_terms: [],
-          payment_terms: [],
-          pan_number: '',
-          address: '',
-          remarks: '',
-          additional_info: ''
+          country: ''
         });
         toast.success("Customer added successfully")
       } else {

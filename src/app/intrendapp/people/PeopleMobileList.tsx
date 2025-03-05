@@ -35,7 +35,7 @@ export default function PeopleMobileList({
     const fetchAllPeople = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people_all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -116,52 +116,57 @@ export default function PeopleMobileList({
 
       {isLoading && <p className="text-center">Loading people...</p>}
 
-      {!isLoading && people.length === 0 && (
-        <p className="text-center text-gray-500">No people found</p>
-      )}
+      {!isLoading && (!people || people.length === 0) && (
+  <p className="text-center text-gray-500">No people found</p>
+)}
 
-      {people.map((person) => (
-        <div key={person._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
-          <div className="flex flex-col space-y-4 text-sm w-full">
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Name:</span>
-                <span>{person.name}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Email:</span>
-                <span>{person.email}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Employee Type:</span>
-                <span>{person.type_employee}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Phone:</span>
-                <span>{person.phone}</span>
-              </div>
-            </div>
 
-            <div className="flex justify-end space-x-4">
-              <Link href={`people/${person._id}`} passHref>
-                <span className="text-blue-500 hover:text-blue-700">
-                  <FaEye />
-                </span>
-              </Link>
-              <FaTrash
-                onClick={() => setDeletePersonId(person._id)}
-                className="text-red-500 cursor-pointer hover:text-red-700"
-              />
+      {Array.isArray(people) && people.length > 0 ? (
+        people.map((person) => (
+          <div key={person._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
+            <div className="flex flex-col space-y-4 text-sm w-full">
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Name:</span>
+                  <span>{person.name}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Email:</span>
+                  <span>{person.email}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Employee Type:</span>
+                  <span>{person.type_employee}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Phone:</span>
+                  <span>{person.phone}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <Link href={`people/${person._id}`} passHref>
+                  <span className="text-blue-500 hover:text-blue-700">
+                    <FaEye />
+                  </span>
+                </Link>
+                <FaTrash
+                  onClick={() => setDeletePersonId(person._id)}
+                  className="text-red-500 cursor-pointer hover:text-red-700"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      ) : (
+        <p className="text-gray-500">No people found.</p>
+      )}
 
       {deletePersonId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
