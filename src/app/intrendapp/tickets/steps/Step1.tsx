@@ -9,7 +9,7 @@ interface Step1Props {
   isCurrentStep: boolean;
   personName: string;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -36,7 +36,7 @@ const Step1: React.FC<Step1Props> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isCurrentStep ) {
+    if (isCurrentStep) {
       handleNext();
     }
   }, [isCurrentStep]);
@@ -47,40 +47,50 @@ const Step1: React.FC<Step1Props> = ({
       // Decode the message
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_client_message_decode_groq`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_customer_message_decode`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ text: ticket.steps[step].text }),
+
+          body: JSON.stringify({
+            customer_message: ticket.steps[step].latest.text,
+          }),
         }
       );
-      console.log(response);
       if (!response.ok) {
         throw new Error("Failed to decode message");
       }
 
-      const decodedMessage = await response.json();
-
+      const decoded_messages = await response.json();
+      const parsedMessage = JSON.parse(decoded_messages);
+      // console.log(parsedMessage);
+      console.log("payload", {
+        ticket_id: ticket.id,
+        step_info:  { decoded_messages: parsedMessage },
+        step_number: step,
+      });
       // Update Step 2 with the decoded message
-      await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+    if(ticket.id, decoded_messages){
+      const updateResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ticket_number: ticket.ticket_number,
-            step_info: decodedMessage,
-            step_number: "Step 2 : Message Decoded",
+            ticket_id: ticket.id,
+            step_info:  { decoded_messages: parsedMessage },
+            step_number: step,
           }),
         }
       );
-
+      console.log("update response", updateResponse);
+    }
       // Fetch the updated ticket and move to the next step
-      await fetchTicket(ticket._id);
+      await fetchTicket(ticket.id);
       setActiveStep("Step 2 : Message Decoded");
     } catch (error) {
       console.error("Error in Step 1 next handler:", error);

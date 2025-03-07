@@ -107,10 +107,12 @@ const TicketDetailsPage = () => {
 
     switch (step) {
       case "Step 1 : Customer Message Received":
+        console.log(ticket.steps[step])
+        console.log("step....",step)
         return (
           <Step1
             ticketNumber={ticket.ticket_number}
-            message={ticket.steps[step].text}
+            message={ticket.steps[step].latest.text}
             customerName={ticket.customer_name}
             personName={ticket.person_name} // Add this line
             isCurrentStep={step === ticket.current_step}
@@ -122,49 +124,57 @@ const TicketDetailsPage = () => {
         );
 
       case "Step 2 : Message Decoded":
+        console.log(ticket.steps[step])
+        console.log(ticket.steps[step].latest.decoded_messages)
+        console.log(ticket.steps[step].latest.decoded_messages)
+        console.log(ticket.current_step)
         return (
           <Step2
-            ticketNumber={ticket.ticket_number}
-            data={ticket.steps[step]}
-            originalMessage={
-              ticket.steps["Step 1 : Customer Message Received"]?.text || ""
-            }
-            isCurrentStep={step === ticket.current_step}
-            ticket={ticket}
-            setActiveStep={setActiveStep}
-            fetchTicket={fetchTicket}
-          />
+          ticketNumber={ticket.ticket_number}
+          data={ticket.steps[step].latest.decoded_messages}
+          originalMessage={
+            ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+          }
+          isCurrentStep={step === ticket.current_step}
+          ticket={ticket}
+          setActiveStep={setActiveStep}
+          fetchTicket={fetchTicket}
+          step={step}
+        />
         );
 
       case "Step 3 : Message Template for vendors":
+        console.log(ticket.steps[step])
         return (
           <Step3
-            ticketNumber={ticket.ticket_number}
-            template={ticket.steps[step]?.text || ""}
-            customerName={ticket.customer_name}
-            originalMessage={
-              ticket.steps["Step 1 : Customer Message Received"]?.text || ""
-            }
-            isCurrentStep={step === ticket.current_step}
-            ticket={ticket}
-            setActiveStep={setActiveStep}
-            fetchTicket={fetchTicket}
-          />
+          ticketNumber={ticket.ticket_number}
+          template={ticket.steps[step]?.latest?.vendor_message_temp || ""}
+          customerName={ticket.customer_name}
+          originalMessage={
+            ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+          }
+          isCurrentStep={step === ticket.current_step}
+          ticket={ticket}
+          setActiveStep={setActiveStep}
+          fetchTicket={fetchTicket}
+          step={step}
+        />
         );
 
       case "Step 4 : Vendor Selection":
         return (
           <Step4
-            ticketNumber={ticket.ticket_number}
-            selectedVendors={ticket.steps[step]?.list || []}
-            template={
-              ticket.steps["Step 3 : Message Template for vendors"]?.text || ""
-            }
-            isCurrentStep={step === ticket.current_step}
-            ticket={ticket}
-            setActiveStep={setActiveStep}
-            fetchTicket={fetchTicket}
-          />
+          ticketNumber={ticket.ticket_number}
+          selectedVendors={ticket.steps[step]?.latest.vendors || []}
+          selectedVendors1={ticket.steps[step]?.latest || []}
+          template={
+            ticket.steps["Step 3 : Message Template for vendors"]?.latest.vendor_message_temp || ""
+          }
+          isCurrentStep={step === ticket.current_step}
+          ticket={ticket}
+          setActiveStep={setActiveStep}
+          fetchTicket={fetchTicket}
+        />
         );
 
       case "Step 5: Messages from Vendors":

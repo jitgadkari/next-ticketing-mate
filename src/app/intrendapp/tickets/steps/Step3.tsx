@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
@@ -13,7 +14,7 @@ interface Step3Props {
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -21,6 +22,7 @@ interface Step3Props {
     created_data: string;
     updated_date: string;
   };
+  step: string;
 }
 
 const Step3: React.FC<Step3Props> = ({
@@ -32,65 +34,53 @@ const Step3: React.FC<Step3Props> = ({
   fetchTicket,
   setActiveStep,
   ticket,
+  step,
 }) => {
   console.log(template);
+  console.log(customerName);
+  console.log(originalMessage);
+  console.log(ticket);
   const [message, setMessage] = useState(template);
   const [includeCustomerName, setIncludeCustomerName] = useState(true);
-  const [includeSampleQuery, setSampleQuery] = useState(false);
+  const [includeSampleQuery, setIncludeSampleQuery] = useState(false);
+  const [includeDecodedMessage, setIncludeDecodedMessage] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!template) {
-      fetchTicket(ticket._id);
+      fetchTicket(ticket.id);
     }
     let initialMessage = template;
-    if (includeCustomerName) {
-      if (!initialMessage.includes(`\n\nCustomer Name: ${customerName}`)) {
-        initialMessage += `\n\nCustomer Name: ${customerName}`;
-      }
+    if (
+      includeCustomerName &&
+      !initialMessage.includes(`\n\nCustomer Name: ${customerName}`)
+    ) {
+      initialMessage += `\n\nCustomer Name: ${customerName}`;
     }
     setMessage(initialMessage);
   }, []);
-  
-  const handleNext = async () => {
-    console.log("Handling next for Step 3");
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { list: [] },
-          step_number: "Step 4 : Vendor Selection",
-        }),
-      }
-    );
-    await fetchTicket(ticket._id);
-    setLoading(false);
-    setActiveStep("Step 4 : Vendor Selection");
-    toast.success("Step 3 completed");
-  };
+
   const handleUpdate = async (updatedTemplate: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { text: updatedTemplate },
-          step_number: "Step 3 : Message Template for vendors",
+          ticket_id: ticket.id,
+          step_info: {
+            vendor_message_temp: updatedTemplate,
+            include_decoded_message: includeDecodedMessage, // ✅ Updated to track the decoded message state
+          },
+          step_number: step,
         }),
       }
     );
     const jsonResponse = await response.json();
     console.log(jsonResponse);
-    await fetchTicket(ticket._id);
+    await fetchTicket(ticket.id);
   };
 
   const handleNextStep = async () => {
@@ -98,23 +88,27 @@ const Step3: React.FC<Step3Props> = ({
       setLoading(true);
       await handleUpdate(message);
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ticket_number: ticketNumber,
-            step_info: { list: [] },
-            step_number: "Step 4 : Vendor Selection",
+            ticket_id: ticket.id,
+            step_info: { vendors: [] },
+            step_number: step,
           }),
         }
       );
 
-      await handleNext();
+      setActiveStep("Step 4 : Vendor Selection");
+      toast.success("Step 3 completed");
+      await fetchTicket(ticket.id);
     } catch (error) {
       console.error("Error updating ticket:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,8 +128,9 @@ const Step3: React.FC<Step3Props> = ({
       );
     }
   };
+
   const toggleSampleQuery = () => {
-    setSampleQuery(!includeSampleQuery);
+    setIncludeSampleQuery(!includeSampleQuery);
     if (!includeSampleQuery) {
       setMessage((prevMessage) => `${prevMessage}\n\nThis is a Sample Query`);
     } else {
@@ -144,12 +139,72 @@ const Step3: React.FC<Step3Props> = ({
       );
     }
   };
+  const handleIncludeDecodedMessage = async () => {
+    setIncludeDecodedMessage((prevState) => !prevState); // Toggle state first
+    const newState = !includeDecodedMessage; // Get new state
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
+    try {
+      const vendorMessageTemplate = await message_decoder(newState); // ✅ Await API call
+
+      let updatedMessage = vendorMessageTemplate; // Start with decoded message
+
+      // ✅ Check if customer name should be included
+      if (
+        includeCustomerName &&
+        !updatedMessage.includes(`\n\nCustomer Name: ${customerName}`)
+      ) {
+        updatedMessage += `\n\nCustomer Name: ${customerName}`;
+      }
+
+      // ✅ Check if sample query should be included
+      if (
+        includeSampleQuery &&
+        !updatedMessage.includes(`\n\nThis is a Sample Query`)
+      ) {
+        updatedMessage += `\n\nThis is a Sample Query`;
+      }
+
+      setMessage(updatedMessage);
+    } catch (error) {
+      console.error("Error including decoded message:", error);
+    }
+  };
+
+  const message_decoder = async (includeDecodedMessage: boolean) => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          vendor_name: "{VENDOR}",
+          customerMessage: originalMessage,
+          ticket_number: ticket.ticket_number,
+          asked_details:
+            ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages,
+          asked_details_required: includeDecodedMessage,
+        }),
+      }
+    );
+    console.log(response);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response:", errorData);
+      throw new Error(
+        `Failed to generate vendor message template: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log(data);
+    const vendorMessageTemplate = data;
+    console.log(vendorMessageTemplate);
+    return vendorMessageTemplate;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
   };
 
@@ -158,7 +213,7 @@ const Step3: React.FC<Step3Props> = ({
       {!loading && (
         <>
           <div className="py-1 mb-4">
-            <h1 className="text-xl font-bold ">Customer Message</h1>
+            <h1 className="text-xl font-bold">Customer Message</h1>
             <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
           </div>
           <h3 className="text-xl font-bold mb-4">
@@ -172,31 +227,40 @@ const Step3: React.FC<Step3Props> = ({
             onChange={handleInputChange}
             rows={15}
           />
-          <div className="flex justify-between mb-4 mt-4">
+          <div className="flex flex-wrap gap-4 mb-4 mt-4">
             <Button
               onClick={handleSave}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             >
               Save
             </Button>
-            <div className="flex gap-4">
-              <Button
-                onClick={toggleSampleQuery}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                {includeSampleQuery
-                  ? "Remove Sample Query"
-                  : "Add Sample Query"}
-              </Button>
-              <Button
-                onClick={toggleCustomerName}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                {includeCustomerName
-                  ? "Remove Customer Name"
-                  : "Add Customer Name"}
-              </Button>
-            </div>
+            <Button
+              onClick={toggleSampleQuery}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              {includeSampleQuery ? "Remove Sample Query" : "Add Sample Query"}
+            </Button>
+            <Button
+              onClick={toggleCustomerName}
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            >
+              {includeCustomerName
+                ? "Remove Customer Name"
+                : "Add Customer Name"}
+            </Button>
+            <Button
+              onClick={handleIncludeDecodedMessage}
+              className={`font-bold py-2 px-4 rounded ${
+                isCurrentStep
+                  ? "bg-blue-500 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isCurrentStep}
+            >
+              {includeDecodedMessage
+                ? "Remove Decoded Message from Template"
+                : "Include Decoded Message in Template"}
+            </Button>
           </div>
           <Button
             onClick={handleNextStep}

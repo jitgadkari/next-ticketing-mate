@@ -4,6 +4,7 @@ import Select, { MultiValue } from 'react-select';
 export interface MultiSelectOption {
   label: string;
   value: string;
+  id?: string;
 }
 
 interface MultiSelectProps {

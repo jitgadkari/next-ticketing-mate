@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { BsCalendar2DateFill } from "react-icons/bs";
 interface Ticket {
-  _id: string;
+  id: string;
   ticket_number: string;
   customer_name: string;
   current_step: string;
@@ -105,12 +105,12 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
         const data = await response.json();
         console.log(data)
         const parsedTickets = data.tickets.map((ticket: any) => ({
-          _id: ticket._id,
+          id: ticket.id,
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           current_step: ticket.current_step,
           created_date: ticket.created_date,
-          customer_message: ticket.steps["Step 1 : Customer Message Received"]?.text || "",
+          customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
           status: ticket.steps["Step 9: Final Status"]?.status || "open",
           final_decision:
             ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
@@ -153,7 +153,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
         }
       );
       if (response.ok) {
-        setAllTickets(allTickets.filter((ticket) => ticket._id !== ticketId));
+        setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
         toast.success("Ticket deleted successfully");
       } else {
@@ -253,13 +253,13 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
       <td className="border rounded-lg p-2">{ticket.customer_message}</td>
       <td className="border rounded-lg p-2">
         <ul className="h-full flex justify-center space-x-2">
-          <Link href={`tickets/${ticket._id}`} passHref>
+          <Link href={`tickets/${ticket.id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
               <FaEye />
             </span>
           </Link>
           <FaTrash
-            onClick={() => setDeleteTicketId(ticket._id)}
+            onClick={() => setDeleteTicketId(ticket.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </ul>
@@ -292,7 +292,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                       <ul className="absolute left-0 w-48 max-h-48 overflow-y-auto mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
                         {customers.map((customer) => (
                           <li
-                            key={customer._id}
+                            key={customer.id}
                             onClick={() =>
                               setFilterState((prev) => ({
                                 ...prev,
