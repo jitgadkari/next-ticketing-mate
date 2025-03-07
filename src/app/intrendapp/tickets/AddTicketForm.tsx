@@ -24,10 +24,20 @@ export interface Person {
   phone: string;
 }
 
+interface FormData {
+  customer_id: string;
+  customer_name: string;
+  person_name: string;
+  message: string;
+  from_number: string;
+  ticket_type: string;
+  customer_people_list: Person[];
+}
+
 const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTicketFormProps) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [showPersonDropDown, setShowPersonDropDown] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     customer_id: "",
     customer_name: initialCustomer || "",
     person_name: "",
@@ -79,7 +89,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
   const handleCustomerSelect = (customer: Customer) => {
     setFormData({
       ...formData,
-      customer_id: customer.id, // ✅ Set customer_id
+      customer_id: customer.id, // Set customer_id
       customer_name: customer.name,
       person_name: "",
       from_number: "",
@@ -92,38 +102,52 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.message.trim()) {
-      toast.error("Message cannot be empty.");
+    if (!formData.customer_id) {
+      toast.error("Please select a customer");
       return;
     }
 
-    // const fromNumberRegex = /^91.*@c\.us$/;
-    // if (!fromNumberRegex.test(formData.from_number)) {
-    //   toast.error("Invalid 'From Number'. It should start with '91' and end with '@c.us'");
-    //   return;
-    // }
+    if (!formData.person_name) {
+      toast.error("Please select a person");
+      return;
+    }
 
+    if (!formData.message.trim()) {
+      toast.error("Message cannot be empty");
+      return;
+    }
+
+    const currentDate = new Date().toISOString();
+    
     const payload = {
-      customer_id: formData.customer_id, // ✅ Include customer_id
+      customer_id: formData.customer_id,
       customer_name: formData.customer_name,
       ticket_type: formData.ticket_type,
       customer_people_list: formData.customer_people_list,
-      customer_message: formData.message,
-      from_number: formData.from_number,
       assigned_internal_people_list: [],
+      customer_message: formData.message,
       image_urls: [],
-      status: "Active",
+      from_number: formData.from_number || "",
+      created_date: currentDate,
+      updated_date: currentDate,
+      status: "Active"
     };
-
+    
     try {
       console.log("Submitting Ticket:", payload);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket?user_id=573c7b4-0621-4d23-8d02-d964c66025b3&user_agent=user-test`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(payload),
       });
-console.log(response)
+      
+      const responseData = await response.json().catch(() => ({}));
+      console.log("Server response:", responseData);
+
       if (response.ok) {
         onAdd();
         setFormData({
@@ -137,11 +161,13 @@ console.log(response)
         });
         toast.success("Ticket added successfully");
       } else {
-        const errorData = await response.json();
-        console.error("Failed to add ticket", errorData);
+        const errorMessage = responseData.error?.message || responseData.message || "Failed to add ticket";
+        toast.error(errorMessage);
+        console.error("Failed to add ticket", responseData);
       }
     } catch (error) {
       console.error("Error adding ticket:", error);
+      toast.error("Network error while adding ticket");
     }
   };
 

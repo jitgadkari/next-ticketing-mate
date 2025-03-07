@@ -133,7 +133,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
         );
         const data = await response.json();
         setCustomers(data.customers);

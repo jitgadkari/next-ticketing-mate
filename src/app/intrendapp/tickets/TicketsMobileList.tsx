@@ -110,10 +110,10 @@ export default function TicketsMobileList({
           }/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
-        console.log("Raw ticket data:", data.tickets);
+        // console.log("Raw ticket data:", data.tickets);
         const parsedTickets = data.tickets.map((ticket: any) => {
-          console.log("Ticket steps:", ticket.steps);
-          console.log("Step 1 text:", ticket.steps["Step 1 : Customer Message Received"]?.text);
+          // console.log("Ticket steps:", ticket.steps);
+          // console.log("Step 1 text:", ticket.steps["Step 1 : Customer Message Received"]?.latest.text);
           return {
             _id: ticket._id,
             ticket_number: ticket.ticket_number,
@@ -121,7 +121,7 @@ export default function TicketsMobileList({
             current_step: ticket.current_step,
             created_date: ticket.created_date,
             updated_date: ticket.updated_date,
-            customer_message: ticket.steps["Step 1 : Customer Message Received"]?.text || "",
+            customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
             status: ticket.steps["Step 9: Final Status"]?.status || "open",
             final_decision:
               ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
@@ -145,7 +145,7 @@ export default function TicketsMobileList({
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
         );
         const data = await response.json();
         setCustomers(data.customers);
@@ -362,7 +362,7 @@ export default function TicketsMobileList({
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {customers.map((customer) => (
                   <li
-                    key={customer._id}
+                    key={customer.id}
                     className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer"
                     onClick={() => {
                       setFilterState((prev) => ({
