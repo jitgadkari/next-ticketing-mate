@@ -36,11 +36,20 @@ interface ScheduleDetails {
   delivery_point: string;
 }
 
+interface BulkDetails {
+  rate: RateDetails;
+  schedule: ScheduleDetails;
+  query?: string;
+}
+
 interface VendorDetails {
   vendor_name: string;
   query: string;
   rate: RateDetails;
   schedule: ScheduleDetails;
+  original_message: string;
+  response_received_time: string;
+  decoded_response: Record<string, any>;
 }
 
 interface DecodedMessages {
@@ -48,6 +57,70 @@ interface DecodedMessages {
     [type: string]: VendorDetails;
   };
 }
+
+const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (path: string[], value: any) => void }> = ({
+  data,
+  isEditing = false,
+  onEdit,
+}) => {
+  const renderInput = (path: string[], value: any) => (
+    <input
+      type={typeof value === "number" ? "number" : "text"}
+      value={value?.toString() || ""}
+      onChange={(e) => {
+        const newValue = e.target.type === "number" ? 
+          (e.target.value === "" ? "" : parseFloat(e.target.value)) : 
+          e.target.value;
+        onEdit?.(path, newValue);
+      }}
+      className="w-full border rounded px-2 py-1 text-sm"
+    />
+  );
+
+  const renderValue = (path: string[], value: any): React.ReactNode => {
+    if (typeof value === "object" && value !== null) {
+      return (
+        <table className="w-full nested-table">
+          <tbody>
+            {Object.entries(value).map(([key, val]) => (
+              <tr key={key} className="border-b border-gray-100">
+                <td className="py-1 px-2 text-sm font-medium capitalize w-1/3">
+                  {key.replace(/_/g, " ")}
+                </td>
+                <td className="py-1 px-2 text-sm">
+                  {isEditing && onEdit && typeof val !== "object" ? 
+                    renderInput([...path, key], val) : 
+                    renderValue([...path, key], val)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    
+    return isEditing && onEdit ? 
+      renderInput(path, value) : 
+      String(value) || "Not Found";
+  };
+
+  return (
+    <table className="w-full border-collapse">
+      <tbody>
+        {Object.entries(data).map(([key, value]) => (
+          <tr key={key} className="border-b">
+            <td className="py-2 px-4 text-sm font-medium capitalize w-1/3 bg-gray-50">
+              {key.replace(/_/g, " ")}
+            </td>
+            <td className="py-2 px-4 text-sm">
+              {renderValue([key], value)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
 
 const Step6: React.FC<Step6Props> = ({
   ticketNumber,
@@ -78,33 +151,29 @@ const Step6: React.FC<Step6Props> = ({
   const handleInputChange = (
     vendor: string,
     type: string,
-    field: keyof RateDetails | keyof ScheduleDetails,
-    value: string | number | object
+    path: string[],
+    value: string | number
   ) => {
-    setSelectedMessages((prev) => {
-      const updated = structuredClone(prev); // Deep clone to ensure reactivity
-  
-      // Ensure vendor exists
-      if (!updated[vendor]) {
-        updated[vendor] = {};
+    setAllDecodedMessages((prev) => {
+      const updated = structuredClone(prev);
+      const bulkData = updated.decoded_messages[vendor].decoded_response[type];
+
+      // Navigate to the correct nested object using the path
+      let target = bulkData;
+      const lastKey = path[path.length - 1];
+      
+      // Navigate through the path except the last key
+      for (let i = 0; i < path.length - 1; i++) {
+        target = target[path[i]];
       }
-  
-      // Ensure type exists (e.g., "Bulk")
-      if (!updated[vendor][type]) {
-        updated[vendor][type] = {
-          rate: {},
-          schedule: {},
-        } as VendorDetails;
+
+      // Update the value at the final path
+      if (target && typeof target === 'object') {
+        target[lastKey] = value;
       }
-  
-      const vendorDetails = updated[vendor][type];
-  
-      if (field in vendorDetails.rate) {
-        vendorDetails.rate[field as keyof RateDetails] = value as never;
-      } else if (field in vendorDetails.schedule) {
-        vendorDetails.schedule[field as keyof ScheduleDetails] = value as never;
-      }
-  
+
+      // Also update selectedMessages to stay in sync
+      setSelectedMessages(structuredClone(updated));
       return updated;
     });
   };
@@ -121,20 +190,29 @@ const Step6: React.FC<Step6Props> = ({
 
   const handleSelectChange = (vendor: string, isChecked: boolean) => {
     setSelectedMessages((prev) => {
-      const updated = { ...prev };
-      if (!isChecked) {
-        updated[vendor] = decodedMessages[vendor];
+      const updated = structuredClone(prev);
+      if (!updated.decoded_messages) updated.decoded_messages = {};
+      
+      if (isChecked) {
+        // Remove this vendor's messages
+        delete updated.decoded_messages[vendor];
       } else {
-        delete updated[vendor];
+        // Add this vendor's messages back
+        updated.decoded_messages[vendor] = allDecodedMessages.decoded_messages[vendor];
       }
+      
       return updated;
     });
   };
 
-  const handleUpdate = async (updatedDecodedMessages: DecodedMessages) => {
-    console.log("Updating Step 6 messages:", updatedDecodedMessages);
+  const isVendorSelected = (vendorId: string): boolean => {
+    return !selectedMessages.decoded_messages?.[vendorId];
+  };
+
+  const handleUpdate = async () => {
+    console.log("Updating Step 6 messages:", allDecodedMessages);
     try {
-      await fetch(
+      const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
         {
           method: "PUT",
@@ -144,12 +222,16 @@ const Step6: React.FC<Step6Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_number: ticket.current_step,
-            step_info: {
-              decoded_messages: updatedDecodedMessages,
-            },
+            step_info: allDecodedMessages
           }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update');
+      }
+
       await fetchTicket(ticket.id);
       toast.success("Changes saved successfully");
     } catch (error) {
@@ -160,10 +242,18 @@ const Step6: React.FC<Step6Props> = ({
   const handleEditSaveToggle = async () => {
     if (isEditing) {
       // If currently editing, save changes
-      await handleUpdate(selectedMessages);
+      await handleUpdate();
     }
     // Toggle edit mode
     setIsEditing(!isEditing);
+  };
+
+  const handleCancel = () => {
+    // Reset to original data
+    setAllDecodedMessages(decodedMessages);
+    setSelectedMessages(decodedMessages);
+    setIsEditing(false);
+    toast.success('Changes cancelled');
   };
 
   const handleNextStep = async () => {
@@ -171,7 +261,7 @@ const Step6: React.FC<Step6Props> = ({
         setLoading(true);
         console.log("Selected Messages:", selectedMessages);
 
-        // ✅ Extract vendor information properly (excluding unnecessary metadata)
+        // Extract vendor information properly (excluding unnecessary metadata)
         const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
             (acc, [vendorId, vendorData]) => {
                 acc[vendorData.vendor_name] = vendorData.decoded_response;
@@ -180,17 +270,17 @@ const Step6: React.FC<Step6Props> = ({
             {} as Record<string, any>
         );
 
-        // ✅ Create the correct request payload
+        // Create the correct request payload
         const requestPayload = {
             customer_name: customerName,
             customerMessage: originalMessage,
-            vendor_delivery_info: formattedVendorInfo, // ✅ Send the correctly formatted object
+            vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
             ticket_number: ticket.ticket_number,
             send_vendor_name: includeVendorName,
             customerMessageRequired: includeCustomerMessage,
         };
 
-        console.log("🚀 Corrected Request Payload:", requestPayload);
+        console.log("Corrected Request Payload:", requestPayload);
 
         // Generate client message template
         const response = await fetch(
@@ -210,7 +300,7 @@ const Step6: React.FC<Step6Props> = ({
 
         const data = await response.json();
         const clientMessageTemplate = data.client_message_template;
-        console.log("✅ Client Message Template:", clientMessageTemplate);
+        console.log("Client Message Template:", clientMessageTemplate);
 
         // Update Step 7 with the generated template
         await fetch(
@@ -233,7 +323,7 @@ const Step6: React.FC<Step6Props> = ({
 
         handleNext(); // Proceed to the next step
     } catch (error) {
-        console.error("❌ Error preparing for next step:", error);
+        console.error("Error preparing for next step:", error);
         toast.error("Failed to proceed to next step");
     } finally {
         setLoading(false);
@@ -254,14 +344,32 @@ const Step6: React.FC<Step6Props> = ({
         Step 6: Decoded Messages from Vendors
       </h3>
 
-      <div className="flex justify-end items-center mb-4">
-        <button
-          onClick={handleEditSaveToggle}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-        >
-          <FaEdit className="text-xl" />
-          {isEditing ? "Save" : "Edit"}
-        </button>
+      <div className="flex justify-end items-center gap-4 mb-4">
+        {isEditing ? (
+          <>
+            <button
+              onClick={handleCancel}
+              className="flex items-center gap-2 text-red-600 hover:text-red-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleEditSaveToggle}
+              className="flex items-center gap-2 text-green-600 hover:text-green-800"
+            >
+              <FaEdit className="text-xl" />
+              Save
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleEditSaveToggle}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          >
+            <FaEdit className="text-xl" />
+            Edit
+          </button>
+        )}
       </div>
 
       {Object.entries(allDecodedMessages.decoded_messages).map(
@@ -298,136 +406,22 @@ const Step6: React.FC<Step6Props> = ({
                     {/* Rate Details */}
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
                       <div className="bg-white p-3 rounded shadow-sm">
-                        <h6 className="font-medium mb-2 text-blue-600">
-                          Rate Details
-                        </h6>
-                        {isEditing ? (
-                          <div className="space-y-2">
-                            {Object.entries(bulkData.rate).map(
-                              ([field, value]) => (
-                                <div key={field} className="flex items-center">
-                                  <label className="w-1/2 text-sm capitalize">
-                                    {field.replace(/_/g, " ")}:
-                                  </label>
-                                  <input
-                                    type={
-                                      field === "price_per_meter" ||
-                                      field === "quantity"
-                                        ? "number"
-                                        : "text"
-                                    }
-                                    value={value}
-                                    onChange={(e) =>
-                                      handleInputChange(
-                                        vendorId,
-                                        key,
-                                        field as keyof RateDetails,
-                                        e.target.value
-                                      )
-                                    }
-                                    className="w-1/2 border rounded px-2 py-1 text-sm"
-                                  />
-                                </div>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            {Object.entries(bulkData.rate).map(
-                              ([field, value]) => (
-                                <p key={field} className="text-sm">
-                                  <span className="font-medium capitalize">
-                                    {field.replace(/_/g, " ")}:
-                                  </span>{" "}
-                                  {typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : String(value) || "Not Found"}
-                                </p>
-                              )
-                            )}
-                          </div>
-                        )}
+                        <h6 className="font-medium mb-2 text-blue-600">Rate Details</h6>
+                        <NestedDataTable 
+                          data={bulkData.rate} 
+                          isEditing={isEditing}
+                          onEdit={(path, value) => handleInputChange(vendorId, key, ['rate', ...path], value)}
+                        />
                       </div>
 
                       {/* Schedule Details */}
                       <div className="bg-white p-3 rounded shadow-sm">
-                        <h6 className="font-medium mb-2 text-blue-600">
-                          Schedule Details
-                        </h6>
-                        {isEditing ? (
-                          <div className="space-y-2">
-                            {Object.entries(bulkData.schedule).map(
-                              ([field, value]) => (
-                                <div key={field} className="flex items-center">
-                                  <label className="w-1/2 text-sm capitalize">
-                                    {field.replace(/_/g, " ")}:
-                                  </label>
-
-                                  {typeof value === "object" &&
-                                  value !== null ? (
-                                    // If value is an object, render its properties as separate inputs
-                                    <div className="w-1/2 space-y-1">
-                                      {Object.entries(value).map(
-                                        ([subField, subValue]) => (
-                                          <div
-                                            key={subField}
-                                            className="flex items-center"
-                                          >
-                                            <label className="w-1/2 text-xs capitalize">
-                                              {subField.replace(/_/g, " ")}:
-                                            </label>
-                                            <input
-                                              type="text"
-                                              value={subValue as string}
-                                              onChange={(e) =>
-                                                handleInputChange(
-                                                  vendorId,
-                                                  key,
-                                                  field as keyof ScheduleDetails,
-                                                  {...value,[subField]: e.target.value,} // Update nested object
-                                                )
-                                              }
-                                              className="w-1/2 border rounded px-2 py-1 text-sm"
-                                            />
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <input
-                                      type="text"
-                                      value={value as string}
-                                      onChange={(e) =>
-                                        handleInputChange(
-                                          vendorId,
-                                          key,
-                                          field as keyof ScheduleDetails,
-                                          e.target.value
-                                        )
-                                      }
-                                      className="w-1/2 border rounded px-2 py-1 text-sm"
-                                    />
-                                  )}
-                                </div>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            {Object.entries(bulkData.schedule).map(
-                              ([field, value]) => (
-                                <p key={field} className="text-sm">
-                                  <span className="font-medium capitalize">
-                                    {field.replace(/_/g, " ")}:
-                                  </span>{" "}
-                                  {typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : String(value) || "Not Found"}
-                                </p>
-                              )
-                            )}
-                          </div>
-                        )}
+                        <h6 className="font-medium mb-2 text-blue-600">Schedule Details</h6>
+                        <NestedDataTable 
+                          data={bulkData.schedule} 
+                          isEditing={isEditing}
+                          onEdit={(path, value) => handleInputChange(vendorId, key, ['schedule', ...path], value)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -441,13 +435,14 @@ const Step6: React.FC<Step6Props> = ({
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  checked={isVendorSelected(vendorId)}
                   onChange={(e) =>
                     handleSelectChange(vendorId, e.target.checked)
                   }
                   className="form-checkbox h-4 w-4 text-blue-600"
                 />
                 <span className="text-sm text-gray-700">
-                  Unselect this quote
+                  {isVendorSelected(vendorId) ? 'Select this quote' : 'Unselect this quote'}
                 </span>
               </label>
             </div>

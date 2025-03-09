@@ -41,24 +41,40 @@ const Step3: React.FC<Step3Props> = ({
   console.log(originalMessage);
   console.log(ticket);
   const [message, setMessage] = useState(template);
-  const [includeCustomerName, setIncludeCustomerName] = useState(true);
-  const [includeSampleQuery, setIncludeSampleQuery] = useState(false);
-  const [includeDecodedMessage, setIncludeDecodedMessage] = useState(false);
+  // Initialize includeCustomerName based on whether the template includes customer name
+  const [includeCustomerName, setIncludeCustomerName] = useState(() => {
+    return template ? template.includes(`Customer Name: ${customerName}`) : true;
+  });
+  const [includeSampleQuery, setIncludeSampleQuery] = useState(() => {
+    return template ? template.includes('This is a Sample Query') : false;
+  });
+  const [includeDecodedMessage, setIncludeDecodedMessage] = useState(() => {
+    // Initialize based on whether the template includes decoded messages
+    return template && ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages
+      ? message === template // If template exists, check if current message matches it
+      : false;
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!template) {
-      fetchTicket(ticket.id);
-    }
-    let initialMessage = template;
-    if (
-      includeCustomerName &&
-      !initialMessage.includes(`\n\nCustomer Name: ${customerName}`)
-    ) {
-      initialMessage += `\n\nCustomer Name: ${customerName}`;
-    }
-    setMessage(initialMessage);
-  }, []);
+    const initializeState = async () => {
+      if (!template) {
+        fetchTicket(ticket.id);
+        return;
+      }
+      setMessage(template);
+
+      // Check if the initial template matches what would be returned with decoded messages
+      try {
+        const decodedTemplate = await message_decoder(true);
+        setIncludeDecodedMessage(template === decodedTemplate);
+      } catch (error) {
+        console.error('Error checking initial decoded message state:', error);
+      }
+    };
+
+    initializeState();
+  }, [template]);
 
   const handleUpdate = async (updatedTemplate: string) => {
     console.log(updatedTemplate);
@@ -114,6 +130,17 @@ const Step3: React.FC<Step3Props> = ({
 
   const handleSave = async () => {
     await handleUpdate(message);
+    // Update states based on current message content
+    setIncludeCustomerName(message.includes(`Customer Name: ${customerName}`));
+    setIncludeSampleQuery(message.includes('This is a Sample Query'));
+
+    // Check if the saved message matches what would be returned with decoded messages
+    try {
+      const decodedTemplate = await message_decoder(true);
+      setIncludeDecodedMessage(message === decodedTemplate);
+    } catch (error) {
+      console.error('Error checking decoded message state:', error);
+    }
   };
 
   const toggleCustomerName = () => {
@@ -204,8 +231,20 @@ const Step3: React.FC<Step3Props> = ({
     return vendorMessageTemplate;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+    // Update states based on current input
+    setIncludeCustomerName(newMessage.includes(`Customer Name: ${customerName}`));
+    setIncludeSampleQuery(newMessage.includes('This is a Sample Query'));
+
+    // Check if the new message matches what would be returned with decoded messages
+    try {
+      const decodedTemplate = await message_decoder(true);
+      setIncludeDecodedMessage(newMessage === decodedTemplate);
+    } catch (error) {
+      console.error('Error checking decoded message state:', error);
+    }
   };
 
   return (

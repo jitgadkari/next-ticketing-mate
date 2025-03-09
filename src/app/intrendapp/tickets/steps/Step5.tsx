@@ -70,18 +70,17 @@ const Step5: React.FC<Step5Props> = ({
     Record<string, boolean>
   >({});
 
-
   const handleNext = async () => {
     console.log("Handling next for Step 5", messages);
     const vendorDecodedMessages: any[] = [];
-  
+
     for (const [vendorId, message] of Object.entries(messages)) {
       console.log("Processing vendor message:", message);
-  
+
       if (message.response_message.trim() !== "") {
         let formatmsg = `query from customer: ${ticket.steps["Step 1 : Customer Message Received"].latest.text} vendor reply: ${message.response_message}`;
         console.log("Formatted message:", formatmsg);
-  
+
         try {
           // Fetch decoded message
           const response = await fetch(
@@ -94,14 +93,14 @@ const Step5: React.FC<Step5Props> = ({
               body: JSON.stringify({ text: formatmsg }),
             }
           );
-  
+
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-  
+
           const decodedMessage = await response.json();
           console.log("Decoded message:", decodedMessage);
-  
+
           vendorDecodedMessages.push({
             vendor_id: vendorId,
             vendor_name: message.vendor_name,
@@ -111,7 +110,7 @@ const Step5: React.FC<Step5Props> = ({
           });
         } catch (error) {
           console.error("Error decoding message:", error);
-  
+
           // If decoding fails, use a default structure
           vendorDecodedMessages.push({
             vendor_id: vendorId,
@@ -152,11 +151,11 @@ const Step5: React.FC<Step5Props> = ({
         }
       }
     }
-  
+
     if (vendorDecodedMessages.length > 0) {
       try {
         const currentTime = new Date().toISOString();
-  
+
         const payload = {
           ticket_id: ticket.id,
           step_info: {
@@ -166,7 +165,7 @@ const Step5: React.FC<Step5Props> = ({
           step_number: "Step 5: Messages from Vendors",
           updated_date: currentTime,
         };
-  
+
         console.log("Transformed payload:", payload);
         const updateResponse = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
@@ -375,21 +374,14 @@ const Step5: React.FC<Step5Props> = ({
 
   const handleRefresh = async () => {
     console.log("Refreshing page...");
-    const updatedTicket = await fetchTicket(ticket.id);
-    console.log("Fetched ticket:", updatedTicket);
+    await fetchTicket(ticket.id);
 
-    if (updatedTicket == null) {
-      throw new Error("Failed to fetch updated ticket data");
-    }
-    console.log("Updated ticket data:", updatedTicket);
+    // After fetchTicket completes, use the updated ticket prop
     const updatedVendorMessages =
-      updatedTicket.steps["Step 5: Messages from Vendors"]?.latest?.vendors ||
-      {};
+      ticket.steps["Step 5: Messages from Vendors"]?.latest?.vendors || {};
     console.log("Updated vendor messages:", updatedVendorMessages);
     // Update state with the latest vendor messages
     setMessages(updatedVendorMessages);
-
-    console.log("Updated vendor messages set in state:", updatedVendorMessages);
   };
 
   return (
@@ -418,7 +410,7 @@ const Step5: React.FC<Step5Props> = ({
               {message.vendor_name}
             </label>
             <label className="block text-gray-700 font-bold mb-2">
-              {message.response_received ? "YES" : "NO"}
+            Vendor Responded : {message.response_received ? "YES" : "NO"}
             </label>
             <div className="flex space-x-2">
               {message.response_message === "" && (

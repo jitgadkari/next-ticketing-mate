@@ -24,6 +24,55 @@ interface Step2Props {
   };
 }
 
+const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (field: string, value: any) => void }> = ({
+  data,
+  isEditing = false,
+  onEdit,
+}) => {
+  const renderValue = (value: any): React.ReactNode => {
+    if (typeof value === "object" && value !== null) {
+      return (
+        <table className="w-full nested-table">
+          <tbody>
+            {Object.entries(value).map(([subKey, subValue]) => (
+              <tr key={subKey} className="border-b border-gray-100">
+                <td className="py-1 px-2 text-sm font-medium capitalize w-1/3">{subKey.replace(/_/g, " ")}</td>
+                <td className="py-1 px-2 text-sm">{renderValue(subValue)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    
+    if (isEditing && onEdit) {
+      return (
+        <input
+          type={typeof value === "number" ? "number" : "text"}
+          value={value?.toString() || ""}
+          onChange={(e) => onEdit(value, e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+        />
+      );
+    }
+    
+    return String(value) || "Not Found";
+  };
+
+  return (
+    <table className="w-full border-collapse">
+      <tbody>
+        {Object.entries(data).map(([key, value]) => (
+          <tr key={key} className="border-b">
+            <td className="py-2 px-4 text-sm font-medium capitalize w-1/3 bg-gray-50">{key.replace(/_/g, " ")}</td>
+            <td className="py-2 px-4 text-sm">{renderValue(value)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
 const Step2: React.FC<Step2Props> = ({
   ticketNumber,
   data,
@@ -185,83 +234,62 @@ const Step2: React.FC<Step2Props> = ({
         <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
       </div>
       {!isEditing ? (
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold mb-4">Step 2: Decoded Message</h3>
-          <div
-            className="flex justify-end items-center"
-            onClick={() => setIsEditing(true)}
-          >
-            {" "}
-            <FaEdit className="text-black text-2xl" />
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Step 2: Decoded Message</h3>
+            <div
+              className="flex justify-end items-center cursor-pointer"
+              onClick={() => setIsEditing(true)}
+            >
+              <FaEdit className="text-black text-2xl" />
+            </div>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <NestedDataTable data={JSON.parse(message)} />
           </div>
         </div>
       ) : (
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold ">Step 2: Decoded Message</h3>
-          <Button
-            onClick={() => setIsEditing(false)}
-            className=" bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
-      {isEditing ? (
-        <div className="text-black">
-          {loading && <h1>Loading...</h1>}
-          <EditDecodedMessage message={message} setMessage={setMessage} />
-          <Button
-            onClick={handleSave}
-            className="mt-4 mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Save
-          </Button>
-        </div>
-      ) : (
-        <div className=" bg-white rounded-md shadow-md ">
-          <div className="overflow-x-auto">
-            {!loading && (
-              <table className="min-w-full bg-white border border-gray-200">
-                <tbody>
-                  {Object.entries(parsedMessage).map(([key, value]) => (
-                    <tr key={key} className="border-b">
-                      <td className="px-4 py-2 font-medium text-gray-700 bg-gray-50">
-                        {key.replace(/_/g, " ")}
-                      </td>
-                      <td className="px-4 py-2 text-gray-800">
-                        {String(value !== "Null" ? value : "N/A")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {loading && <h1>Loading...</h1>}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Step 2: Decoded Message</h3>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsEditing(false)}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="bg-green-500 text-white px-4 py-2 rounded"
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <EditDecodedMessage
+              message={message}
+              setMessage={setMessage}
+              className="w-full"
+            />
           </div>
         </div>
       )}
-      <Button
-        onClick={handleNextStep}
-        className={`mt-4 font-bold py-2 px-4 rounded ${
-          isCurrentStep
-            ? "bg-blue-500 hover:bg-blue-700 text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-        disabled={!isCurrentStep}
-      >
-        Next Step
-      </Button>
-      {/* <Button
-        onClick={handleIncludeDecodedMessage}
-        className={`mt-4 ml-4 font-bold py-2 px-4 rounded ${
-          isCurrentStep
-            ? "bg-blue-500 hover:bg-blue-700 text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-        disabled={!isCurrentStep}
-      >
-       {includeDecodedMessage?"Remove Decoded Message from template":"Include Decoded Message in Template"}
-      </Button> */}
+
+      <div className="flex justify-end mt-4">
+        <Button
+          onClick={handleNextStep}
+          className={`font-bold py-2 px-4 rounded ${
+            isCurrentStep
+              ? "bg-green-500 hover:bg-green-700 text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+          disabled={!isCurrentStep}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 };
