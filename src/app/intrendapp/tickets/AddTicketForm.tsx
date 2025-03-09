@@ -128,15 +128,15 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       customer_message: formData.message,
       image_urls: [],
       from_number: formData.from_number || "",
-      created_date: currentDate,
-      updated_date: currentDate,
+      // created_date: currentDate,
+      // updated_date: currentDate,
       status: "Active"
     };
     
     try {
       console.log("Submitting Ticket:", payload);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket?user_id=573c7b4-0621-4d23-8d02-d964c66025b3&user_agent=user-test`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/create/?user_id=573c7b4-0621-4d23-8d02-d964c66025b3&user_agent=user-test`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

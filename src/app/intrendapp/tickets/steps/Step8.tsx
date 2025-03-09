@@ -11,7 +11,7 @@ interface Step8Props {
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -30,25 +30,29 @@ const Step8: React.FC<Step8Props> = ({
   setActiveStep,
   ticket,
 }) => {
+  console.log(ticket)
   const [response, setResponse] = useState(customerResponse);
   const [loading,setLoading] = useState(false);
  const  handleNext=async () => {
     console.log("Handling next for Step 8");
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { status: "open", final_decision: "pending" },
-          step_number: "Step 9: Final Status",
+          ticket_id: ticket.id,
+          step_info: {
+            "final_decision": `pending`,
+            "status": "Closed",
+        },
+          step_number: ticket.current_step,
         }),
       }
     );
-    fetchTicket(ticket._id);
+    fetchTicket(ticket.id);
     setLoading(false)
     setActiveStep("Step 9: Final Status");
     toast.success("Step 8 completed")
@@ -56,21 +60,30 @@ const Step8: React.FC<Step8Props> = ({
 
   const handleUpdate=async (updatedResponse:string) => {
     console.log("Updating Step 8 response:", updatedResponse);
+    let responseRecieved=false
+    if(response !=="") {
+      responseRecieved=true
+    }
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { text: updatedResponse },
-          step_number: "Step 8 : Customer Response",
+          ticket_id: ticket.id,
+          step_info: {
+            "customer_message_template": customerTemplate,
+            "customer_response_received": responseRecieved,
+            "customer_message_received": response,
+            "customer_response_received_time": new Date().toISOString(),
+          },
+          step_number: ticket.current_step,
         }),
       }
     );
-    fetchTicket(ticket._id);
+    fetchTicket(ticket.id);
   }
   const handleSave = async () => {
     await handleUpdate(response);

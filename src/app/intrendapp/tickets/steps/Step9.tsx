@@ -10,7 +10,7 @@ interface Step9Props {
   isCurrentStep: boolean;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -27,6 +27,7 @@ const Step9: React.FC<Step9Props> = ({
   fetchTicket,
   ticket,
 }) => {
+  console.log("Final status:", finalStatus);
   const [status, setStatus] = useState(finalStatus.status || "open");
   const [finalDecision, setFinalDecision] = useState(
     finalStatus.final_decision || "pending"
@@ -37,66 +38,67 @@ const Step9: React.FC<Step9Props> = ({
   });
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const handleClose = async (finalStatus: {
+  const handleClose = async (closingStatus: {
     status: string;
     final_decision: string;
-  }) => {
-    console.log("Handling close for Step 9");
-    console.log("Closing ticket with status:", finalStatus);
+}) => {
+    console.log("Closing ticket with status:", closingStatus);
     setLoading(true);
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: finalStatus,
-          step_number: "Step 9: Final Status",
-        }),
-      }
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                ticket_id: ticket.id,
+                step_info: {
+                    "final_decision": closingStatus.final_decision,
+                    "status": closingStatus.status,
+                },
+                step_number: "Step 9: Final Status",
+            }),
+        }
     );
     setLoading(false);
-    alert("Ticket process completed and closed.");
     router.push("/intrendapp/tickets");
-    toast.success("Ticket process completed and closed!")
-  };
-
-  const handleUpdate = async (updatedStatus: {
-    status: string;
-    final_decision: string;
-  }) => {
-    console.log("Updating Step 9 status:", updatedStatus);
+    toast.success("Ticket process completed and closed!");
+};
+  const handleUpdate = async () => {
+    // Using the current state values instead of prop values
+    console.log("Sending final-decision:", finalDecision); // Log what we're actually sending
+    console.log("Sending final-status:", status);
+    
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: updatedStatus,
-          step_number: "Step 9: Final Status",
-        }),
-      }
+       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                ticket_id: ticket.id,
+                step_info: {
+                    "final_decision": finalDecision, // Use state instead of prop
+                    "status": status, // Use state instead of prop
+                },
+                step_number: "Step 9: Final Status",
+            }),
+        }
     );
-    await fetchTicket(ticket._id);
-    console.log("Ticket fetched after update");
-  };
-  useEffect(() => {
-    console.log("finalStatus changed:", finalStatus);
-    setStatus(finalStatus.status || "open");
-    setFinalDecision(finalStatus.final_decision || "");
-  }, [finalStatus]);
+    
+    // Optionally fetch the ticket to update the UI
+    await fetchTicket(ticket.id);
+    console.log("Update completed");
+};
 
-  const handleSave = async () => {
-    const updatedStatus = { status, final_decision: finalDecision };
-    console.log("Saving status:", updatedStatus);
-    await handleUpdate(updatedStatus);
-  };
+
+const handleSave = async () => {
+  console.log("Saving with finalDecision:", finalDecision); // Debug log
+  await handleUpdate();
+  toast.success("Status updated successfully");
+};
 
   const handleCloseTicket = async () => {
     if (finalDecision === "") {
@@ -119,7 +121,7 @@ const Step9: React.FC<Step9Props> = ({
     <div className="space-y-4">
        <div className="py-1 mb-4">
             <h1 className="text-xl font-bold ">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+            <div>{ticket.steps["Step 1 : Customer Message Received"].latest.text}</div>
           </div>
       <h3 className="text-xl font-bold">Step 9: Final Status</h3>
       <div className="flex items-center gap-2">

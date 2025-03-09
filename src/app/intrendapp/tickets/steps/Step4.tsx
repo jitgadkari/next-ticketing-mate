@@ -588,7 +588,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: emptyVendorMessages },
-            step_number: "Step 5: Messages from Vendors",
+            step_number: ticket.current_step,
           }),
         }
       );
@@ -629,7 +629,6 @@ const Step4: React.FC<Step4Props> = ({
   console.log("Vendor Messages:", vendorMessages);
 
   console.log("selected options....",selectedOptions);
-  console.log("ticket  message",ticket.steps[ticket.current_step].latest.vendors["58a5cead-c248-46f3-9d2f-8d77b97da2ea"]);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       {!loading && (
@@ -654,7 +653,7 @@ const Step4: React.FC<Step4Props> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {option.value}
                   </label>
-                  <textarea
+                  {/* <textarea
                     value={
                       ticket.steps[ticket.current_step].latest.vendors[
                         option.id
@@ -666,7 +665,7 @@ const Step4: React.FC<Step4Props> = ({
                     className={`w-full h-32 p-2 border rounded mt-2 ${ticket.steps[ticket.current_step].latest.vendors[
                       option.id
                     ]?.message_temp? "" : "hidden"}`}
-                  />
+                  /> */}
                   <textarea
                     value={
                      vendorMessages[option.value]  
@@ -674,9 +673,7 @@ const Step4: React.FC<Step4Props> = ({
                     onChange={(e) =>
                       handleVendorMessageChange(option.value, e.target.value)
                     }
-                    className={`w-full h-32 p-2 border rounded mt-2 ${ticket.steps[ticket.current_step].latest.vendors[
-                      option.id
-                    ]?.message_temp? "hidden" : ""}`}
+                    className={`w-full h-32 p-2 border rounded mt-2 `}
                   />
                   {emailSendingStatus[option.value] && (
                     <p

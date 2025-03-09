@@ -61,6 +61,7 @@ const Step3: React.FC<Step3Props> = ({
   }, []);
 
   const handleUpdate = async (updatedTemplate: string) => {
+    console.log(updatedTemplate);
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
       {
@@ -72,7 +73,6 @@ const Step3: React.FC<Step3Props> = ({
           ticket_id: ticket.id,
           step_info: {
             vendor_message_temp: updatedTemplate,
-            include_decoded_message: includeDecodedMessage, // ✅ Updated to track the decoded message state
           },
           step_number: step,
         }),

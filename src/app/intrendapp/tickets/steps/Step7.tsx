@@ -7,12 +7,13 @@ import { MdEmail } from "react-icons/md";
 interface Step7Props {
   ticketNumber: string;
   customerTemplate: string;
+  messageSentStatus:any;
   personName: string;
   isCurrentStep: boolean;
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -26,12 +27,21 @@ interface Step7Props {
 const Step7: React.FC<Step7Props> = ({
   ticketNumber,
   customerTemplate,
+  messageSentStatus,
   personName,
   isCurrentStep,
   fetchTicket,
   setActiveStep,
   ticket,
 }) => {
+  console.log("Step 7 props:", {
+    ticketNumber,
+    customerTemplate,
+    messageSentStatus,
+    personName,
+    isCurrentStep,
+    ticket,
+  });
   const [template, setTemplate] = useState(customerTemplate);
   console.log(template)
   const [showPopup, setShowPopup] = useState({
@@ -43,8 +53,8 @@ const Step7: React.FC<Step7Props> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<string | null>(null);
   const [messagesSent, setMessagesSent] = useState({
-    whatsApp: false,
-    email: false,
+    whatsApp: messageSentStatus.whatsapp,
+    email: messageSentStatus.email,
   });
 
   const [selectedContact, setSelectedContact] = useState<string>('');
@@ -94,40 +104,46 @@ const Step7: React.FC<Step7Props> = ({
 
   const handleNext = async () => {
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { text: "" },
-          step_number: "Step 8 : Customer Response",
+          ticket_id: ticket.id,
+          step_info: {
+            "customer_message_template": template,
+            "customer_response_received": false,
+            "customer_message_received": "",
+            "customer_response_received_time":null
+          },
+          step_number: ticket.current_step,
         }),
       }
     );
-    fetchTicket(ticket._id);
+    fetchTicket(ticket.id);
     setActiveStep("Step 8 : Customer Response");
     toast.success("Step 7 completed");
   };
 
   const handleUpdate = async (updatedTemplate: string) => {
+    console.log("Updating Step 7 template:", updatedTemplate);
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_info: { text: updatedTemplate },
-          step_number: "Step 7 : Customer Message Template",
+          ticket_id: ticket.id,
+          step_info: { customer_message_template: updatedTemplate ,messagesSent: { whatsApp: messagesSent.whatsApp, email: messagesSent.email} },
+          step_number: ticket.current_step,
         }),
       }
     );
-    fetchTicket(ticket._id);
+    fetchTicket(ticket.id);
   };
 
   const handleSave = async () => {

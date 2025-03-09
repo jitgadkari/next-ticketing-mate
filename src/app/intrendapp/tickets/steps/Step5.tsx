@@ -3,15 +3,41 @@ import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { AiOutlineEdit } from "react-icons/ai";
-
+interface VendorMessage {
+  vendor_name: string;
+  response_received: boolean;
+  response_message: string;
+  message_received_time: string | null;
+}
+interface DecodedMessage {
+  query: string;
+  rate: {
+    price_per_meter: number | string;
+    currency: string;
+    quantity: string;
+    additional_charges: string;
+    other_info: string;
+  };
+  schedule: {
+    delivery_time: string;
+    delivery_point: string;
+    delivery_method: string;
+  };
+}
+interface VendorDecodedMessage {
+  vendor_name: string;
+  decoded_message: Record<string, DecodedMessage>;
+  original_message: string;
+  response_received_time: string;
+}
 interface Step5Props {
   ticketNumber: string;
-  vendorMessages: Record<string, string>;
+  vendorMessages: Record<string, VendorMessage>;
   isCurrentStep: boolean;
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -31,52 +57,35 @@ const Step5: React.FC<Step5Props> = ({
   ticket,
   step,
 }) => {
-  const [messages, setMessages] = useState<Record<string, string>>(vendorMessages);
+  const [messages, setMessages] = useState(vendorMessages);
   const [isDecoding, setIsDecoding] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showReminderPopup, setShowReminderPopup] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
-  const [editPopupVendor, setEditPopupVendor] = useState<string | null>(null);
-  const [editableVendors, setEditableVendors] = useState<Record<string, boolean>>({});
+  const [editPopupVendor, setEditPopupVendor] = useState<
+    Record<string, string>
+  >({});
+  const [editableVendors, setEditableVendors] = useState<
+    Record<string, boolean>
+  >({});
 
-  const handleNext = async (data: any) => {
-    console.log("Handling next for Step 5");
-    const currentMessages = data.ticket.steps[step] as Record<string, string>;
-    const vendorDecodedMessages: Record<string, any> = {};
 
-    for (const [vendor, message] of Object.entries(currentMessages)) {
-      console.log(message);
-      let formatmsg = `query from customer :${ticket.steps["Step 1 : Customer Message Received"].text} vendor reply :${message}`;
-      console.log(formatmsg);
-      if (message.trim() !== "") {
-        // generating null message
-        const nullMessage = {
-          "Bulk 1": {
-            "query": "Not Found",
-            "rate": {
-              "price_per_meter": "Not Found",
-              "currency": "INR",
-              "quantity": "Not Found",
-              "additional_charges": "Not Found",
-              "other_info": "Not Found"
-            },
-            "schedule": {
-              "delivery_time": "Not Found",
-              "delivery_point": "Not Found",
-              "delivery_method": "Not Found"
-            }
-          }
-        }
-        // Only decode non-empty messages
+  const handleNext = async () => {
+    console.log("Handling next for Step 5", messages);
+    const vendorDecodedMessages: any[] = [];
+  
+    for (const [vendorId, message] of Object.entries(messages)) {
+      console.log("Processing vendor message:", message);
+  
+      if (message.response_message.trim() !== "") {
+        let formatmsg = `query from customer: ${ticket.steps["Step 1 : Customer Message Received"].latest.text} vendor reply: ${message.response_message}`;
+        console.log("Formatted message:", formatmsg);
+  
         try {
-
-          
-          
-
-          // fetching decoded message
+          // Fetch decoded message
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode_groq`,
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`,
             {
               method: "POST",
               headers: {
@@ -85,97 +94,170 @@ const Step5: React.FC<Step5Props> = ({
               body: JSON.stringify({ text: formatmsg }),
             }
           );
+  
           if (!response.ok) {
-            // throw new Error(`HTTP error! status: ${response.status}`);
-            // adding null message if error occurs
-            vendorDecodedMessages[vendor] = nullMessage
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
+  
           const decodedMessage = await response.json();
-          vendorDecodedMessages[vendor] = decodedMessage;
+          console.log("Decoded message:", decodedMessage);
+  
+          vendorDecodedMessages.push({
+            vendor_id: vendorId,
+            vendor_name: message.vendor_name,
+            decoded_response: decodedMessage, // Correct key structure
+            original_message: message.response_message,
+            response_received_time: message.message_received_time,
+          });
         } catch (error) {
-          console.error(`Error decoding message for ${vendor}:`, error);
-          // vendorDecodedMessages[vendor] = {
-          //   error: "Failed to decode message",
-          // };
-
-          vendorDecodedMessages[vendor] = nullMessage
+          console.error("Error decoding message:", error);
+  
+          // If decoding fails, use a default structure
+          vendorDecodedMessages.push({
+            vendor_id: vendorId,
+            vendor_name: message.vendor_name,
+            decoded_response: {
+              Sample: {
+                rate: {
+                  price_per_meter: "Not Found",
+                  price_method: "Not Found",
+                  currency: "INR",
+                  quantity: "Not Found",
+                  other_info: "Not Found",
+                },
+                schedule: {
+                  starting_delivery: { days: "Not Found", quantity: "Not Found" },
+                  completion_delivery: { days: "Not Found", quantity: "Not Found" },
+                  delivery_point: "Not Found",
+                },
+              },
+              Bulk: {
+                rate: {
+                  price_per_meter: "Not Found",
+                  price_method: "Not Found",
+                  currency: "INR",
+                  quantity: "Not Found",
+                  other_info: "Not Found",
+                },
+                schedule: {
+                  starting_delivery: { days: "Not Found", quantity: "Not Found" },
+                  completion_delivery: { days: "Not Found", quantity: "Not Found" },
+                  delivery_point: "Not Found",
+                },
+              },
+            },
+            original_message: message.response_message,
+            response_received_time: message.message_received_time,
+          });
         }
-      } else {
-        console.log(`Skipping empty message for ${vendor}`);
       }
     }
-
-    console.log("Decoded vendor messages:", vendorDecodedMessages);
-
-    if (Object.keys(vendorDecodedMessages).length > 0) {
+  
+    if (vendorDecodedMessages.length > 0) {
       try {
+        const currentTime = new Date().toISOString();
+  
+        const payload = {
+          ticket_id: ticket.id,
+          step_info: {
+            decoded_messages: vendorDecodedMessages,
+            time: currentTime,
+          },
+          step_number: "Step 5: Messages from Vendors",
+          updated_date: currentTime,
+        };
+  
+        console.log("Transformed payload:", payload);
         const updateResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
           {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              ticket_number: ticket.ticket_number,
-              step_info: vendorDecodedMessages,
-              step_number: "Step 6 : Vendor Message Decoded",
-            }),
+            body: JSON.stringify(payload),
           }
         );
+
         if (!updateResponse.ok) {
           throw new Error(`HTTP error! status: ${updateResponse.status}`);
         }
+
+        await fetchTicket(ticket.id);
+        setActiveStep("Step 6 : Vendor Message Decoded");
       } catch (error) {
         console.error("Error updating next step:", error);
+        toast.error("Failed to update to next step");
       }
-
-      await fetchTicket(ticket._id);
-      setActiveStep("Step 6 : Vendor Message Decoded");
     } else {
       console.error(
         "No messages to decode. Please enter messages for vendors."
       );
+      toast.error("No messages to decode. Please enter messages for vendors.");
     }
   };
-
-  const handleUpdate = async (updatedMessages: Record<string, string>) => {
+  const handleUpdate = async (
+    updatedMessages: Record<string, VendorMessage>
+  ) => {
     console.log("Updating Step 5 messages:", updatedMessages);
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_number: "Step 5: Messages from Vendors",
-          step_info: updatedMessages,
-        }),
-      }
+
+    const vendors = Object.entries(updatedMessages).map(
+      ([vendorId, message]) => ({
+        vendor_id: vendorId,
+        vendor_name: message.vendor_name,
+        response_received: message.response_message.trim() !== "", // Set to true if response_message is not empty
+        response_message: message.response_message,
+      })
     );
-    fetchTicket(ticket._id);
+
+    const payload = {
+      ticket_id: ticket.id,
+      step_info: {
+        vendors,
+      },
+      step_number: ticket.current_step,
+      updated_date: new Date().toISOString(),
+    };
+    console.log("update payload.....", payload);
+
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+    } catch (error) {
+      console.error("Error updating Step 5 messages:", error);
+    }
+    fetchTicket(ticket.id);
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 50000);
-    const allMessagesAreFilled = Object.values(messages).every(
-      (message) => message.trim() !== ""
-    );
-    if (allMessagesAreFilled) {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [messages]);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     window.location.reload();
+  //   }, 50000);
+  //   const allMessagesAreFilled = Object.values(messages).every(
+  //     (message) => message.trim() !== ""
+  //   );
+  //   if (allMessagesAreFilled) {
+  //     clearInterval(interval);
+  //   }
+  //   return () => clearInterval(interval);
+  // }, [messages]);
 
   const handleChange = (vendor: string, value: string) => {
     setMessages((prevMessage) => {
       const updatedMessages = {
         ...prevMessage,
-        [vendor]: value,
+        [vendor]: {
+          ...prevMessage[vendor],
+          response_message: value,
+        },
       };
       return updatedMessages;
     });
@@ -191,27 +273,27 @@ const Step5: React.FC<Step5Props> = ({
     setIsDecoding(true);
     try {
       // First, save the current messages
-      await handleSave();
-      const updatedData = await updateTicket(ticket._id);
+      // await handleSave();
+      // const updatedData = await updateTicket(ticket.id);
       // Then proceed to the next step
-      await handleNext(updatedData);
+      await handleNext();
     } finally {
       setIsDecoding(false);
     }
   };
 
-  const updateTicket = async (ticketId: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
-      );
-      const data = await response.json();
-      console.log(data);
-      return data;
-    } catch (error) {
-      console.error("Error fetching ticket:", error);
-    }
-  };
+  // const updateTicket = async (ticketId: string) => {
+  //   try {
+  //     const response = await fetch(
+  //       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
+  //     );
+  //     const data = await response.json();
+  //     console.log(data);
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error fetching ticket:", error);
+  //   }
+  // };
   const fetchVendors = async () => {
     try {
       const response = await fetch(
@@ -276,24 +358,47 @@ const Step5: React.FC<Step5Props> = ({
     setShowReminderPopup(true);
   };
 
-  const handleEditClick = (vendor: string) => {
-    setEditPopupVendor(vendor);
+  const handleEditClick = (vendor: string, vendorName: string) => {
+    setEditPopupVendor({ vendor_name: vendorName, vendor_id: vendor });
+    setSelectedVendor(vendor);
     setShowEditPopup(true);
   };
 
   const confirmEdit = (vendor: string) => {
     setEditableVendors((prev) => ({
       ...prev,
-      [vendor]: true
+      [vendor]: true,
     }));
     setShowEditPopup(false);
+  };
+  console.log(messages);
+
+  const handleRefresh = async () => {
+    console.log("Refreshing page...");
+    const updatedTicket = await fetchTicket(ticket.id);
+    console.log("Fetched ticket:", updatedTicket);
+
+    if (updatedTicket == null) {
+      throw new Error("Failed to fetch updated ticket data");
+    }
+    console.log("Updated ticket data:", updatedTicket);
+    const updatedVendorMessages =
+      updatedTicket.steps["Step 5: Messages from Vendors"]?.latest?.vendors ||
+      {};
+    console.log("Updated vendor messages:", updatedVendorMessages);
+    // Update state with the latest vendor messages
+    setMessages(updatedVendorMessages);
+
+    console.log("Updated vendor messages set in state:", updatedVendorMessages);
   };
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       <div className="py-1 mb-4">
         <h1 className="text-xl font-bold ">Customer Message</h1>
-        <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+        <div>
+          {ticket.steps["Step 1 : Customer Message Received"].latest.text}
+        </div>
       </div>
       <div className="flex justify-between py-2">
         <h3 className="text-xl font-bold mb-4">
@@ -306,16 +411,19 @@ const Step5: React.FC<Step5Props> = ({
           Remind all
         </Button>
       </div>
-      {Object.entries(messages).map(([vendor, message]) => (
-        <div key={vendor} className="mb-4">
+      {Object.entries(messages).map(([vendor_id, message]) => (
+        <div key={vendor_id} className="mb-4">
           <div className=" flex justify-between items-center">
             <label className="block text-gray-700 font-bold mb-2">
-              {vendor}
+              {message.vendor_name}
+            </label>
+            <label className="block text-gray-700 font-bold mb-2">
+              {message.response_received ? "YES" : "NO"}
             </label>
             <div className="flex space-x-2">
-              {message === "" && (
+              {message.response_message === "" && (
                 <Button
-                  onClick={() => handleReminderClick(vendor)}
+                  onClick={() => handleReminderClick(vendor_id)}
                   className="bg-gray-500 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
                   disabled={!isCurrentStep}
                 >
@@ -324,7 +432,9 @@ const Step5: React.FC<Step5Props> = ({
               )}
               {isCurrentStep && (
                 <AiOutlineEdit
-                  onClick={() => handleEditClick(vendor)}
+                  onClick={() =>
+                    handleEditClick(vendor_id, message.vendor_name)
+                  }
                   className="text-gray-500 hover:text-green-800 cursor-pointer mt-3"
                   size={24}
                 />
@@ -332,10 +442,10 @@ const Step5: React.FC<Step5Props> = ({
             </div>
           </div>
           <textarea
-            value={message}
-            onChange={(e) => handleChange(vendor, e.target.value)}
+            value={message.response_message}
+            onChange={(e) => handleChange(vendor_id, e.target.value)}
             className="w-full h-32 p-2 border rounded"
-            readOnly={!editableVendors[vendor]}
+            readOnly={!editableVendors[vendor_id]}
           />
         </div>
       ))}
@@ -358,15 +468,24 @@ const Step5: React.FC<Step5Props> = ({
         >
           {isDecoding ? "Decoding..." : "Next"}
         </Button>
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={handleRefresh}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
-      
+
       {/* Edit Confirmation Popup */}
       {showEditPopup && editPopupVendor && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Edit Message</h2>
             <p className="mb-4">
-              Are you sure you want to enable editing for {editPopupVendor}?
+              Are you sure you want to enable editing for{" "}
+              {editPopupVendor.vendor_name}?
             </p>
             <div className="flex justify-end">
               <Button
@@ -376,7 +495,7 @@ const Step5: React.FC<Step5Props> = ({
                 Cancel
               </Button>
               <Button
-                onClick={() => confirmEdit(editPopupVendor)}
+                onClick={() => confirmEdit(editPopupVendor.vendor_id)}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 OK

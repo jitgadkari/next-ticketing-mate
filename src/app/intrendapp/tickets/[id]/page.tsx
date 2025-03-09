@@ -58,6 +58,7 @@ const TicketDetailsPage = () => {
       const data = await response.json();
       setTicket(data.ticket);
       setActiveStep(data.ticket.current_step);
+      return data.ticket;
     } catch (error) {
       console.error("Error fetching ticket:", error);
     }
@@ -107,7 +108,7 @@ const TicketDetailsPage = () => {
 
     switch (step) {
       case "Step 1 : Customer Message Received":
-        console.log(ticket.steps[step])
+        console.log(ticket)
         console.log("step....",step)
         return (
           <Step1
@@ -178,15 +179,17 @@ const TicketDetailsPage = () => {
         );
 
       case "Step 5: Messages from Vendors":
+        console.log(ticket.steps[step])
+        console.log(ticket.steps[step].latest.vendors)
         return (
           <Step5
             ticketNumber={ticket.ticket_number}
-            vendorMessages={ticket.steps[step] as Record<string, string>}
+            vendorMessages={ticket.steps[step].latest.vendors }
+            isCurrentStep={step === ticket.current_step}
             ticket={ticket}
             setActiveStep={setActiveStep}
             fetchTicket={fetchTicket}
             step={step}
-            isCurrentStep={step === ticket.current_step}
           />
         );
 
@@ -294,17 +297,17 @@ const TicketDetailsPage = () => {
       case "Step 6 : Vendor Message Decoded":
         return (
           <Step6
-            ticketNumber={ticket.ticket_number}
-            decodedMessages={ticket.steps[step] || {}}
-            isCurrentStep={step === ticket.current_step}
-            customerName={ticket.customer_name}
-            originalMessage={
-              ticket.steps["Step 1 : Customer Message Received"]?.text || ""
-            }
-            ticket={ticket}
-            setActiveStep={setActiveStep}
-            fetchTicket={fetchTicket}
-          />
+          ticketNumber={ticket.ticket_number}
+          decodedMessages={ticket.steps[step].latest || {}}
+          isCurrentStep={step === ticket.current_step}
+          customerName={ticket.customer_name}
+          originalMessage={
+            ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+          }
+          ticket={ticket}
+          setActiveStep={setActiveStep}
+          fetchTicket={fetchTicket}
+        />
         );
 
       // case "Step 7 : Customer Message Template":
@@ -367,7 +370,7 @@ const TicketDetailsPage = () => {
       case "Step 7 : Customer Message Template":
         console.log("Step 7 data:", ticket.steps[step]); // Debug log
         console.log("step 5",ticket.steps["Step 5: Messages from Vendors"])
-        let customerTemplate = ticket.steps[step]?.text || "";
+        let customerTemplate = ticket.steps[step]?.latest.customer_message_template || "";
 
         // Ensure customerTemplate is a string
         if (typeof customerTemplate === "object") {
@@ -380,18 +383,20 @@ const TicketDetailsPage = () => {
         } else if (typeof customerTemplate !== "string") {
           customerTemplate = String(customerTemplate);
         }
+        console.log("messagesent",ticket.steps[step]?.latest.message_sent)
 
         return (
           <Step7
-            ticketNumber={ticket.ticket_number}
-            customerTemplate={customerTemplate}
-            personName={ticket.person_name} // Add this line
-            ticket={ticket}
-            setActiveStep={setActiveStep}
-            fetchTicket={fetchTicket}
-            isCurrentStep={step === ticket.current_step}
-        
-          />
+          ticketNumber={ticket.ticket_number}
+          customerTemplate={customerTemplate}
+          messageSentStatus={ticket.steps[step]?.latest.message_sent || ""}
+          personName={ticket.person_name} // Add this line
+          ticket={ticket}
+          setActiveStep={setActiveStep}
+          fetchTicket={fetchTicket}
+          isCurrentStep={step === ticket.current_step}
+      
+        />
         );
 
       case "Step 8 : Customer Response":
@@ -399,9 +404,9 @@ const TicketDetailsPage = () => {
           <Step8
             ticketNumber={ticket.ticket_number}
             customerTemplate={
-              ticket.steps["Step 7 : Customer Message Template"]?.text || ""
+              ticket.steps["Step 7 : Customer Message Template"]?.latest.customer_message_template || ""
             }
-            customerResponse={ticket.steps[step]?.text || ""}
+            customerResponse={ticket.steps[step]?.latest.customer_message_received || ""}
             ticket={ticket}
             setActiveStep={setActiveStep}
             fetchTicket={fetchTicket}
@@ -413,14 +418,14 @@ const TicketDetailsPage = () => {
         console.log("Rendering Step 9. Current step data:", ticket.steps[step]);
         return (
           <Step9
-            ticketNumber={ticket.ticket_number}
-            finalStatus={
-              ticket.steps[step] as { status: string; final_decision: string }
-            }
-            fetchTicket={fetchTicket}
-            ticket={ticket}
-            isCurrentStep={step === ticket.current_step}
-          />
+          ticketNumber={ticket.ticket_number}
+          finalStatus={
+            ticket.steps[step].latest as { status: string; final_decision: string }
+          }
+          fetchTicket={fetchTicket}
+          ticket={ticket}
+          isCurrentStep={step === ticket.current_step}
+        />
         );
 
       default:

@@ -12,7 +12,7 @@ interface Step6Props {
   setActiveStep: (step: string) => void;
   fetchTicket: (ticketId: string) => Promise<void>;
   ticket: {
-    _id: string;
+    id: string;
     ticket_number: string;
     customer_name: string;
     current_step: string;
@@ -37,7 +37,8 @@ interface ScheduleDetails {
 }
 
 interface VendorDetails {
-  query: string
+  vendor_name: string;
+  query: string;
   rate: RateDetails;
   schedule: ScheduleDetails;
 }
@@ -58,6 +59,7 @@ const Step6: React.FC<Step6Props> = ({
   setActiveStep,
   ticket,
 }) => {
+  console.log("step 6 props", decodedMessages, ticket);
   const [allDecodedMessages, setAllDecodedMessages] = useState(decodedMessages);
   const [selectedMessages, setSelectedMessages] =
     useState<DecodedMessages>(decodedMessages);
@@ -66,66 +68,57 @@ const Step6: React.FC<Step6Props> = ({
   const [includeVendorName, setIncludeVendorName] = useState(true);
   const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
 
-
   const toggleIncludeVendorName = () => {
-    setIncludeVendorName((prev) => !prev)
-  }
+    setIncludeVendorName((prev) => !prev);
+  };
 
   const toggleIncludeCustomerMessage = () => {
-    setIncludeCustomerMessage((prev) => !prev)
-  }
-
-
+    setIncludeCustomerMessage((prev) => !prev);
+  };
   const handleInputChange = (
     vendor: string,
     type: string,
     field: keyof RateDetails | keyof ScheduleDetails,
-    value: string | number
+    value: string | number | object
   ) => {
     setSelectedMessages((prev) => {
-      const updated = { ...prev };
+      const updated = structuredClone(prev); // Deep clone to ensure reactivity
+  
+      // Ensure vendor exists
+      if (!updated[vendor]) {
+        updated[vendor] = {};
+      }
+  
+      // Ensure type exists (e.g., "Bulk")
+      if (!updated[vendor][type]) {
+        updated[vendor][type] = {
+          rate: {},
+          schedule: {},
+        } as VendorDetails;
+      }
+  
       const vendorDetails = updated[vendor][type];
-
+  
       if (field in vendorDetails.rate) {
-        // TypeScript knows here that `field` must be a key of `RateDetails`
         vendorDetails.rate[field as keyof RateDetails] = value as never;
       } else if (field in vendorDetails.schedule) {
-        // TypeScript knows here that `field` must be a key of `ScheduleDetails`
         vendorDetails.schedule[field as keyof ScheduleDetails] = value as never;
       }
-
+  
       return updated;
     });
   };
+  
+  
 
   const handleNext = async () => {
     console.log("Handling next for Step 6");
-    fetchTicket(ticket._id);
+    fetchTicket(ticket.id);
     setLoading(false);
     setActiveStep("Step 7 : Customer Message Template");
-    toast.success("Step 6 completed")
+    toast.success("Step 6 completed");
   };
 
-
-  const handleUpdate = async (updatedDecodedMessages: DecodedMessages) => {
-    console.log("Updating Step 6 messages:", updatedDecodedMessages);
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_number: ticket.ticket_number,
-          step_number: "Step 6 : Vendor Message Decoded",
-          step_info: updatedDecodedMessages,
-        }),
-      }
-    );
-    fetchTicket(ticket._id);
-  };
-  console.log(selectedMessages);
   const handleSelectChange = (vendor: string, isChecked: boolean) => {
     setSelectedMessages((prev) => {
       const updated = { ...prev };
@@ -138,314 +131,365 @@ const Step6: React.FC<Step6Props> = ({
     });
   };
 
-  const handleNextStep = async () => {
+  const handleUpdate = async (updatedDecodedMessages: DecodedMessages) => {
+    console.log("Updating Step 6 messages:", updatedDecodedMessages);
     try {
-      setLoading(true);
-      console.log(selectedMessages);
-      // Update the current step with selected messages
-      await handleUpdate(selectedMessages);
-      console.log({
-        client_name: customerName,
-        customerMessage: originalMessage,
-        vendor_delivery_info_json: JSON.stringify(selectedMessages),
-      })
-      // Generate client message template
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message_new`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            client_name: customerName,
-            customerMessage: originalMessage,
-            vendor_delivery_info_json: JSON.stringify(selectedMessages),
-            ticket_number: ticket.ticket_number,
-            "send_vendor_name": includeVendorName,
-            "customerMessageRequired": includeCustomerMessage
-          }),
-        }
-      );
-      console.log(response)
-      if (!response.ok) {
-        throw new Error("Failed to generate client message template");
-      }
-
-      const data = await response.json();
-      const clientMessageTemplate = data.client_message_template;
-
-      // Update Step 7 with the generated template
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ticket_number: ticketNumber,
-            step_info: { text: clientMessageTemplate },
-            step_number: "Step 7 : Customer Message Template",
+            ticket_id: ticket.id,
+            step_number: ticket.current_step,
+            step_info: {
+              decoded_messages: updatedDecodedMessages,
+            },
           }),
         }
       );
-
-      // Move to the next step
-      handleNext();
+      await fetchTicket(ticket.id);
+      toast.success("Changes saved successfully");
     } catch (error) {
-      console.error("Error preparing for next step:", error);
+      console.error("Error updating messages:", error);
+      toast.error("Failed to save changes");
     }
   };
+  const handleEditSaveToggle = async () => {
+    if (isEditing) {
+      // If currently editing, save changes
+      await handleUpdate(selectedMessages);
+    }
+    // Toggle edit mode
+    setIsEditing(!isEditing);
+  };
 
+  const handleNextStep = async () => {
+    try {
+        setLoading(true);
+        console.log("Selected Messages:", selectedMessages);
+
+        // ✅ Extract vendor information properly (excluding unnecessary metadata)
+        const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
+            (acc, [vendorId, vendorData]) => {
+                acc[vendorData.vendor_name] = vendorData.decoded_response;
+                return acc;
+            }, 
+            {} as Record<string, any>
+        );
+
+        // ✅ Create the correct request payload
+        const requestPayload = {
+            customer_name: customerName,
+            customerMessage: originalMessage,
+            vendor_delivery_info: formattedVendorInfo, // ✅ Send the correctly formatted object
+            ticket_number: ticket.ticket_number,
+            send_vendor_name: includeVendorName,
+            customerMessageRequired: includeCustomerMessage,
+        };
+
+        console.log("🚀 Corrected Request Payload:", requestPayload);
+
+        // Generate client message template
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestPayload), 
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to generate client message template");
+        }
+
+        const data = await response.json();
+        const clientMessageTemplate = data.client_message_template;
+        console.log("✅ Client Message Template:", clientMessageTemplate);
+
+        // Update Step 7 with the generated template
+        await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    ticket_id: ticket.id,
+                    step_info: {
+                        customer_message_template: clientMessageTemplate,
+                        message_sent: { whatsapp: false, email: false },
+                    },
+                    step_number: ticket.current_step,
+                }),
+            }
+        );
+
+        handleNext(); // Proceed to the next step
+    } catch (error) {
+        console.error("❌ Error preparing for next step:", error);
+        toast.error("Failed to proceed to next step");
+    } finally {
+        setLoading(false);
+    }
+};
+
+  console.log("allDecodedMessages", allDecodedMessages);
   return (
     <div>
       <div className="py-1 mb-4">
-            <h1 className="text-xl font-bold ">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
-          </div>
-      <h3 className="text-xl font-bold my-4">Step 6: Decoded Messages from Vendors</h3>
-      <div className="flex justify-end items-center" onClick={() => setIsEditing(!isEditing)}>
-        <FaEdit
-          className="text-black text-2xl"
-
-        />
+        <h1 className="text-xl font-bold">Customer Message</h1>
+        <div>
+          {ticket.steps["Step 1 : Customer Message Received"].latest.text}
+        </div>
       </div>
-      {!loading &&
-        Object.keys(allDecodedMessages).map((vendor) => {
-          const vendorData = allDecodedMessages[vendor];
 
-          return (
-            <div key={vendor} className="mb-4">
-              <label className="block text-gray-700 font-bold">{vendor}</label>
-              {Object.entries(vendorData).map(([type, details]) => {
-                const vendorDetails = details as VendorDetails;
+      <h3 className="text-xl font-bold my-4">
+        Step 6: Decoded Messages from Vendors
+      </h3>
 
+      <div className="flex justify-end items-center mb-4">
+        <button
+          onClick={handleEditSaveToggle}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+        >
+          <FaEdit className="text-xl" />
+          {isEditing ? "Save" : "Edit"}
+        </button>
+      </div>
+
+      {Object.entries(allDecodedMessages.decoded_messages).map(
+        ([vendorId, vendorData]) => (
+          <div
+            key={vendorId}
+            className="mb-8 border rounded-lg p-4 bg-white shadow"
+          >
+            {/* Vendor Header Information */}
+            <div className="mb-4 border-b pb-4">
+              <h4 className="text-lg font-semibold text-blue-600">
+                {vendorData.vendor_name}
+              </h4>
+              <p className="text-sm text-gray-600">
+                Original Message: {vendorData.original_message}
+              </p>
+              <p className="text-sm text-gray-600">
+                Response Time:{" "}
+                {new Date(vendorData.response_received_time).toLocaleString()}
+              </p>
+            </div>
+
+            {/* Bulk Details */}
+            {Object.entries(vendorData.decoded_response).map(([key, value]) => {
+              if (key.startsWith("Bulk")) {
+                const bulkData = value as BulkDetails;
                 return (
-                  <div key={type} className="my-2">
-                    <h4 className="font-semibold">{type}</h4>
-                    <h3 className="py-2"><span className="font-semibold ">Query: </span>{vendorDetails.query}</h3>
-                    <div className="ml-4 flex md:flex-row flex-col md: gap-3">
-                      <div className="bg-gray-100 px-3 py-2 rounded-md">
-                        <h5 className="font-medium">Rate:</h5>
+                  <div key={key} className="mb-4 bg-gray-50 p-4 rounded-lg">
+                    <h5 className="font-medium text-lg mb-2">{key}</h5>
+                    {/* <p className="mb-3 text-gray-700">
+                    <span className="font-medium">Query:</span> {bulkData.query}
+                  </p> */}
+
+                    {/* Rate Details */}
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded shadow-sm">
+                        <h6 className="font-medium mb-2 text-blue-600">
+                          Rate Details
+                        </h6>
                         {isEditing ? (
-                          <>
-                            <p>
-                              Price per meter:
-                              <input
-                                type="number"
-                                value={vendorDetails.rate.price_per_meter}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "price_per_meter",
-                                    parseFloat(e.target.value)
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Currency:
-                              <input
-                                type="text"
-                                value={vendorDetails.rate.currency}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "currency",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Quantity:
-                              <input
-                                type="number"
-                                value={vendorDetails.rate.quantity}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "quantity",
-                                    parseFloat(e.target.value)
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Additional Charges:
-                              <input
-                                type="text"
-                                value={vendorDetails.rate.additional_charges}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "additional_charges",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Other Info:
-                              <input
-                                type="text"
-                                value={vendorDetails.rate.other_info}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "other_info",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded"
-                              />
-                            </p>
-                          </>
+                          <div className="space-y-2">
+                            {Object.entries(bulkData.rate).map(
+                              ([field, value]) => (
+                                <div key={field} className="flex items-center">
+                                  <label className="w-1/2 text-sm capitalize">
+                                    {field.replace(/_/g, " ")}:
+                                  </label>
+                                  <input
+                                    type={
+                                      field === "price_per_meter" ||
+                                      field === "quantity"
+                                        ? "number"
+                                        : "text"
+                                    }
+                                    value={value}
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        vendorId,
+                                        key,
+                                        field as keyof RateDetails,
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-1/2 border rounded px-2 py-1 text-sm"
+                                  />
+                                </div>
+                              )
+                            )}
+                          </div>
                         ) : (
-                          <>
-                            <p>
-                              Price per meter:{" "}
-                              {vendorDetails.rate.price_per_meter}{" "}
-                              {vendorDetails.rate.currency}
-                            </p>
-                            <p>Quantity: {vendorDetails.rate.quantity}</p>
-                            <p>
-                              Additional Charges:{" "}
-                              {vendorDetails.rate.additional_charges}
-                            </p>
-                            <p>Other Info: {vendorDetails.rate.other_info}</p>
-                          </>
+                          <div className="space-y-1">
+                            {Object.entries(bulkData.rate).map(
+                              ([field, value]) => (
+                                <p key={field} className="text-sm">
+                                  <span className="font-medium capitalize">
+                                    {field.replace(/_/g, " ")}:
+                                  </span>{" "}
+                                  {typeof value === "object"
+                                    ? JSON.stringify(value)
+                                    : String(value) || "Not Found"}
+                                </p>
+                              )
+                            )}
+                          </div>
                         )}
                       </div>
-                      <div className="bg-gray-100 px-3 py-2 rounded-md">
-                        <h5 className="font-medium">Schedule:</h5>
+
+                      {/* Schedule Details */}
+                      <div className="bg-white p-3 rounded shadow-sm">
+                        <h6 className="font-medium mb-2 text-blue-600">
+                          Schedule Details
+                        </h6>
                         {isEditing ? (
-                          <>
-                            <p>
-                              Delivery Method:
-                              <input
-                                type="text"
-                                value={vendorDetails.schedule.delivery_method}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "delivery_method",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Delivery Time:
-                              <input
-                                type="text"
-                                value={vendorDetails.schedule.delivery_time}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "delivery_time",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                            <p>
-                              Delivery Point:
-                              <input
-                                type="text"
-                                value={vendorDetails.schedule.delivery_point}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    vendor,
-                                    type,
-                                    "delivery_point",
-                                    e.target.value
-                                  )
-                                }
-                                className="ml-2 border rounded pl-2"
-                              />
-                            </p>
-                          </>
+                          <div className="space-y-2">
+                            {Object.entries(bulkData.schedule).map(
+                              ([field, value]) => (
+                                <div key={field} className="flex items-center">
+                                  <label className="w-1/2 text-sm capitalize">
+                                    {field.replace(/_/g, " ")}:
+                                  </label>
+
+                                  {typeof value === "object" &&
+                                  value !== null ? (
+                                    // If value is an object, render its properties as separate inputs
+                                    <div className="w-1/2 space-y-1">
+                                      {Object.entries(value).map(
+                                        ([subField, subValue]) => (
+                                          <div
+                                            key={subField}
+                                            className="flex items-center"
+                                          >
+                                            <label className="w-1/2 text-xs capitalize">
+                                              {subField.replace(/_/g, " ")}:
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={subValue as string}
+                                              onChange={(e) =>
+                                                handleInputChange(
+                                                  vendorId,
+                                                  key,
+                                                  field as keyof ScheduleDetails,
+                                                  {...value,[subField]: e.target.value,} // Update nested object
+                                                )
+                                              }
+                                              className="w-1/2 border rounded px-2 py-1 text-sm"
+                                            />
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={value as string}
+                                      onChange={(e) =>
+                                        handleInputChange(
+                                          vendorId,
+                                          key,
+                                          field as keyof ScheduleDetails,
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-1/2 border rounded px-2 py-1 text-sm"
+                                    />
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
                         ) : (
-                          <>
-                            <p>
-                            Price Condition:{" "}
-                              {vendorDetails.schedule.delivery_method}
-                            </p>
-                            <p>
-                              Delivery Condition:{" "}
-                              {vendorDetails.schedule.delivery_time}
-                            </p>
-                            <p>
-                              Delivery Point:{" "}
-                              {vendorDetails.schedule.delivery_point}
-                            </p>
-                          </>
+                          <div className="space-y-1">
+                            {Object.entries(bulkData.schedule).map(
+                              ([field, value]) => (
+                                <p key={field} className="text-sm">
+                                  <span className="font-medium capitalize">
+                                    {field.replace(/_/g, " ")}:
+                                  </span>{" "}
+                                  {typeof value === "object"
+                                    ? JSON.stringify(value)
+                                    : String(value) || "Not Found"}
+                                </p>
+                              )
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
                 );
-              })}
+              }
+              return null;
+            })}
 
-              <input
-                type="checkbox"
-                onChange={(e) => handleSelectChange(vendor, e.target.checked)}
-                className="mt-1"
-              />
-              <label className="ml-2">Unselect this quote</label>
+            {/* Vendor Selection Checkbox */}
+            <div className="mt-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  onChange={(e) =>
+                    handleSelectChange(vendorId, e.target.checked)
+                  }
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                />
+                <span className="text-sm text-gray-700">
+                  Unselect this quote
+                </span>
+              </label>
             </div>
-          );
-        })}
+          </div>
+        )
+      )}
 
-      {loading && <h1>Loading...</h1>}
-      <div className="flex gap-4">
-        <Button
-          onClick={toggleIncludeCustomerMessage}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {includeCustomerMessage
-            ? "Remove Customer Message"
-            : "Include Customer Message"}
-        </Button>
-        <Button
-          onClick={toggleIncludeVendorName}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {includeVendorName
-            ? "Remove Vendor Name"
-            : "Include Vendor Name"}
-        </Button>
-      </div>
-      <div className="flex justify-end">
-        <Button
-          onClick={handleNextStep}
-          className={`mt-4 ml-2 font-bold py-2 px-4 rounded ${isCurrentStep
-            ? "bg-green-500 hover:bg-green-700 text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+      {/* Bottom Action Buttons */}
+      <div className="space-y-4">
+        <div className="flex gap-4">
+          <Button
+            onClick={toggleIncludeCustomerMessage}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            {includeCustomerMessage
+              ? "Remove Customer Message"
+              : "Include Customer Message"}
+          </Button>
+          <Button
+            onClick={toggleIncludeVendorName}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            {includeVendorName ? "Remove Vendor Name" : "Include Vendor Name"}
+          </Button>
+        </div>
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleNextStep}
+            className={`font-bold py-2 px-4 rounded ${
+              isCurrentStep
+                ? "bg-green-500 hover:bg-green-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
-          disabled={!isCurrentStep}
-        >
-          Next
-        </Button>
+            disabled={!isCurrentStep}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );
-
 };
 
 export default Step6;
