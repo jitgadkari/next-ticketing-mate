@@ -15,7 +15,7 @@ import Step9 from "../steps/Step9";
 import toast from "react-hot-toast";
 
 interface Ticket {
-  _id: string;
+  id: string;
   ticket_number: string;
   person_name: string; // Add this line
   customer_name: string;
@@ -24,6 +24,7 @@ interface Ticket {
   created_data: string;
   updated_date: string;
   from_number:string;
+  customer_id:string;
 }
 
 const stepsOrder = [
@@ -85,14 +86,14 @@ const TicketDetailsPage = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ticket_number: ticket?.ticket_number,
+            ticket_id: ticket?.id,
             step_number: step,
           }),
         }
       );
 
       if (response.ok) {
-        fetchTicket(ticket?._id!);
+        fetchTicket(ticket?.id!);
         setActiveStep(step);
         toast.success(`Ticket refreshed to: ${step} `)
       } else {

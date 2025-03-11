@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { FaWhatsapp } from "react-icons/fa";
@@ -21,6 +21,15 @@ interface Step7Props {
     created_data: string;
     updated_date: string;
     from_number: string;
+  };
+}
+
+interface StepVersion {
+  time: string;
+  customer_message_template: string;
+  messagesSent: {
+    whatsApp: boolean;
+    email: boolean;
   };
 }
 
@@ -64,6 +73,61 @@ const Step7: React.FC<Step7Props> = ({
   const [groupOptions, setGroupOptions] = useState<{[key: string]: string}>({});
   const [selectedPersonPhone, setSelectedPersonPhone] = useState<string>('');
 
+  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+
+  const allVersions = useMemo(() => {
+    const stepData = ticket.steps["Step 7 : Customer Message Template"] || {};
+    const defaultData = { 
+      customer_message_template: "",
+      messagesSent: { whatsApp: false, email: false }
+    };
+
+    const versions = (stepData.versions || []).map((version: StepVersion) => ({
+      version: version.time,
+      time: version.time,
+      data: version
+    }));
+
+    const versionList = [
+      {
+        version: 'latest',
+        time: stepData.latest?.time || new Date().toISOString(),
+        data: stepData.latest || defaultData
+      },
+      ...versions
+    ];
+
+    return versionList.sort((a, b) => {
+      if (a.version === 'latest') return -1;
+      if (b.version === 'latest') return 1;
+      return new Date(b.time).getTime() - new Date(a.time).getTime();
+    });
+  }, [ticket.steps]);
+
+  useEffect(() => {
+    const versionData = allVersions.find(v => v.version === selectedVersion);
+    if (versionData?.data) {
+      setTemplate(versionData.data.customer_message_template);
+      setMessagesSent(versionData.data.messagesSent);
+    }
+  }, [selectedVersion, allVersions]);
+
+  const formatTime = (timestamp: string) => {
+    if (timestamp === 'No timestamp') return timestamp;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroup(groupId);
     // Find the group name from groupOptions
@@ -102,6 +166,8 @@ const Step7: React.FC<Step7Props> = ({
 
   const keys = Object.keys(step5Messages);
 
+  const [loading, setLoading] = useState(false);
+
   const handleNext = async () => {
     await fetch(
       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
@@ -128,22 +194,34 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleUpdate = async (updatedTemplate: string) => {
-    console.log("Updating Step 7 template:", updatedTemplate);
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_id: ticket.id,
-          step_info: { customer_message_template: updatedTemplate ,messagesSent: { whatsApp: messagesSent.whatsApp, email: messagesSent.email} },
-          step_number: ticket.current_step,
-        }),
-      }
-    );
-    fetchTicket(ticket.id);
+    try {
+      const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
+      const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
+      
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              "customer_message_template": updatedTemplate,
+              "whatsApp": whatsAppMessage,
+              "email": emailMessage,
+              "customer_message_template_time": new Date().toISOString(),
+            },
+            step_number: ticket.current_step,
+          }),
+        }
+      );
+      fetchTicket(ticket.id);
+    } catch (error) {
+      console.error("Error updating Step 7:", error);
+      toast.error("Failed to update template");
+    }
   };
 
   const handleSave = async () => {
@@ -151,14 +229,53 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleNextStep = async () => {
-    if (!messagesSent.whatsApp || !messagesSent.email) {
-      setShowPopup((prev) => ({
-        ...prev,
-        sendReminder: true,
-      }));
-    } else {
-      await handleSave();
-      await handleNext();
+    setLoading(true);
+    try {
+      console.log("Starting Step 7 completion...");
+      
+      const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
+      const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
+      
+      console.log("Updating Step 7 template...");
+      await handleUpdate(customerTemplate);
+      
+      console.log("Moving to next step...");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              "customer_message_template": customerTemplate,
+              "whatsApp": whatsAppMessage,
+              "email": emailMessage,
+              "customer_message_template_time": new Date().toISOString(),
+            },
+            step_number: ticket.current_step,
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update step");
+      }
+      
+      console.log("Refreshing ticket data...");
+      await fetchTicket(ticket.id);
+      
+      setLoading(false);
+      setActiveStep("Step 8: Message Sent");
+      toast.success("Step 7 completed");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Error moving to next step:", errorMessage);
+      toast.error(`Failed to complete step: ${errorMessage}`);
+      setLoading(false);
     }
   };
 
@@ -303,7 +420,26 @@ const Step7: React.FC<Step7Props> = ({
             <h1 className="text-xl font-bold ">Customer Message</h1>
             <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
           </div>
-      <h3 className="text-xl font-bold my-4">Step 7: Customer Message Template</h3>
+      <div className="flex justify-between items-center my-4">
+        <h3 className="text-xl font-bold">
+          Step 7: Customer Message Template
+        </h3>
+        <div className="flex items-center gap-4">
+          {isCurrentStep && (
+            <select
+              value={selectedVersion}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              className="px-3 py-2 border rounded-md text-sm"
+            >
+              {allVersions.map((version: { version: string; time: string }) => (
+                <option key={version.version} value={version.version}>
+                  {version.version === 'latest' ? 'Latest Version' : `Version from ${formatTime(version.time)}`}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
       <textarea
         value={template}
         onChange={(e) => setTemplate(e.target.value)}

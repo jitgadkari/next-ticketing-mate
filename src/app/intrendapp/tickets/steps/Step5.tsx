@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { AiOutlineEdit } from "react-icons/ai";
@@ -30,6 +30,11 @@ interface VendorDecodedMessage {
   original_message: string;
   response_received_time: string;
 }
+interface StepVersion {
+  time: string;
+  vendors: Record<string, VendorMessage>;
+}
+
 interface Step5Props {
   ticketNumber: string;
   vendorMessages: Record<string, VendorMessage>;
@@ -61,6 +66,7 @@ const Step5: React.FC<Step5Props> = ({
   const [isDecoding, setIsDecoding] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showReminderPopup, setShowReminderPopup] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [editPopupVendor, setEditPopupVendor] = useState<
@@ -69,6 +75,61 @@ const Step5: React.FC<Step5Props> = ({
   const [editableVendors, setEditableVendors] = useState<
     Record<string, boolean>
   >({});
+
+  const allVersions = useMemo(() => {
+    const stepData = ticket.steps["Step 5: Messages from Vendors"] || {};
+    const versions = stepData.versions || [];
+
+    const versionList = [
+      {
+        version: 'latest',
+        time: stepData.latest?.time || new Date().toISOString(),
+        data: stepData.latest || {}
+      },
+      ...versions.map((v: StepVersion) => ({
+        version: v.time,
+        time: v.time,
+        data: v
+      }))
+    ];
+
+    return versionList.sort((a, b) => {
+      if (a.version === 'latest') return -1;
+      if (b.version === 'latest') return 1;
+      return new Date(a.time).getTime() - new Date(b.time).getTime();
+    });
+  }, [ticket.steps]);
+
+  const formatTime = (timestamp: string) => {
+    if (timestamp === 'No timestamp') return timestamp;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  useEffect(() => {
+    const versionData = allVersions.find(v => v.version === selectedVersion);
+    if (versionData && versionData.data.vendors) {
+      setMessages(versionData.data.vendors);
+    }
+  }, [selectedVersion, allVersions]);
+
+  const handleVersionChange = (version: string) => {
+    setSelectedVersion(version);
+    const selectedVersion = allVersions.find(v => v.version === version);
+    if (selectedVersion && selectedVersion.data.vendors) {
+      setMessages(selectedVersion.data.vendors);
+    }
+  };
 
   const handleNext = async () => {
     console.log("Handling next for Step 5", messages);
@@ -393,9 +454,24 @@ const Step5: React.FC<Step5Props> = ({
         </div>
       </div>
       <div className="flex justify-between py-2">
-        <h3 className="text-xl font-bold mb-4">
-          Step 5: Messages from Vendors
-        </h3>
+        <div className="flex items-center space-x-4">
+          <h3 className="text-xl font-bold mb-4">
+            Step 5: Messages from Vendors
+          </h3>
+          {isCurrentStep && allVersions.length > 1 && (
+            <select
+              value={selectedVersion}
+              onChange={(e) => handleVersionChange(e.target.value)}
+              className="border rounded px-2 py-1 text-sm ml-4"
+            >
+              {allVersions.map(({ version, time }) => (
+                <option key={version} value={version}>
+                  {version === 'latest' ? 'Latest Version' : formatTime(time)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <Button
           onClick={sendReminderToAllRemainingVendors}
           className="bg-gray-500 hover:bg-green-800 text-white font-bold  px-2 rounded"
@@ -410,7 +486,7 @@ const Step5: React.FC<Step5Props> = ({
               {message.vendor_name}
             </label>
             <label className="block text-gray-700 font-bold mb-2">
-            Vendor Responded : {message.response_received ? "YES" : "NO"}
+              Vendor Responded : {message.response_received ? "YES" : "NO"}
             </label>
             <div className="flex space-x-2">
               {message.response_message === "" && (
@@ -451,11 +527,10 @@ const Step5: React.FC<Step5Props> = ({
         </Button>
         <Button
           onClick={handleNextStep}
-          className={`font-bold py-2 px-4 rounded ${
-            isCurrentStep
+          className={`font-bold py-2 px-4 rounded ${isCurrentStep
               ? "bg-green-500 hover:bg-green-700 text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+            }`}
           disabled={!isCurrentStep || isDecoding}
         >
           {isDecoding ? "Decoding..." : "Next"}

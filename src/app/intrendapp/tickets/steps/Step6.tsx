@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
 import { FaEdit } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -122,6 +122,38 @@ const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (path
   );
 };
 
+interface StepVersion {
+  time: string;
+  decoded_messages: {
+    [key: string]: {
+      vendor_name: string;
+      decoded_response: {
+        [key: string]: {
+          rate: {
+            currency: string;
+            quantity: string;
+            other_info: string;
+            price_method: string;
+            price_per_meter: string;
+          };
+          schedule: {
+            delivery_point: string;
+            starting_delivery: {
+              days: string;
+              quantity: string;
+            };
+            completion_delivery: {
+              days: string;
+              quantity: string;
+            };
+          };
+        };
+      };
+      original_message: string;
+    };
+  };
+}
+
 const Step6: React.FC<Step6Props> = ({
   ticketNumber,
   decodedMessages,
@@ -140,6 +172,72 @@ const Step6: React.FC<Step6Props> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [includeVendorName, setIncludeVendorName] = useState(true);
   const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
+  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+
+  const allVersions = useMemo(() => {
+    const stepData = ticket.steps["Step 6 : Vendor Message Decoded"] || {};
+    console.log('Step 6 - Step data:', stepData);
+
+    // Following initialization pattern from MEMORY
+    const defaultData = { decoded_messages: {} };
+
+    // Get versions array
+    const versions = (stepData.versions || []).map((version: StepVersion) => ({
+      version: version.time,
+      time: version.time,
+      data: version
+    }));
+
+    // Add latest version
+    const versionList = [
+      {
+        version: 'latest',
+        time: stepData.latest?.time || new Date().toISOString(),
+        data: stepData.latest || defaultData
+      },
+      ...versions
+    ];
+
+    console.log('Step 6 - Version list:', versionList);
+    return versionList.sort((a, b) => {
+      if (a.version === 'latest') return -1;
+      if (b.version === 'latest') return 1;
+      return new Date(b.time).getTime() - new Date(a.time).getTime();
+    });
+  }, [ticket.steps]);
+
+  const formatTime = (timestamp: string) => {
+    if (timestamp === 'No timestamp') return timestamp;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  useEffect(() => {
+    console.log('Step 6 - Selected version:', selectedVersion);
+    const versionData = allVersions.find(v => v.version === selectedVersion);
+    console.log('Step 6 - Version data found:', versionData);
+    
+    if (versionData?.data) {
+      // Following initialization pattern from MEMORY
+      const decodedMessages = versionData.data.decoded_messages || {};
+      console.log('Step 6 - Setting messages:', decodedMessages);
+      
+      // Always provide default values for decoded_messages state
+      const newState = { decoded_messages: decodedMessages };
+      setAllDecodedMessages(newState);
+      setSelectedMessages(newState);
+    }
+  }, [selectedVersion, allVersions]);
 
   const toggleIncludeVendorName = () => {
     setIncludeVendorName((prev) => !prev);
@@ -340,9 +438,24 @@ const Step6: React.FC<Step6Props> = ({
         </div>
       </div>
 
-      <h3 className="text-xl font-bold my-4">
-        Step 6: Decoded Messages from Vendors
-      </h3>
+      <div className="flex justify-between items-center my-4">
+        <h3 className="text-xl font-bold">
+          Step 6: Decoded Messages from Vendors
+        </h3>
+        {isCurrentStep && <div className="flex items-center gap-4">
+          <select
+            value={selectedVersion}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="px-3 py-2 border rounded-md text-sm"
+          >
+            {allVersions.map((version: { version: string; time: string }) => (
+              <option key={version.version} value={version.version}>
+                {version.version === 'latest' ? 'Latest Version' : `Version from ${formatTime(version.time)}`}
+              </option>
+            ))}
+          </select>
+        </div>}
+      </div>
 
       <div className="flex justify-end items-center gap-4 mb-4">
         {isEditing ? (

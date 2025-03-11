@@ -85,9 +85,68 @@ const Step2: React.FC<Step2Props> = ({
 }) => {
   console.log("Step 2 data:", data);
   console.log("Step 2 message:", originalMessage);
+  console.log("Step 2 versions:", ticket.steps[step]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(JSON.stringify(data, null, 2));
   const [loading, setLoading] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+
+  interface VersionData {
+    time?: string;
+    decoded_messages: Record<string, any>;
+  }
+
+  interface StepVersion {
+    time: string;
+    decoded_messages: Record<string, any>;
+  }
+
+  const stepData = ticket.steps[step] || {};
+  const versions = stepData.versions || [];
+  
+  // Add latest version to the versions array for unified handling
+  const allVersions = [
+    {
+      version: 'latest',
+      time: stepData.latest?.time || 'No timestamp',
+      decoded_messages: stepData.latest?.decoded_messages || {}
+    },
+    ...versions.map((v: StepVersion) => ({
+      version: v.time, // Using time as version identifier
+      time: v.time,
+      decoded_messages: v.decoded_messages
+    }))
+  ];
+
+  // Sort versions by time in descending order (newest first)
+  allVersions.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+  const formatTime = (timestamp: string) => {
+    if (timestamp === 'No timestamp') return timestamp;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+  
+  const handleVersionChange = (version: string) => {
+    if (isCurrentStep) {
+      setSelectedVersion(version);
+      const selectedVersion = allVersions.find(v => v.version === version);
+      if (selectedVersion) {
+        setMessage(JSON.stringify(selectedVersion.decoded_messages, null, 2));
+      }
+    }
+  };
   // const [includeDecodedMessage, setIncludeDecodedMessage] = useState(true);
   const handleNext = async () => {
     console.log("Handling next for Step 2");
@@ -237,11 +296,26 @@ const Step2: React.FC<Step2Props> = ({
         <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Step 2: Decoded Message</h3>
-            <div
-              className="flex justify-end items-center cursor-pointer"
-              onClick={() => setIsEditing(true)}
-            >
-              <FaEdit className="text-black text-2xl" />
+            <div className="flex items-center space-x-4">
+              {isCurrentStep && versions.length > 0 && (
+                <select
+                  value={selectedVersion}
+                  onChange={(e) => handleVersionChange(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  {allVersions.map(({version, time}) => (
+                    <option key={version} value={version}>
+                      {version === 'latest' ? 'Latest Version' : formatTime(time)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <div
+                className="flex justify-end items-center cursor-pointer"
+                onClick={() => setIsEditing(true)}
+              >
+                <FaEdit className="text-black text-2xl" />
+              </div>
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">

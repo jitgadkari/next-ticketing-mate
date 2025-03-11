@@ -36,10 +36,58 @@ const Step3: React.FC<Step3Props> = ({
   ticket,
   step,
 }) => {
-  console.log(template);
-  console.log(customerName);
-  console.log(originalMessage);
-  console.log(ticket);
+  interface StepVersion {
+    time: string;
+    vendor_message_temp: string;
+  }
+
+  const stepData = ticket.steps[step] || {};
+  const versions = stepData.versions || [];
+  
+  // Add latest version to the versions array for unified handling
+  const allVersions = [
+    {
+      version: 'latest',
+      time: stepData.latest?.time || 'No timestamp',
+      vendor_message_temp: stepData.latest?.vendor_message_temp || ''
+    },
+    ...versions.map((v: StepVersion) => ({
+      version: v.time,
+      time: v.time,
+      vendor_message_temp: v.vendor_message_temp
+    }))
+  ];
+
+  // Sort versions by time in descending order (newest first)
+  allVersions.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+
+  const formatTime = (timestamp: string) => {
+    if (timestamp === 'No timestamp') return timestamp;
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  const handleVersionChange = (version: string) => {
+    if (isCurrentStep) {
+      setSelectedVersion(version);
+      const selectedVersion = allVersions.find(v => v.version === version);
+      if (selectedVersion) {
+        setMessage(selectedVersion.vendor_message_temp);
+      }
+    }
+  };
   const [message, setMessage] = useState(template);
   // Initialize includeCustomerName based on whether the template includes customer name
   const [includeCustomerName, setIncludeCustomerName] = useState(() => {
@@ -255,9 +303,24 @@ const Step3: React.FC<Step3Props> = ({
             <h1 className="text-xl font-bold">Customer Message</h1>
             <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
           </div>
-          <h3 className="text-xl font-bold mb-4">
-            Step 3: Message Template for Vendors
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">
+              Step 3: Message Template for Vendors
+            </h3>
+            {isCurrentStep && versions.length > 0 && (
+              <select
+                value={selectedVersion}
+                onChange={(e) => handleVersionChange(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+              >
+                {allVersions.map(({version, time}) => (
+                  <option key={version} value={version}>
+                    {version === 'latest' ? 'Latest Version' : formatTime(time)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           <Input
             label="Vendor Template"
             type="textarea"
