@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
-
+import { MdOutlineFolderDelete } from "react-icons/md";
 interface Customer {
   id: string;
   name: string;
@@ -49,6 +49,7 @@ const CustomerList = ({
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [softDeleteCustomerId, setSoftDeleteCustomerId] = useState<string | null>(null);
 
   // Populate filter options for states
   useEffect(() => {
@@ -70,7 +71,7 @@ const CustomerList = ({
 
         if (response.ok) {
           const data = await response.json();
-    console.log(data)
+          console.log(data)
           if (data.customers && Array.isArray(data.customers)) {
             setAllCustomers(data.customers); // Store all customers in state
             setCustomers(data.customers.slice(0, pageFilter.limit)); // Display first page of customers
@@ -136,7 +137,28 @@ const CustomerList = ({
       toast.error("An error occurred while deleting the customer");
     }
   };
-
+  const handleSoftDelete = async (customer_id: string) => {
+    console.log(customer_id)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/soft_delete/${customer_id}?user_id=1&user_agent=user-test`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setCustomers(customers.filter((customer) => customer.id !== customer_id));
+        setDeleteCustomerId(null);
+        toast.success("Customer deleted successfully");
+      } else {
+        console.error("Failed to delete customer");
+        toast.error("Failed to delete customer");
+      }
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      toast.error("An error occurred while deleting the customer");
+    }
+  };
   const columns = [
     "Name", "Contact", "Email", "State", "Country", "Code", "Actions"
   ];
@@ -163,7 +185,11 @@ const CustomerList = ({
             }}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
-
+          <MdOutlineFolderDelete
+            onClick={() => setSoftDeleteCustomerId(customer.id)}
+            className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
+            title="Soft Delete"
+          />
         </div>
       </td>
     </>
@@ -227,7 +253,7 @@ const CustomerList = ({
       {deleteCustomerId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
-          <p>Are you sure you want to delete this customer?</p>
+          <p>Are you sure you want to soft delete this customer?</p>
           <p className="text-gray-500 text-sm">Customer ID: {deleteCustomerId}</p> {/* Debugging */}
           <div className="flex justify-end mt-4">
             <button
@@ -246,6 +272,28 @@ const CustomerList = ({
         </dialog>
       )}
 
+      {/* Soft Delete Dialog */}
+      {softDeleteCustomerId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to Soft delete this customer?</p>
+          <p className="text-gray-500 text-sm">Customer ID: {softDeleteCustomerId}</p> {/* Debugging */}
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setSoftDeleteCustomerId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSoftDelete(softDeleteCustomerId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
       {/* Pagination */}
       <Pagination
         limit={pageFilter.limit}

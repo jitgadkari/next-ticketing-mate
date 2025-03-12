@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
@@ -62,7 +63,7 @@ const Step5: React.FC<Step5Props> = ({
   ticket,
   step,
 }) => {
-  const [messages, setMessages] = useState(vendorMessages);
+  const [messages, setMessages] = useState(vendorMessages || {});
   const [isDecoding, setIsDecoding] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showReminderPopup, setShowReminderPopup] = useState(false);
@@ -479,7 +480,7 @@ const Step5: React.FC<Step5Props> = ({
           Remind all
         </Button>
       </div>
-      {Object.entries(messages).map(([vendor_id, message]) => (
+      {Object?.entries(messages).map(([vendor_id, message]) => (
         <div key={vendor_id} className="mb-4">
           <div className=" flex justify-between items-center">
             <label className="block text-gray-700 font-bold mb-2">
@@ -606,3 +607,5 @@ const Step5: React.FC<Step5Props> = ({
 };
 
 export default Step5;
+
+

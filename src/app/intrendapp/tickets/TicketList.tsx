@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
+import { MdOutlineFolderDelete } from "react-icons/md";
 import Table from "../../components/Table";
 import { Customer } from "./AddTicketForm";
 import toast from "react-hot-toast";
@@ -64,6 +65,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
+  const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(null);
   const [pageInfo, setPageInfo] = useState({
     total_tickets: null,
     current_page: null,
@@ -147,20 +149,60 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`,
+    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/delete`,
         {
-          method: "DELETE",
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticket_id: ticketId,
+            user_id: '1',
+            user_agent: 'user-test'
+          }),
         }
       );
+
       if (response.ok) {
         setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
-        toast.success("Ticket deleted successfully");
+        toast.success('Ticket deleted successfully');
       } else {
-        console.error("Failed to delete ticket");
+        console.error('Failed to delete ticket');
       }
     } catch (error) {
-      console.error("Error deleting ticket:", error);
+      console.error('Error deleting ticket:', error);
+    }
+  };
+
+  const handleSoftDelete = async (ticketId: string) => {
+    try {
+      const response = await fetch(
+    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/soft_delete`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticket_id: ticketId,
+            changed_status: 'Closed',
+            user_id: '1',
+            user_agent: 'user-test'
+          }),
+        }
+      );
+  const data = await response.json();
+  console.log(data)
+      if (response.ok) {
+        setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
+        setDeleteTicketId(null);
+        toast.success('Ticket soft deleted successfully');
+      } else {
+        console.error('Failed to soft delete ticket');
+      }
+    } catch (error) {
+      console.error('Error soft deleting ticket:', error);
     }
   };
 
@@ -261,6 +303,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           <FaTrash
             onClick={() => setDeleteTicketId(ticket.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
+          />
+          <MdOutlineFolderDelete
+            onClick={() => setSoftDeleteTicketId(ticket.id)}
+            className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
+            title="Soft Delete"
           />
         </ul>
       </td>
@@ -574,6 +621,26 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
             </button>
             <button
               onClick={() => handleDelete(deleteTicketId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
+      {softDeleteTicketId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to Soft delete this ticket?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setSoftDeleteTicketId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSoftDelete(softDeleteTicketId)}
               className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
             >
               Delete

@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
-
+import { MdOutlineFolderDelete } from "react-icons/md";
 interface VendorListProps {
   vendors: Vendor[];
   setVendors: (vendors: Vendor[]) => void;
@@ -40,7 +40,7 @@ const VendorList = ({
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
+const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null);
   // Populate filter options for states
   useEffect(() => {
     if (Array.isArray(vendors)) {
@@ -128,6 +128,29 @@ const VendorList = ({
     }
   };
 
+  const handleSoftDelete = async (vendor_id: string) => {
+    console.log(vendor_id)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/soft_delete/$${vendor_id}?user_id=1&user_agent=user-test`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setVendors(vendors.filter((vendor) => vendor.id !== vendor_id));
+        setSoftDeleteVendorId(null);
+        toast.success("Vendor soft deleted successfully");
+      } else {
+        console.error("Failed to soft delete vendor");
+        toast.error("Failed to soft delete vendor");
+      }
+    } catch (error) {
+      console.error("Error soft deleting vendor:", error);
+      toast.error("An error occurred while soft deleting the vendor");
+    }
+  };
+
   const columns = [
     "Name", "Contact", "Email", "State", "Country", "Code", "Actions"
   ];
@@ -150,6 +173,11 @@ const VendorList = ({
           <FaTrash
             onClick={() => setDeleteVendorId(vendor.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
+          />
+           <MdOutlineFolderDelete
+            onClick={() => setSoftDeleteVendorId(vendor.id)}
+            className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
+            title="Soft Delete"
           />
         </div>
       </td>
@@ -231,7 +259,28 @@ const VendorList = ({
           </div>
         </dialog>
       )}
-
+{/* Soft Delete Dialog */}
+      {softDeleteVendorId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
+          <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+          <p>Are you sure you want to Soft delete this vendor?</p>
+          <p className="text-gray-500 text-sm">Vendor ID: {softDeleteVendorId}</p> {/* Debugging */}
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setSoftDeleteVendorId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSoftDelete(softDeleteVendorId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
       {/* Pagination */}
       <Pagination
         limit={pageFilter.limit}
