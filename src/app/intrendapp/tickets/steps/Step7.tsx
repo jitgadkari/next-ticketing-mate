@@ -4,10 +4,11 @@ import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { FaWhatsapp } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
+
 interface Step7Props {
   ticketNumber: string;
   customerTemplate: string;
-  messageSentStatus:any;
+  messageSentStatus: any;
   personName: string;
   isCurrentStep: boolean;
   setActiveStep: (step: string) => void;
@@ -33,6 +34,15 @@ interface StepVersion {
   };
 }
 
+interface DecodedResponse {
+  vendor_name: string;
+  decoded_response: string;
+}
+
+interface DecodedMessages {
+  [vendorId: string]: DecodedResponse;
+}
+
 const Step7: React.FC<Step7Props> = ({
   ticketNumber,
   customerTemplate,
@@ -52,7 +62,7 @@ const Step7: React.FC<Step7Props> = ({
     ticket,
   });
   const [template, setTemplate] = useState(customerTemplate);
-  console.log(template)
+  console.log(template);
   const [showPopup, setShowPopup] = useState({
     whatsAppPerson: false,
     whatsAppGroup: false,
@@ -65,48 +75,59 @@ const Step7: React.FC<Step7Props> = ({
     whatsApp: messageSentStatus.whatsapp,
     email: messageSentStatus.email,
   });
- const [includeVendorName, setIncludeVendorName] = useState(true);
+  const [includeVendorName, setIncludeVendorName] = useState(true);
   const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
-  const [selectedContact, setSelectedContact] = useState<string>('');
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
-  const [customerData, setCustomerData] = useState<any>(null);
-  const [peopleOptions, setPeopleOptions] = useState<string[]>([]);
-  const [groupOptions, setGroupOptions] = useState<{[key: string]: string}>({});
-  const [selectedPersonPhone, setSelectedPersonPhone] = useState<string>('');
+  const [selectedContact, setSelectedContact] = useState<{id: string; name: string} | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  interface CustomerPerson {
+    id: string;
+    name: string;
+    phone?: string;
+  }
 
-  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+  interface CustomerData {
+    customer_people_list: CustomerPerson[];
+    group?: Record<string, string>;
+  }
+
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [peopleOptions, setPeopleOptions] = useState<string[]>([]);
+  const [groupOptions, setGroupOptions] = useState<{ [key: string]: string }>({});
+  const [selectedPersonPhone, setSelectedPersonPhone] = useState<string>("");
+
+  const [selectedVersion, setSelectedVersion] = useState<string>("latest");
 
   const allVersions = useMemo(() => {
     const stepData = ticket.steps["Step 7 : Customer Message Template"] || {};
-    const defaultData = { 
+    const defaultData = {
       customer_message_template: "",
-      messagesSent: { whatsApp: false, email: false }
+      messagesSent: { whatsApp: false, email: false },
     };
 
     const versions = (stepData.versions || []).map((version: StepVersion) => ({
       version: version.time,
       time: version.time,
-      data: version
+      data: version,
     }));
 
     const versionList = [
       {
-        version: 'latest',
+        version: "latest",
         time: stepData.latest?.time || new Date().toISOString(),
-        data: stepData.latest || defaultData
+        data: stepData.latest || defaultData,
       },
-      ...versions
+      ...versions,
     ];
 
     return versionList.sort((a, b) => {
-      if (a.version === 'latest') return -1;
-      if (b.version === 'latest') return 1;
+      if (a.version === "latest") return -1;
+      if (b.version === "latest") return 1;
       return new Date(b.time).getTime() - new Date(a.time).getTime();
     });
   }, [ticket.steps]);
 
   useEffect(() => {
-    const versionData = allVersions.find(v => v.version === selectedVersion);
+    const versionData = allVersions.find((v) => v.version === selectedVersion);
     if (versionData?.data) {
       setTemplate(versionData.data.customer_message_template);
       setMessagesSent(versionData.data.messagesSent);
@@ -114,23 +135,24 @@ const Step7: React.FC<Step7Props> = ({
   }, [selectedVersion, allVersions]);
 
   const formatTime = (timestamp: string) => {
-    if (timestamp === 'No timestamp') return timestamp;
+    if (timestamp === "No timestamp") return timestamp;
     try {
       const date = new Date(timestamp);
-      return date.toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
   useEffect(() => {
-    if (!customerTemplate.trim()) { // Only generate if empty
+    if (!customerTemplate.trim()) {
+      // Only generate if empty
       (async () => {
         const generatedTemplate = await generateMessageTemplate(
           ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
@@ -145,62 +167,68 @@ const Step7: React.FC<Step7Props> = ({
       setTemplate(customerTemplate); // Use existing template if available
     }
   }, []);
-  
-  const generateMessageTemplate=async(decoded_messages,includeCustomerMessage,includeVendorName,customerName,originalMessage)=>{
-    console.log(decoded_messages,includeCustomerMessage,includeVendorName)
- const formattedVendorInfo = Object.entries(decoded_messages).reduce(
-            (acc, [vendorId, vendorData]) => {
-                acc[vendorData.vendor_name] = vendorData.decoded_response;
-                return acc;
-            }, 
-            {} as Record<string, any>
-        );
 
-        console.log(formattedVendorInfo)
-        // Create the correct request payload
-        const requestPayload = {
-            customer_name: customerName,
-            customerMessage: originalMessage,
-            vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
-            ticket_number: ticket.ticket_number,
-            send_vendor_name: includeVendorName,
-            customerMessageRequired: includeCustomerMessage,
-        };
+  const generateMessageTemplate = async (
+    decoded_messages: DecodedMessages,
+    includeCustomerMessage: boolean,
+    includeVendorName: boolean,
+    customerName: string,
+    originalMessage: string
+  ) => {
+    console.log(decoded_messages, includeCustomerMessage, includeVendorName);
+    const formattedVendorInfo = Object.entries(decoded_messages).reduce(
+      (acc, [vendorId, vendorData]) => {
+        acc[vendorData.vendor_name] = vendorData.decoded_response;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 
-        console.log("Corrected Request Payload:", requestPayload);
+    console.log(formattedVendorInfo);
+    // Create the correct request payload
+    const requestPayload = {
+      customer_name: customerName,
+      customerMessage: originalMessage,
+      vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
+      ticket_number: ticket.ticket_number,
+      send_vendor_name: includeVendorName,
+      customerMessageRequired: includeCustomerMessage,
+    };
 
-        // Generate client message template
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestPayload), 
-            }
-        );
+    console.log("Corrected Request Payload:", requestPayload);
 
-        if (!response.ok) {
-            throw new Error("Failed to generate client message template");
-        }
+    // Generate client message template
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestPayload),
+      }
+    );
 
-        const data = await response.json();
-        const clientMessageTemplate = data.client_message_template;
-        console.log("Client Message Template:", clientMessageTemplate);
-        return clientMessageTemplate
+    if (!response.ok) {
+      throw new Error("Failed to generate client message template");
+    }
 
-  }
+    const data = await response.json();
+    const clientMessageTemplate = data.client_message_template;
+    console.log("Client Message Template:", clientMessageTemplate);
+    return clientMessageTemplate;
+  };
+
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroup(groupId);
     // Find the group name from groupOptions
     const selectedGroupName = Object.entries(groupOptions).find(([name, id]) => id === groupId)?.[0];
-    console.log('Selected Group Details:', {
+    console.log("Selected Group Details:", {
       groupName: selectedGroupName,
-      groupId: groupId
+      groupId: groupId,
     });
   };
-  
+
   const toggleIncludeVendorName = () => {
     setIncludeVendorName((prev) => {
       const newIncludeVendorName = !prev;
@@ -208,7 +236,7 @@ const Step7: React.FC<Step7Props> = ({
       return newIncludeVendorName;
     });
   };
-  
+
   const toggleIncludeCustomerMessage = () => {
     setIncludeCustomerMessage((prev) => {
       const newIncludeCustomerMessage = !prev;
@@ -216,9 +244,9 @@ const Step7: React.FC<Step7Props> = ({
       return newIncludeCustomerMessage;
     });
   };
-  
+
   // Function to manually regenerate the template
-  const updateTemplate = async (newIncludeCustomerMessage, newIncludeVendorName) => {
+  const updateTemplate = async (newIncludeCustomerMessage: boolean, newIncludeVendorName: boolean) => {
     const generatedTemplate = await generateMessageTemplate(
       ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
       newIncludeCustomerMessage,
@@ -228,7 +256,7 @@ const Step7: React.FC<Step7Props> = ({
     );
     setTemplate(generatedTemplate);
   };
-  
+
   useEffect(() => {
     setTemplate(customerTemplate);
     fetchCustomerDetails();
@@ -241,15 +269,35 @@ const Step7: React.FC<Step7Props> = ({
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers/?name=${encodeURIComponent(customerName)}`
       );
       const data = await response.json();
+      console.log("Customer Data", data);
       if (data.customers && data.customers.length > 0) {
         const customer = data.customers[0];
-        setCustomerData(customer);
+        // Initialize with default empty values following the pattern
+        setCustomerData({
+          customer_people_list: customer.customer_people_list || [],
+          group: customer.group || {}
+        });
         setPeopleOptions(customer.people || []);
         setGroupOptions(customer.group || {});
+      } else {
+        // Set default empty values if no data
+        setCustomerData({
+          customer_people_list: [],
+          group: {}
+        });
+        setPeopleOptions([]);
+        setGroupOptions({});
       }
     } catch (error) {
-      console.error('Error fetching customer details:', error);
-      toast.error('Failed to fetch customer details');
+      console.error("Error fetching customer details:", error);
+      toast.error("Failed to fetch customer details");
+      // Set default empty values on error
+      setCustomerData({
+        customer_people_list: [],
+        group: {}
+      });
+      setPeopleOptions([]);
+      setGroupOptions({});
     }
   };
 
@@ -270,10 +318,10 @@ const Step7: React.FC<Step7Props> = ({
         body: JSON.stringify({
           ticket_id: ticket.id,
           step_info: {
-            "customer_message_template": template,
-            "customer_response_received": false,
-            "customer_message_received": "",
-            "customer_response_received_time":null
+            customer_message_template: template,
+            customer_response_received: false,
+            customer_message_received: "",
+            customer_response_received_time: null,
           },
           step_number: ticket.current_step,
         }),
@@ -288,7 +336,7 @@ const Step7: React.FC<Step7Props> = ({
     try {
       const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
       const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
-      
+
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
         {
@@ -299,10 +347,10 @@ const Step7: React.FC<Step7Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: {
-              "customer_message_template": updatedTemplate,
-              "whatsApp": whatsAppMessage,
-              "email": emailMessage,
-              "customer_message_template_time": new Date().toISOString(),
+              customer_message_template: updatedTemplate,
+              whatsApp: whatsAppMessage,
+              email: emailMessage,
+              customer_message_template_time: new Date().toISOString(),
             },
             step_number: ticket.current_step,
           }),
@@ -323,13 +371,13 @@ const Step7: React.FC<Step7Props> = ({
     setLoading(true);
     try {
       console.log("Starting Step 7 completion...");
-      
+
       const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
       const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
-      
+
       console.log("Updating Step 7 template...");
       await handleUpdate(customerTemplate);
-      
+
       console.log("Moving to next step...");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
@@ -341,24 +389,24 @@ const Step7: React.FC<Step7Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: {
-              "customer_message_template": customerTemplate,
-              "whatsApp": whatsAppMessage,
-              "email": emailMessage,
-              "customer_message_template_time": new Date().toISOString(),
+              customer_message_template: customerTemplate,
+              whatsApp: whatsAppMessage,
+              email: emailMessage,
+              customer_message_template_time: new Date().toISOString(),
             },
             step_number: ticket.current_step,
           }),
         }
       );
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update step");
       }
-      
+
       console.log("Refreshing ticket data...");
       await fetchTicket(ticket.id);
-      
+
       setLoading(false);
       setActiveStep("Step 8: Message Sent");
       toast.success("Step 7 completed");
@@ -385,50 +433,23 @@ const Step7: React.FC<Step7Props> = ({
     setIsSending(true);
 
     try {
-      if (type === "whatsAppPerson" || type === "whatsAppGroup") {
-        let targetNumber = '';
-        
-        if (type === "whatsAppPerson") {
-          if (!selectedContact) {
-            toast.error("Please select a contact");
-            return;
-          }
-          if (!selectedPersonPhone) {
-            toast.error("No phone number available for this contact");
-            return;
-          }
-          // Add @c.us suffix for person if not already present
-          targetNumber = selectedPersonPhone.endsWith('@c.us') 
-            ? selectedPersonPhone 
-            : `${selectedPersonPhone}@c.us`;
-          console.log('Sending WhatsApp message to person:', targetNumber);
-        } else {
-          if (!selectedGroup) {
-            toast.error("Please select a group");
-            return;
-          }
-          // Add @g.us suffix for group if not already present
-          targetNumber = selectedGroup.endsWith('@g.us') 
-            ? selectedGroup 
-            : `${selectedGroup}@g.us`;
-          console.log('Sending WhatsApp message to group:', targetNumber);
+      if (type === "whatsAppPerson") {
+        if (!selectedContact) {
+          toast.error("Please select a contact");
+          return;
+        }
+        if (!selectedPersonPhone) {
+          toast.error("No phone number available for this contact");
+          return;
         }
 
         // Validate message content
-        if (!template || template.trim() === '') {
+        if (!template || template.trim() === "") {
           toast.error("Message content cannot be empty");
           return;
         }
 
-        console.log('Message template content:', template);
-        
-        const payload = {
-          to: targetNumber,
-          message: template.trim(),
-          type: "text"
-        };
-        
-        console.log('Sending message with payload:', payload);
+        console.log("Sending WhatsApp message to person:", selectedPersonPhone);
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
           {
@@ -436,11 +457,55 @@ const Step7: React.FC<Step7Props> = ({
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              to: `${selectedPersonPhone}@c.us`,
+              message: template.trim()
+            }),
           }
         );
+
+        if (!response.ok) {
+          throw new Error(`Failed to send WhatsApp message: ${response.statusText}`);
+        }
+
         const data = await response.json();
-        console.log("Whatsapp message response:", data)
+        console.log("WhatsApp message response:", data);
+        setSendingStatus("WhatsApp message sent successfully");
+        setMessagesSent((prev) => ({
+          ...prev,
+          whatsApp: true,
+        }));
+      } else if (type === "whatsAppGroup") {
+        if (!selectedGroup) {
+          toast.error("Please select a group");
+          return;
+        }
+        // Add @g.us suffix for group if not already present
+        const targetNumber = selectedGroup.endsWith("@g.us")
+          ? selectedGroup
+          : `${selectedGroup}@g.us`;
+        console.log("Sending WhatsApp message to group:", targetNumber);
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: targetNumber,
+              message: template.trim()
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to send WhatsApp message: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("WhatsApp message response:", data);
         setSendingStatus("WhatsApp message sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -462,8 +527,12 @@ const Step7: React.FC<Step7Props> = ({
           }
         );
 
+        if (!sendEmailResponse.ok) {
+          throw new Error(`Failed to send email: ${sendEmailResponse.statusText}`);
+        }
+
         const sendEmailData = await sendEmailResponse.json();
-        console.log('Email API Response:', sendEmailData);
+        console.log("Email API Response:", sendEmailData);
         setSendingStatus("Email sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
@@ -473,44 +542,53 @@ const Step7: React.FC<Step7Props> = ({
     } catch (error) {
       console.error(`Error sending ${type} message:`, error);
       setSendingStatus(`Failed to send ${type} message`);
+      toast.error(`Failed to send ${type} message`);
     } finally {
       setIsSending(false);
     }
   };
 
-  const handlePersonSelect = async (personName: string) => {
-    setSelectedContact(personName);
-    if (personName) {
+  const handlePersonSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const personId = e.target.value;
+    if (personId) {
       try {
-        console.log('Fetching details for person:', personName);
+        console.log("Fetching details for person ID:", personId);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/person/name/?person=${encodeURIComponent(personName)}`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${personId}`
         );
         const data = await response.json();
-        console.log('Person data:', data);
-        if (data.person && data.person.phone) {
-          console.log('Setting phone number:', data.person.phone);
-          setSelectedPersonPhone(data.person.phone);
+        console.log("Person data:", data);
+        if (data.person && data.person[0]?.phone) {
+          const person = data.person[0];
+          console.log("Setting phone number:", person.phone);
+          setSelectedPersonPhone(person.phone);
+          setSelectedContact({
+            id: personId,
+            name: person.name || ''
+          });
         } else {
-          setSelectedPersonPhone('');
-          toast.error('No phone number found for this person');
+          setSelectedPersonPhone("");
+          setSelectedContact(null);
+          toast.error("No phone number found for this person");
         }
       } catch (error) {
-        console.error('Error fetching person details:', error);
-        toast.error('Failed to fetch person details');
-        setSelectedPersonPhone('');
+        console.error("Error fetching person details:", error);
+        toast.error("Failed to fetch person details");
+        setSelectedPersonPhone("");
+        setSelectedContact(null);
       }
     } else {
-      setSelectedPersonPhone('');
+      setSelectedPersonPhone("");
+      setSelectedContact(null);
     }
   };
 
   return (
     <div>
       <div className="py-1 mb-4">
-            <h1 className="text-xl font-bold ">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
-          </div>
+        <h1 className="text-xl font-bold ">Customer Message</h1>
+        <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+      </div>
       <div className="flex justify-between items-center my-4">
         <h3 className="text-xl font-bold">
           Step 7: Customer Message Template
@@ -524,7 +602,7 @@ const Step7: React.FC<Step7Props> = ({
             >
               {allVersions.map((version: { version: string; time: string }) => (
                 <option key={version.version} value={version.version}>
-                  {version.version === 'latest' ? 'Latest Version' : `Version from ${formatTime(version.time)}`}
+                  {version.version === "latest" ? "Latest Version" : `Version from ${formatTime(version.time)}`}
                 </option>
               ))}
             </select>
@@ -536,7 +614,7 @@ const Step7: React.FC<Step7Props> = ({
         onChange={(e) => setTemplate(e.target.value)}
         className="w-full h-64 p-2 border rounded"
       />
-     
+
       <div className="flex justify-between mt-4">
         <Button
           onClick={handleSave}
@@ -587,7 +665,6 @@ const Step7: React.FC<Step7Props> = ({
               <MdEmail />
             </Button>
           </div>
-     
         </div>
         <Button
           onClick={handleNextStep}
@@ -621,14 +698,14 @@ const Step7: React.FC<Step7Props> = ({
                 Select Contact
               </label>
               <select
-                value={selectedContact}
-                onChange={(e) => handlePersonSelect(e.target.value)}
+                value={selectedContact?.id || ''}
+                onChange={handlePersonSelect}
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select a contact...</option>
-                {peopleOptions.map((person, index) => (
-                  <option key={index} value={person}>
-                    {person}
+                {(customerData?.customer_people_list || []).map((person: CustomerPerson, index: number) => (
+                  <option key={person.id || index} value={person.id}>
+                    {person.name}
                   </option>
                 ))}
               </select>

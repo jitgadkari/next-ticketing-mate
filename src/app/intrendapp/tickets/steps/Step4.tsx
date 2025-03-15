@@ -69,7 +69,7 @@ const Step4: React.FC<Step4Props> = ({
 
   const stepData = ticket.steps[ticket.current_step] || {};
   const versions = stepData.versions || [];
-  
+
   // Add latest version to the versions array for unified handling
   const allVersions = [
     {
@@ -112,7 +112,7 @@ const Step4: React.FC<Step4Props> = ({
       if (selectedVersionData) {
         // Get vendor data from the selected version
         const vendors = selectedVersionData.vendors || {};
-        
+
         // Update selected options
         const selectedVendorOptions = (Object.entries(vendors) as Array<[string, VendorData]>).map(([id, vendorData]) => ({
           label: vendorData.vendor_name,
@@ -120,7 +120,7 @@ const Step4: React.FC<Step4Props> = ({
           id: id,
         }));
         setSelectedOptions(selectedVendorOptions);
-        
+
         // Update vendor messages
         const newMessages: Record<string, string> = {};
         (Object.entries(vendors) as Array<[string, VendorData]>).forEach(([id, vendorData]) => {
@@ -271,7 +271,7 @@ const Step4: React.FC<Step4Props> = ({
       // Get the current step data
       const currentStepData = ticket.steps[ticket.current_step] || {};
       const currentVersions = currentStepData.versions || [];
-      
+
       // Create new version data
       const newVersion = {
         time: new Date().toISOString(),
@@ -300,7 +300,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_number: ticket.current_step,
-            step_info: { 
+            step_info: {
               vendors: vendorsToUpdate,
               versions: updatedVersions,
               latest: {
@@ -311,11 +311,11 @@ const Step4: React.FC<Step4Props> = ({
           }),
         }
       );
-      
+
       if (!response.ok) {
         throw new Error(`Failed to save: ${response.status}`);
       }
-      
+
       await fetchTicket(ticket.id);
       toast.success("Changes saved successfully");
     } catch (error) {
@@ -354,14 +354,14 @@ const Step4: React.FC<Step4Props> = ({
   // Update vendor messages when selected version changes
   useEffect(() => {
     const currentStepData = ticket.steps[ticket.current_step] || {};
-    const selectedVersionData = selectedVersion === 'latest' 
-      ? currentStepData.latest 
+    const selectedVersionData = selectedVersion === 'latest'
+      ? currentStepData.latest
       : (currentStepData.versions || []).find((v: StepVersion) => v.time === selectedVersion);
 
     if (selectedVersionData) {
       const vendors = selectedVersionData.vendors || {};
       const newMessages: Record<string, string> = {};
-      
+
       // Update messages for currently selected vendors
       selectedOptions.forEach((option) => {
         if (option.id && vendors[option.id]?.message_temp) {
@@ -371,7 +371,7 @@ const Step4: React.FC<Step4Props> = ({
           newMessages[option.value] = vendorMessages[option.value] || '';
         }
       });
-      
+
       // Only update if messages have changed
       const currentMessages = JSON.stringify(vendorMessages);
       const updatedMessages = JSON.stringify(newMessages);
@@ -472,7 +472,7 @@ const Step4: React.FC<Step4Props> = ({
         sort_field: "created_date",
         sort_order: "desc"
       };
-console.log(requestPayload.filters_dict)
+      console.log(requestPayload.filters_dict)
       console.log("Request payload for filtered vendors:", JSON.stringify(requestPayload, null, 2));
 
       const response = await fetch(
@@ -502,7 +502,7 @@ console.log(requestPayload.filters_dict)
         email: v.email,
         phone: v.phone
       }));
-      
+
       if (vendorsList.length > 0) {
         console.log("Successfully fetched filtered vendors:", vendorsList);
         setVendors(
@@ -512,9 +512,7 @@ console.log(requestPayload.filters_dict)
             id: vendor.id,
           }))
         );
-        console.log("Updated vendors state:", vendors);
         setVendorDetails(vendorsList);
-        console.log("Updated vendor details state:", vendorDetails);
       } else {
         console.error("Unexpected response format. Expected {vendors: Array}. Got:", data);
       }
@@ -532,10 +530,8 @@ console.log(requestPayload.filters_dict)
   };
 
   const generateVendorMessages = async () => {
-    console.log("Generating vendor messages...");
     const messages: Record<string, string> = {};
     for (const option of selectedOptions) {
-      console.log(option);
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/replace_vendor_with_name`,
@@ -551,7 +547,6 @@ console.log(requestPayload.filters_dict)
           }
         );
         const data = await response.json();
-        console.log("generated message:", data);
         messages[
           option.value
         ] = `${data}\n Ticket Number: ${ticket.ticket_number}`;
@@ -563,7 +558,6 @@ console.log(requestPayload.filters_dict)
         messages[option.value] = "Error generating message";
       }
     }
-    console.log(messages);
     setVendorMessages(messages);
   };
 
@@ -585,24 +579,27 @@ console.log(requestPayload.filters_dict)
       toast.loading("Sending WhatsApp messages...");
       const messagePromises = selectedOptions.map(async (option) => {
         const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
+        console.log(vendor)
+        console.log(vendorMessages[option.value])
         if (!vendor || !vendor.phone) {
           throw new Error(`Missing vendor details or phone number for ${option.value}`);
         }
-
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              to: vendor.phone,
+              to: `${vendor.phone}@c.us`,
               message: vendorMessages[option.value],
             }),
           }
         );
-
+        console.log(response);
+        const data = await response.json();
+        console.log(data);
         if (!response.ok) {
           throw new Error(`Failed to send WhatsApp to ${option.value}`);
         }
@@ -621,6 +618,7 @@ console.log(requestPayload.filters_dict)
 
       const results = await Promise.all(messagePromises);
       await updateTicketWithSentStatus(results);
+      console.log(results)
       toast.dismiss();
       toast.success("WhatsApp messages sent successfully!");
     } catch (error) {
@@ -747,13 +745,13 @@ console.log(requestPayload.filters_dict)
     }
   };
 
- 
+
   // This function now builds the Step 5 payload as an array of vendor objects
   const handleNextStep = async () => {
     // Get vendor names from the selected options
     const updatedVendors = selectedOptions.map((option) => option.value);
     console.log("Next Step vendors:", updatedVendors);
-  
+
     // For each vendor, use saved message status if it exists; otherwise default to false
     const vendorsToUpdate = updatedVendors.map((vendorName) => {
       const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
@@ -772,14 +770,14 @@ console.log(requestPayload.filters_dict)
           : { whatsapp: false, email: false },
       };
     }).filter((v): v is NonNullable<typeof v> => v !== null);
-  
+
     console.log("Mapped vendors for Step 4 update:", vendorsToUpdate);
     console.log("payload", JSON.stringify({
       ticket_id: ticket.id,
       step_number: ticket.current_step,
       step_info: { vendors: vendorsToUpdate },
     }));
-  
+
     try {
       // Update Step 4 with the vendor details (including the message sent status)
       await fetch(
@@ -794,7 +792,7 @@ console.log(requestPayload.filters_dict)
           }),
         }
       );
-  
+
       // Initialize Step 5 payload as an array instead of an object
       const emptyVendorMessages = selectedOptions.map((option) => {
         const vendor = vendorDetails.find((v) => v.name === option.value);
@@ -806,9 +804,9 @@ console.log(requestPayload.filters_dict)
           message_received_time: "", // Could also be a timestamp if needed
         };
       });
-  
+
       console.log("Step 5 initial vendor messages:", emptyVendorMessages);
-  
+
       // Update Step 5 with the empty messages array
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
@@ -823,7 +821,7 @@ console.log(requestPayload.filters_dict)
         }
       );
       console.log(response);
-  
+
       // Optionally fetch updated ticket data and move to Step 5
       await fetchTicket(ticket.id);
       setLoading(false);
@@ -833,7 +831,7 @@ console.log(requestPayload.filters_dict)
       console.error("Error updating steps:", error);
     }
   };
-  
+
 
   const handlePopupConfirm = async () => {
     setShowWhatsappPopup(false); // Close the confirmation dialog
@@ -858,7 +856,7 @@ console.log(requestPayload.filters_dict)
 
   console.log("Vendor Messages:", vendorMessages);
 
-  console.log("selected options....",selectedOptions);
+  console.log("selected options....", selectedOptions);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       {!loading && (
@@ -877,7 +875,7 @@ console.log(requestPayload.filters_dict)
                 onChange={(e) => handleVersionChange(e.target.value)}
                 className="border rounded px-2 py-1 text-sm"
               >
-                {allVersions.map(({version, time}) => (
+                {allVersions.map(({ version, time }) => (
                   <option key={version} value={version}>
                     {version === 'latest' ? 'Latest Version' : formatTime(time)}
                   </option>
@@ -915,23 +913,21 @@ console.log(requestPayload.filters_dict)
                   /> */}
                   {emailSendingStatus[option.value] && (
                     <p
-                      className={`mt-1 ${
-                        emailSendingStatus[option.value] === "Email Sent"
+                      className={`mt-1 ${emailSendingStatus[option.value] === "Email Sent"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
+                        }`}
                     >
                       Status: {emailSendingStatus[option.value]}
                     </p>
                   )}
                   {whatsappSendingStatus[option.value] && (
                     <p
-                      className={`mt-1 ${
-                        whatsappSendingStatus[option.value] ===
-                        "Whatsapp Message Sent"
+                      className={`mt-1 ${whatsappSendingStatus[option.value] ===
+                          "Whatsapp Message Sent"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
+                        }`}
                     >
                       Status: {whatsappSendingStatus[option.value]}
                     </p>
@@ -950,12 +946,11 @@ console.log(requestPayload.filters_dict)
             </Button>
             <Button
               onClick={handleWhatsAppPopUp}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-                (!isCurrentStep ||
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
                   selectedOptions.length === 0 ||
                   isWhatsAppSending) &&
                 "opacity-50 cursor-not-allowed"
-              }`}
+                }`}
               disabled={
                 !isCurrentStep ||
                 selectedOptions.length === 0 ||
@@ -966,20 +961,19 @@ console.log(requestPayload.filters_dict)
                 {isWhatsAppSending
                   ? "Sending..."
                   : showResendWhatsappMessage
-                  ? "Resend"
-                  : "Send"}
+                    ? "Resend"
+                    : "Send"}
               </span>
 
               <FaWhatsapp />
             </Button>
             <Button
               onClick={handleSendEmailPopUp}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${
-                (!isCurrentStep ||
+              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
                   selectedOptions.length === 0 ||
                   isEmailSending) &&
                 "opacity-50 cursor-not-allowed "
-              }`}
+                }`}
               disabled={
                 !isCurrentStep || selectedOptions.length === 0 || isEmailSending
               }
@@ -988,18 +982,17 @@ console.log(requestPayload.filters_dict)
                 {isEmailSending
                   ? "Sending..."
                   : showResendEmail
-                  ? "Resend"
-                  : "Send"}
+                    ? "Resend"
+                    : "Send"}
               </span>
               <MdEmail />
             </Button>
             <Button
               onClick={handleNextStep}
-              className={`font-bold py-2 px-4 rounded ${
-                isCurrentStep
+              className={`font-bold py-2 px-4 rounded ${isCurrentStep
                   ? "bg-blue-500 hover:bg-blue-700 text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+                }`}
               disabled={!isCurrentStep || selectedOptions.length === 0}
             >
               Next
@@ -1075,13 +1068,11 @@ console.log(requestPayload.filters_dict)
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
             <p className="mb-4">
-              {`You haven't sent ${!isMessageSent.emailSent ? "Email" : ""}${
-                !isMessageSent.emailSent && !isMessageSent.whatsappMessageSent
+              {`You haven't sent ${!isMessageSent.emailSent ? "Email" : ""}${!isMessageSent.emailSent && !isMessageSent.whatsappMessageSent
                   ? ", "
                   : ""
-              }${
-                !isMessageSent.whatsappMessageSent ? "WhatsApp" : ""
-              } messages yet. Would you like to proceed without sending?`}
+                }${!isMessageSent.whatsappMessageSent ? "WhatsApp" : ""
+                } messages yet. Would you like to proceed without sending?`}
             </p>
 
             <div className="flex justify-end">
