@@ -170,8 +170,7 @@ const Step6: React.FC<Step6Props> = ({
     useState<DecodedMessages>(decodedMessages);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [includeVendorName, setIncludeVendorName] = useState(true);
-  const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
+ 
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
 
   const allVersions = useMemo(() => {
@@ -239,13 +238,7 @@ const Step6: React.FC<Step6Props> = ({
     }
   }, [selectedVersion, allVersions]);
 
-  const toggleIncludeVendorName = () => {
-    setIncludeVendorName((prev) => !prev);
-  };
 
-  const toggleIncludeCustomerMessage = () => {
-    setIncludeCustomerMessage((prev) => !prev);
-  };
   const handleInputChange = (
     vendor: string,
     type: string,
@@ -360,45 +353,45 @@ const Step6: React.FC<Step6Props> = ({
         console.log("Selected Messages:", selectedMessages);
 
         // Extract vendor information properly (excluding unnecessary metadata)
-        const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
-            (acc, [vendorId, vendorData]) => {
-                acc[vendorData.vendor_name] = vendorData.decoded_response;
-                return acc;
-            }, 
-            {} as Record<string, any>
-        );
+        // const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
+        //     (acc, [vendorId, vendorData]) => {
+        //         acc[vendorData.vendor_name] = vendorData.decoded_response;
+        //         return acc;
+        //     }, 
+        //     {} as Record<string, any>
+        // );
 
-        // Create the correct request payload
-        const requestPayload = {
-            customer_name: customerName,
-            customerMessage: originalMessage,
-            vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
-            ticket_number: ticket.ticket_number,
-            send_vendor_name: includeVendorName,
-            customerMessageRequired: includeCustomerMessage,
-        };
+        // // Create the correct request payload
+        // const requestPayload = {
+        //     customer_name: customerName,
+        //     customerMessage: originalMessage,
+        //     vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
+        //     ticket_number: ticket.ticket_number,
+        //     send_vendor_name: true,
+        //     customerMessageRequired: true,
+        // };
 
-        console.log("Corrected Request Payload:", requestPayload);
+        // console.log("Corrected Request Payload:", requestPayload);
 
-        // Generate client message template
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestPayload), 
-            }
-        );
+        // // Generate client message template
+        // const response = await fetch(
+        //     `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+        //     {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //         },
+        //         body: JSON.stringify(requestPayload), 
+        //     }
+        // );
 
-        if (!response.ok) {
-            throw new Error("Failed to generate client message template");
-        }
+        // if (!response.ok) {
+        //     throw new Error("Failed to generate client message template");
+        // }
 
-        const data = await response.json();
-        const clientMessageTemplate = data.client_message_template;
-        console.log("Client Message Template:", clientMessageTemplate);
+        // const data = await response.json();
+        // const clientMessageTemplate = data.client_message_template;
+        // console.log("Client Message Template:", clientMessageTemplate);
 
         // Update Step 7 with the generated template
         await fetch(
@@ -411,7 +404,7 @@ const Step6: React.FC<Step6Props> = ({
                 body: JSON.stringify({
                     ticket_id: ticket.id,
                     step_info: {
-                        customer_message_template: clientMessageTemplate,
+                        customer_message_template: "",
                         message_sent: { whatsapp: false, email: false },
                     },
                     step_number: ticket.current_step,
@@ -565,22 +558,7 @@ const Step6: React.FC<Step6Props> = ({
 
       {/* Bottom Action Buttons */}
       <div className="space-y-4">
-        <div className="flex gap-4">
-          <Button
-            onClick={toggleIncludeCustomerMessage}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            {includeCustomerMessage
-              ? "Remove Customer Message"
-              : "Include Customer Message"}
-          </Button>
-          <Button
-            onClick={toggleIncludeVendorName}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            {includeVendorName ? "Remove Vendor Name" : "Include Vendor Name"}
-          </Button>
-        </div>
+       
 
         <div className="flex justify-end">
           <Button

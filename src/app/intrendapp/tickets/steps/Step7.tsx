@@ -65,7 +65,8 @@ const Step7: React.FC<Step7Props> = ({
     whatsApp: messageSentStatus.whatsapp,
     email: messageSentStatus.email,
   });
-
+ const [includeVendorName, setIncludeVendorName] = useState(true);
+  const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
   const [selectedContact, setSelectedContact] = useState<string>('');
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [customerData, setCustomerData] = useState<any>(null);
@@ -128,6 +129,68 @@ const Step7: React.FC<Step7Props> = ({
     }
   };
 
+  useEffect(() => {
+    if (!customerTemplate.trim()) { // Only generate if empty
+      (async () => {
+        const generatedTemplate = await generateMessageTemplate(
+          ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
+          includeCustomerMessage,
+          includeVendorName,
+          ticket.customer_name,
+          ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+        );
+        setTemplate(generatedTemplate);
+      })();
+    } else {
+      setTemplate(customerTemplate); // Use existing template if available
+    }
+  }, []);
+  
+  const generateMessageTemplate=async(decoded_messages,includeCustomerMessage,includeVendorName,customerName,originalMessage)=>{
+    console.log(decoded_messages,includeCustomerMessage,includeVendorName)
+ const formattedVendorInfo = Object.entries(decoded_messages).reduce(
+            (acc, [vendorId, vendorData]) => {
+                acc[vendorData.vendor_name] = vendorData.decoded_response;
+                return acc;
+            }, 
+            {} as Record<string, any>
+        );
+
+        console.log(formattedVendorInfo)
+        // Create the correct request payload
+        const requestPayload = {
+            customer_name: customerName,
+            customerMessage: originalMessage,
+            vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
+            ticket_number: ticket.ticket_number,
+            send_vendor_name: includeVendorName,
+            customerMessageRequired: includeCustomerMessage,
+        };
+
+        console.log("Corrected Request Payload:", requestPayload);
+
+        // Generate client message template
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestPayload), 
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to generate client message template");
+        }
+
+        const data = await response.json();
+        const clientMessageTemplate = data.client_message_template;
+        console.log("Client Message Template:", clientMessageTemplate);
+        return clientMessageTemplate
+
+  }
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroup(groupId);
     // Find the group name from groupOptions
@@ -137,7 +200,35 @@ const Step7: React.FC<Step7Props> = ({
       groupId: groupId
     });
   };
-
+  
+  const toggleIncludeVendorName = () => {
+    setIncludeVendorName((prev) => {
+      const newIncludeVendorName = !prev;
+      updateTemplate(includeCustomerMessage, newIncludeVendorName);
+      return newIncludeVendorName;
+    });
+  };
+  
+  const toggleIncludeCustomerMessage = () => {
+    setIncludeCustomerMessage((prev) => {
+      const newIncludeCustomerMessage = !prev;
+      updateTemplate(newIncludeCustomerMessage, includeVendorName);
+      return newIncludeCustomerMessage;
+    });
+  };
+  
+  // Function to manually regenerate the template
+  const updateTemplate = async (newIncludeCustomerMessage, newIncludeVendorName) => {
+    const generatedTemplate = await generateMessageTemplate(
+      ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
+      newIncludeCustomerMessage,
+      newIncludeVendorName,
+      ticket.customer_name,
+      ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+    );
+    setTemplate(generatedTemplate);
+  };
+  
   useEffect(() => {
     setTemplate(customerTemplate);
     fetchCustomerDetails();
@@ -453,6 +544,22 @@ const Step7: React.FC<Step7Props> = ({
         >
           Save
         </Button>
+        <div className="flex gap-4">
+          <Button
+            onClick={toggleIncludeCustomerMessage}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            {includeCustomerMessage
+              ? "Remove Customer Message"
+              : "Include Customer Message"}
+          </Button>
+          <Button
+            onClick={toggleIncludeVendorName}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            {includeVendorName ? "Remove Vendor Name" : "Include Vendor Name"}
+          </Button>
+        </div>
         <div className="flex flex-col justify-center items-center gap-2">
           <div className="md:flex gap-2 items-center">
             <Button
