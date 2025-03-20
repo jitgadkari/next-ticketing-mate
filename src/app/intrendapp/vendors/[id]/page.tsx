@@ -11,42 +11,50 @@ import toast from "react-hot-toast";
 interface Vendor {
   id: string;
   name: string;
-  fabric_type: string[];
-  width: string[];
-  content: string[];
-  type: string[];
-  certifications: string[];
-  approvals: string[];
-  weave: string[];
-  weave_type: string[];
-  designs: string[];
-  payment_terms: string;
-  delivery_destination: string;
-  delivery_terms: string[];
-  factory_location: string;
-  state: string;
-  phone: string;
   email: string;
-  gst_number: string;
-  pan_number: string;
+  phone: string;
   code: string;
+  attributes: {
+    width?: string[];
+    fabric_type?: string[];
+    content?: string[];
+    type?: string[];
+    certifications?: string[];
+    approvals?: string[];
+    weave?: string[];
+    weave_type?: string[];
+    designs?: string[];
+    delivery_terms?: string[];
+  };
+  vendor_people_list: { id: string; name: string }[];
+  state: string;
+  country: string;
+  delivery_destination: string;
   address: string;
   remarks: string;
-  vendor_people_list: { id: string; name: string }[]; // Linked vendor people
+  additional_info: Record<string, any>;
+  versions: any[];
+  created_date: string;
+  updated_date: string;
+  status: string;
+  factory_location: string;
+  gst_number: string;
+  pan_number: string;
+  mark_up:string;
 }
 
-interface Attributes {
-  fabric_type: string[];
-  width: string[];
-  content: string[];
-  type: string[];
-  certifications: string[];
-  approvals: string[];
-  weave: string[];
-  weave_type: string[];
-  designs: string[];
-  payment_terms: string[];
-  delivery_terms: string[];
+interface AttributesResponse {
+  timestamp: string;
+  attributes: {
+    type: string[];
+    weave: string[];
+    width: string[];
+    content: string[];
+    designs: string[];
+    certifications: string[];
+    delivery_terms: string[];
+  };
+  version_note: string;
 }
 
 interface Person {
@@ -64,7 +72,7 @@ const VendorDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
+  const [defaultAttributes, setDefaultAttributes] = useState<AttributesResponse | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
   // For vendor people, we store an array of JSON-stringified objects in "vendor_people_list".
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
@@ -93,27 +101,27 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchVendor = async (vendorId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`);
       const data = await response.json();
-      // Assuming API returns vendor as an array.
-      const fetchedVendor: Vendor = data.vendor[0];
+      console.log("fetchVendor", data)
+      const fetchedVendor: Vendor = data.vendor;
       setVendor(fetchedVendor);
-      // Initialize selectedAttributes from vendor.attributes and vendor_people_list.
+      // Initialize selectedAttributes from vendor.attributes
       setSelectedAttributes({
-        fabric_type: fetchedVendor.attributes.fabric_type || [],
-        width: fetchedVendor.attributes.width || [],
-        content: fetchedVendor.attributes.content || [],
-        type: fetchedVendor.attributes.type || [],
-        certifications: fetchedVendor.attributes.certifications || [],
-        approvals: fetchedVendor.attributes.approvals || [],
-        weave: fetchedVendor.attributes.weave || [],
-        weave_type: fetchedVendor.attributes.weave_type || [],
-        designs: fetchedVendor.attributes.designs || [],
-        delivery_terms: fetchedVendor.attributes.delivery_terms || [],
+        fabric_type: fetchedVendor.attributes?.fabric_type || [],
+        width: fetchedVendor.attributes?.width || [],
+        content: fetchedVendor.attributes?.content || [],
+        type: fetchedVendor.attributes?.type || [],
+        certifications: fetchedVendor.attributes?.certifications || [],
+        approvals: fetchedVendor.attributes?.approvals || [],
+        weave: fetchedVendor.attributes?.weave || [],
+        weave_type: fetchedVendor.attributes?.weave_type || [],
+        designs: fetchedVendor.attributes?.designs || [],
+        delivery_terms: fetchedVendor.attributes?.delivery_terms || [],
         vendor_people_list: fetchedVendor.vendor_people_list
           ? fetchedVendor.vendor_people_list.map((person) =>
-              JSON.stringify({ id: person.id, name: person.name })
-            )
+            JSON.stringify({ id: person.id, name: person.name })
+          )
           : []
       });
     } catch (error) {
@@ -123,8 +131,10 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchDefaultAttributes = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`);
       const data = await response.json();
+      console.log("[VendorDetails] Full attributes response:", data);
+      console.log("[VendorDetails] Attributes data structure:", data.attributes);
       setDefaultAttributes(data.attributes);
     } catch (error) {
       console.error("Error fetching default attributes:", error);
@@ -133,9 +143,10 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchUnlinkedPeople = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/unlinked`);
+      const response = await fetch( `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/unlinked`);
       const data = await response.json();
-      setUnlinkedPeople(data.data);
+      console.log("[VendorDetails] Fetching unlinked people",data);
+      setUnlinkedPeople(data.unlinked_people);
     } catch (error) {
       console.error("Error fetching unlinked people:", error);
     }
@@ -168,15 +179,15 @@ const VendorDetailsPage: React.FC = () => {
       try {
         // If no vendor people selected, fallback to original vendor_people_list.
         const vendorPeople = selectedAttributes.vendor_people_list.length > 0
-        ? selectedAttributes.vendor_people_list.map((personStr) => JSON.parse(personStr))
-        : vendor.vendor_people_list.map((person) => ({ id: person.id, name: person.name }));
-      
+          ? selectedAttributes.vendor_people_list.map((personStr) => JSON.parse(personStr))
+          : vendor.vendor_people_list.map((person) => ({ id: person.id, name: person.name }));
+
         // Remove any people keys from attributes.
-        const { people, vendor_people_list: _ignored, ...otherAttributes } = vendor.attributes;
+        // const { vendor_people_list: _ignored, ...otherAttributes } = vendor.attributes;       
         const update_dict = {
           ...vendor,
           attributes: {
-            ...otherAttributes,
+            ...vendor.attributes,
             fabric_type: selectedAttributes.fabric_type,
             width: selectedAttributes.width,
             content: selectedAttributes.content,
@@ -193,20 +204,16 @@ const VendorDetailsPage: React.FC = () => {
         console.log("Final update_dict:", update_dict);
         console.log(
           "Payload:",
-          JSON.stringify({
-            update_dict: { ...update_dict, delivery_destination: vendor.delivery_destination },
-          })
+          JSON.stringify({ ...update_dict, delivery_destination: vendor.delivery_destination })
         );
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/?vendor_id=${id}&user_id=1&user_agent=user-test`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${id}?userId=1&userAgent=user-test`,
           {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              update_dict: { ...update_dict, delivery_destination: vendor.delivery_destination },
-            }),
+            body: JSON.stringify({ ...update_dict, delivery_destination: vendor.delivery_destination }),
           }
         );
         if (response.ok) {
@@ -230,15 +237,16 @@ const VendorDetailsPage: React.FC = () => {
     if (attribute === "vendor_people_list") {
       return unlinkedPeople.map((person) => ({
         label: `${person.name} (${person.email})`,
-        // Use _id if available, otherwise fallback to person.id.
-        value: JSON.stringify({ id: person._id || person.id, name: person.name }),
+        value: JSON.stringify({ id: person._id || person._id, name: person.name }),
       }));
     }
-    const attributeKey = attribute === "payment_terms" ? "paymnent_terms" : attribute;
-    const defaultOpts = (defaultAttributes[attributeKey as keyof Attributes] as string[] || []);
+
+    // Get the default options from the attributes response
+    const defaultOpts = defaultAttributes?.attributes?.[attribute as keyof AttributesResponse['attributes']] || [];
     const selectedOpts = Array.isArray(selectedAttributes[attribute])
       ? (selectedAttributes[attribute] as string[])
       : [];
+
     const allOptions = Array.from(new Set([...defaultOpts, ...selectedOpts]));
     return allOptions.map((value) => ({
       label: value,
@@ -253,18 +261,18 @@ const VendorDetailsPage: React.FC = () => {
         <p><strong>Name:</strong> {vendor.name}</p>
         <p><strong>Email:</strong> {vendor.email}</p>
         <p><strong>Phone:</strong> {vendor.phone}</p>
-        <p><strong>State:</strong> {vendor.state}</p>
-        <p><strong>Country:</strong> {vendor.country}</p>
-        <p><strong>Mark Up:</strong> {vendor.mark_up}</p>
-        <p><strong>GST Number:</strong> {vendor.gst_number}</p>
-        <p><strong>PAN Number:</strong> {vendor.pan_number}</p>
-        <p><strong>Delivery Destination:</strong> {vendor.delivery_destination}</p>
-        <p><strong>Address:</strong> {vendor.address}</p>
-        <p><strong>Remarks:</strong> {vendor.remarks}</p>
+        <p><strong>Code:</strong> {vendor.code}</p>
+        <p><strong>Status:</strong> {vendor.status}</p>
+        <p><strong>State:</strong> {vendor.state || 'N/A'}</p>
+        <p><strong>Country:</strong> {vendor.country || 'N/A'}</p>
+        <p><strong>Factory Location:</strong> {vendor.factory_location || 'N/A'}</p>
+        <p><strong>Delivery Destination:</strong> {vendor.delivery_destination || 'N/A'}</p>
+        <p><strong>Address:</strong> {vendor.address || 'N/A'}</p>
+        <p><strong>Remarks:</strong> {vendor.remarks || 'N/A'}</p>
         <p>
           <strong>Attributes:</strong>{" "}
           {vendor.attributes && Object.keys(vendor.attributes).length > 0 ? (
-            <ul>
+            <ul className="list-disc pl-4">
               {Object.entries(vendor.attributes).map(([key, value]) => (
                 <li key={key}>
                   <strong>{key}:</strong>{" "}
@@ -279,10 +287,10 @@ const VendorDetailsPage: React.FC = () => {
         <p>
           <strong>Vendor People:</strong>{" "}
           {vendor.vendor_people_list && vendor.vendor_people_list.length > 0 ? (
-            <ul>
+            <ul className="list-disc pl-4">
               {vendor.vendor_people_list.map((person, index) => (
                 <li key={index}>
-                  <strong>ID:</strong> {person.id}, <strong>Name:</strong> {person.name}
+                  <strong>Name:</strong> {person.name} (<strong>ID:</strong> {person.id})
                 </li>
               ))}
             </ul>
@@ -290,8 +298,8 @@ const VendorDetailsPage: React.FC = () => {
             "None"
           )}
         </p>
-        <p><strong>Created Date:</strong> {vendor["created_date"]}</p>
-        <p><strong>Updated Date:</strong> {vendor["updated_date"]}</p>
+        <p><strong>Created Date:</strong> {new Date(vendor.created_date).toLocaleString()}</p>
+        <p><strong>Updated Date:</strong> {new Date(vendor.updated_date).toLocaleString()}</p>
       </div>
     </div>
   );
@@ -413,10 +421,10 @@ const VendorDetailsPage: React.FC = () => {
       <div>
         <label className="block text-gray-700">Select Vendor People</label>
         <MultiSelect
-          options={unlinkedPeople.map((person) => ({
+          options={unlinkedPeople?.map((person) => ({
             label: `${person.name} (${person.email})`,
-            value: JSON.stringify({ id: person._id || person.id, name: person.name }),
-          }))}
+            value: JSON.stringify({ id: person._id || person._id, name: person.name }),
+          })) || []}
           value={(selectedAttributes.vendor_people_list as string[]).map((personStr) => {
             const personObj = JSON.parse(personStr);
             return {

@@ -62,13 +62,18 @@ const CustomerList = ({
     const fetchAllCustomers = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`, {
+        // const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`, {
+        //   method: 'GET',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        // });
+        const response = await fetch("http://localhost:5001/api/customers?status=Active&limit=10&offset=0", {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-
         if (response.ok) {
           const data = await response.json();
           console.log(data)
@@ -119,7 +124,7 @@ const CustomerList = ({
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customer_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/${customer_id}`,
         {
           method: "DELETE",
         }
@@ -141,7 +146,7 @@ const CustomerList = ({
     console.log(customer_id)
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/soft_delete/${customer_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/soft_delete/${customer_id}`,
         {
           method: "DELETE",
         }
@@ -253,7 +258,7 @@ const CustomerList = ({
       {deleteCustomerId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
-          <p>Are you sure you want to soft delete this customer?</p>
+          <p>Are you sure you want to delete this customer?</p>
           <p className="text-gray-500 text-sm">Customer ID: {deleteCustomerId}</p> {/* Debugging */}
           <div className="flex justify-end mt-4">
             <button

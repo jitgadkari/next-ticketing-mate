@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "./page";
 import Pagination from "@/app/components/Pagination";
-import { useParams } from "next/navigation";
 import { MdOutlineFolderDelete } from "react-icons/md";
 
 interface PeopleListProps {
@@ -40,11 +39,10 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
     const fetchAllPeople = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/?status=Active&limit=10&offset=0`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?status=Active&limit=${pageFilter.limit}&offset=${pageFilter.offset}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
-
         if (response.ok) {
           const data = await response.json();
           console.log(data)
@@ -53,14 +51,14 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
             setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
           } else {
             setPeople([]);
-            toast.error("No people found");
+            // toast.error("No people found");
           }
         } else {
           const errorText = await response.text();
-          toast.error(`Failed to fetch people: ${errorText}`);
+          // toast.error(`Failed to fetch people: ${errorText}`);
         }
       } catch (error) {
-        toast.error("Error fetching people");
+        // toast.error("Error fetching people");
       } finally {
         setIsLoading(false);
       }
@@ -74,12 +72,12 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
       person.name.toLowerCase().includes(filterName.toLowerCase())
     );
     setPeople(filteredPeople.slice(0, pageFilter.limit)); // Adjust based on limit
-  }, [filterName, allPeople, pageFilter.limit]);
+  }, [filterName, allPeople, pageFilter.limit, pageFilter.offset]);
 
   const handleDelete = async (persons_id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${persons_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${persons_id}?userId=1&userAgent=user-test`,
         { method: "DELETE" }
       );
       if (response.ok) {
@@ -99,7 +97,7 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
     console.log(persons_id)
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/soft_delete/${persons_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/soft_delete/${persons_id}?userId=1&userAgent=user-test`,
         {
           method: "DELETE",
         }
@@ -153,15 +151,15 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
     <div className="p-8 bg-white rounded shadow text-black">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">People List</h1>
-        <button
+        {/* <button
           onClick={() => setShowFilter(!showFilter)}
           className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
         >
           {showFilter ? "Hide Filter" : "Show Filter"}
-        </button>
+        </button> */}
       </div>
 
-      {showFilter && (
+      {/* {showFilter && (
         <div className="mb-6">
           <input
             type="text"
@@ -171,7 +169,7 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
             className="p-2 w-full border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-400"
           />
         </div>
-      )}
+      )} */}
 
       {isLoading && <p className="text-center">Loading people...</p>}
 

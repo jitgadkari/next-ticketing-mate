@@ -45,7 +45,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
   }, [formData.linked_to]);
   const fetchCustomers = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers`);
       const data = await response.json();
       console.log(data.customers)
       setCustomers(data.customers);
@@ -56,7 +56,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
 
   const fetchVendors = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`);
       const data = await response.json();
       console.log(data.vendors)
       setVendors(data.vendors);
@@ -99,7 +99,7 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
     };
     console.log("Submitting Data:", submitData);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons?user_id=1&user_agent=user-test`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?userId=1&userAgent=user-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

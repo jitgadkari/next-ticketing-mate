@@ -14,6 +14,7 @@ interface PeopleMobileListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
+  onSearch?: (name: string) => void;
 }
 
 export default function PeopleMobileList({
@@ -24,51 +25,30 @@ export default function PeopleMobileList({
   onPrevious,
   onNext,
   onPageChange,
+  onSearch,
 }: PeopleMobileListProps) {
   const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
   const [filterName, setFilterName] = useState<string>("");
-  const [allPeople, setAllPeople] = useState<Person[]>([]); // To store all people data
+  const [debouncedFilterName, setDebouncedFilterName] = useState<string>("");
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Debounce the filter name updates
   useEffect(() => {
-    const fetchAllPeople = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/?status=Active&limit=10&offset=0`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+    const timeoutId = setTimeout(() => {
+      setDebouncedFilterName(filterName);
+    }, 300);
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.people && Array.isArray(data.people)) {
-            setAllPeople(data.people); // Store all people in state
-            setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
-          } else {
-            setPeople([]);
-            toast.error("No people found");
-          }
-        } else {
-          const errorText = await response.text();
-          toast.error(`Failed to fetch people: ${errorText}`);
-        }
-      } catch (error) {
-        toast.error("Error fetching people");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    return () => clearTimeout(timeoutId);
+  }, [filterName]);
 
-    fetchAllPeople();
-  }, [pageFilter.limit]);
-
+  // Fetch data when filter changes
   useEffect(() => {
-    const filteredPeople = allPeople.filter((person) =>
-      person.name.toLowerCase().includes(filterName.toLowerCase())
-    );
-    setPeople(filteredPeople.slice(0, pageFilter.limit)); // Adjust based on limit
-  }, [filterName, allPeople, pageFilter.limit]);
+    if (debouncedFilterName !== filterName && onSearch) {
+      onPageChange(1); // Reset to first page when filter changes
+      onSearch(debouncedFilterName); // Call parent's search handler
+    }
+  }, [debouncedFilterName, onSearch, onPageChange]);
 
   const handleDelete = async (personId: string): Promise<void> => {
     try {

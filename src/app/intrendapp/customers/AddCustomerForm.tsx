@@ -43,7 +43,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
 
   const fetchDefaultAttributes = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`);
       if (!response.ok) {
         throw new Error('Failed to fetch default attributes');
       }
@@ -70,7 +70,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/new/?user_id=1&user_agent=user-test`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/new?userId=1&userAgent=user-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -42,7 +42,7 @@ export default function CustomerMobileList({
     const fetchAllCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers`
         );
         if (response.ok) {
           const data = await response.json();
@@ -85,7 +85,7 @@ export default function CustomerMobileList({
   const handleDelete = async (customerId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customer/${customerId}`,
         {
           method: "DELETE",
         }

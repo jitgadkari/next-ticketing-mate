@@ -55,7 +55,7 @@ export default function VendorMobileList({
     const fetchAllVendors = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export default function VendorMobileList({
         }
       );
       if (response.ok) {
-        setVendors(vendors.filter((vendor) => vendor._id !== vendorId));
+        setVendors(vendors.filter((vendor) => vendor.id !== vendorId));
         setDeleteVendorId(null);
         toast.success("Vendor deleted successfully");
       } else {
@@ -179,7 +179,7 @@ export default function VendorMobileList({
       {/* Display vendor details */}
       {Array.isArray(vendors) && vendors.length > 0 ? (
   vendors.map((vendor) => (
-    <div key={vendor._id} className="bg-white text-black p-4 rounded-lg shadow-lg">
+    <div key={vendor.id} className="bg-white text-black p-4 rounded-lg shadow-lg">
       <div className="flex flex-col space-y-4 text-sm w-full">
         <div className="flex justify-between items-center">
           <div className="flex">
@@ -212,13 +212,13 @@ export default function VendorMobileList({
           </div>
         </div>
         <div className="flex justify-end space-x-4">
-          <Link href={`vendors/${vendor._id}`} passHref>
+          <Link href={`vendors/${vendor.id}`} passHref>
             <span className="text-blue-500 hover:text-blue-700">
               <FaEye />
             </span>
           </Link>
           <FaTrash
-            onClick={() => setDeleteVendorId(vendor._id)}
+            onClick={() => setDeleteVendorId(vendor.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
         </div>

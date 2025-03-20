@@ -54,13 +54,12 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
     const fetchAllVendors = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-        
         if (response.ok) {
           const data = await response.json();
           
@@ -109,7 +108,7 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
   const handleDelete = async (vendor_id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendor_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendor_id}?userId=1&userAgent=user-test`,
         {
           method: "DELETE",
         }
@@ -132,7 +131,7 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
     console.log(vendor_id)
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/soft_delete/$${vendor_id}?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/soft_delete/${vendor_id}?userId=1&userAgent=user-test`,
         {
           method: "DELETE",
         }

@@ -39,7 +39,7 @@ const CustomersPage = () => {
         offset: pageFilter.offset.toString(),
         limit: pageFilter.limit.toString(),
       });
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers?${queryParams.toString()}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers?${queryParams.toString()}`);
       const data = await response.json();
     
       setPageInfo((prev) => ({

@@ -95,7 +95,7 @@ const CustomerDetailsPage: React.FC = () => {
     console.log("[CustomerDetails] Fetching customer data:", customerId);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${customerId}`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/${customerId}`
       );
       const data = await response.json();
       console.log("[CustomerDetails] Customer data received:", data.customer);
@@ -121,17 +121,24 @@ const CustomerDetailsPage: React.FC = () => {
     console.log("[CustomerDetails] Fetching default attributes");
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`
       );
       const data = await response.json();
       console.log("[CustomerDetails] Default attributes received:", data);
+      
+      // Extract attributes from the nested structure
+      const attrs = data?.attributes?.attributes || {};
+      
       const defaultAttrs = {
-        fabric_type: data?.attributes?.fabric_type || [],
-        certifications: data?.attributes?.certifications || [],
-        approvals: data?.attributes?.approvals || [],
-        delivery_terms: data?.attributes?.delivery_terms || [],
-        paymnent_terms: data?.attributes?.paymnent_terms || [],
+        fabric_type: attrs.type || [],
+        weave: attrs.weave || [],
+        width: attrs.width || [],
+        content: attrs.content || [],
+        designs: attrs.designs || [],
+        certifications: attrs.certifications || [],
+        delivery_terms: attrs.delivery_terms || [],
       };
+      
       setDefaultAttributes(defaultAttrs);
       console.log("[CustomerDetails] Default attributes set:", defaultAttrs);
     } catch (error) {
@@ -142,10 +149,12 @@ const CustomerDetailsPage: React.FC = () => {
       );
       setDefaultAttributes({
         fabric_type: [],
+        weave: [],
+        width: [],
+        content: [],
+        designs: [],
         certifications: [],
-        approvals: [],
         delivery_terms: [],
-        paymnent_terms: [],
       });
     }
   };
@@ -154,11 +163,11 @@ const CustomerDetailsPage: React.FC = () => {
     console.log("[CustomerDetails] Fetching unlinked people");
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/people/unlinked`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/unlinked`
       );
       const data = await response.json();
       console.log("[CustomerDetails] Unlinked people received:", data);
-      setUnlinkedPeople(data.data);
+      setUnlinkedPeople(data.unlinked_people);
     } catch (error) {
       setError("Error fetching unlinked people");
       console.error("[CustomerDetails] Error fetching unlinked people:", error);
@@ -210,13 +219,13 @@ const CustomerDetailsPage: React.FC = () => {
         };
         console.log("[CustomerDetails] Submitting update:", update_dict);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/?customer_id=${id}&user_id=1&user_agent=user-test`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/${id}?userId=1&userAgent=user-test`,
           {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ update_dict }),
+            body: JSON.stringify(update_dict),
           }
         );
         const responseData = await response.json();

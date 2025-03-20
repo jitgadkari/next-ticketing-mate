@@ -38,13 +38,14 @@ const AttributesPage: React.FC = () => {
   const fetchAttributes = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`
       );
       const data = await response.json();
-      if (data && data.attributes) {
-        setAttributes(data.attributes);
-        setFormData(data.attributes);
-        initializeInputValues(data.attributes);
+      console.log(data)
+      if (data && data.attributes.attributes) {
+        setAttributes(data.attributes.attributes);
+        setFormData(data.attributes.attributes);
+        initializeInputValues(data.attributes.attributes);
       }
     } catch (error) {
       console.error("Error fetching attributes:", error);
@@ -97,7 +98,7 @@ const AttributesPage: React.FC = () => {
       const method = attributes ? 'PUT' : 'POST';
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes?user_id=1&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
         {
           method,
           headers: { "Content-Type": "application/json" },
@@ -283,11 +284,11 @@ const AttributesPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(attributes).map(([category, values]) => (
+              {Object.entries(attributes ?? {}).map(([category, values]) => (
                 <div key={category} className="p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-semibold mb-2">{category}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {values.map((value, index) => (
+                    {(Array.isArray(values) ? values : []).map((value, index) => (
                       <span
                         key={index}
                         className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"

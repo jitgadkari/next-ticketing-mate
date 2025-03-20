@@ -44,14 +44,14 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
     // delivery_destination: '',
     // delivery_terms: [],
     // factory_location: '',
-    state: ''
+    state: '',
     // gst_number: '',
     // pan_number: '',
     // group: '',
     // address: '',
     // remarks: '',
     // additional_info: '',
-    // country:''
+    country:''
   });
 
   const [defaultAttributes, setDefaultAttributes] = useState<Attributes | null>(null);
@@ -63,7 +63,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
 
   const fetchDefaultAttributes = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`);
       if (!response.ok) {
         throw new Error('Failed to fetch default attributes');
       }
@@ -90,7 +90,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/new/?user_id=1&user_agent=user-test`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/new?userId=1&userAgent=user-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,14 +120,14 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
           // delivery_destination: '',
           // delivery_terms: [],
           // factory_location: '',
-          state: ''
+          state: '',
           // gst_number: '',
           // pan_number: '',
           // group: '',
           // address: '',
           // remarks: '',
           // additional_info: '',
-          // country:''
+          country:''
         });
         toast.success("Vendor added successfully")
       } else {
@@ -189,14 +189,14 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
         onChange={handleChange}
         required
       />
-      {/* <Input
+      <Input
         label="Country"
         type="text"
         name="country"
         value={formData.country}
         onChange={handleChange}
         required
-      /> */}
+      />
       {/* <div>
         <label htmlFor="group" className="block text-sm font-medium text-gray-700">
           Group
