@@ -2,28 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { isAuthenticated } from '@/utils/auth';
 
 const IntrendApp = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error || !session) {
-          router.push('/login');
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        router.push('/login');
-      }
-    };
-
-    checkAuth();
+    if (!isAuthenticated()) {
+      router.push('/login');
+    }
+    setLoading(false);
   }, [router]);
 
   if (loading) {

@@ -2,38 +2,35 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { isAuthenticated, clearAuthData } from '@/utils/auth';
 
 export default function TopNavBar() {
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [authStatus, setAuthStatus] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         setIsMounted(true);
+        setAuthStatus(isAuthenticated());
 
-        // Check initial auth state
-        const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setIsAuthenticated(!!session);
+        // Listen for storage events to detect auth changes
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'access_token') {
+                setAuthStatus(isAuthenticated());
+            }
         };
-        checkAuth();
 
-        // Subscribe to auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setIsAuthenticated(!!session);
-        });
-
+        window.addEventListener('storage', handleStorageChange);
         return () => {
-            subscription.unsubscribe();
+            window.removeEventListener('storage', handleStorageChange);
         };
     }, []);
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
+    const handleLogout = () => {
+        clearAuthData();
         // The middleware will handle the redirect to login page
         router.push('/login');
     };
@@ -70,7 +67,7 @@ export default function TopNavBar() {
 
                 {isMounted && (
                     <div className="hidden md:flex items-center space-x-6">
-                        {isAuthenticated ? (
+                        {authStatus ? (
                             <div className="flex items-center space-x-4">
                                 <div className="relative">
                                     <button
@@ -129,7 +126,7 @@ export default function TopNavBar() {
             {isMounted && (
                 <div className={`md:hidden ${isMobileMenuOpen ? 'block fixed w-full z-[100]' : 'hidden'} bg-gray-700 text-white`}>
                     <ul className="flex flex-col p-4 space-y-2">
-                        {isAuthenticated ? (
+                        {authStatus ? (
                             <>
                                 <li>
                                     <Link href="/intrendapp/dashboard" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>

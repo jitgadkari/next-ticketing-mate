@@ -2,22 +2,17 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { isAuthenticated } from '@/utils/auth';
 
 export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/intrendapp');
-      } else {
-        router.push('/login');
-      }
-    };
-
-    checkAuth();
+    if (isAuthenticated()) {
+      router.push('/intrendapp/dashboard');
+    } else {
+      router.push('/login');
+    }
   }, [router]);
 
   return null; // or a loading spinner if you prefer

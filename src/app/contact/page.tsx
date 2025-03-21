@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@/lib/supabase";
+import { isAuthenticated } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -9,20 +9,18 @@ const Contact = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Check initial auth state
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
+    setIsAuthenticated(isAuthenticated());
+
+    // Listen for storage events to detect auth changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'access_token') {
+        setIsAuthenticated(isAuthenticated());
+      }
     };
-    checkAuth();
 
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 

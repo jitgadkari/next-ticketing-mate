@@ -2,13 +2,9 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { isAuthenticated, setAuthData } from '@/utils/auth';
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
@@ -18,13 +14,9 @@ const Login = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push("/intrendapp/tickets");
-      }
-    };
-    checkSession();
+    if (isAuthenticated()) {
+      router.push("/intrendapp/tickets");
+    }
   }, [router]);
 
   const handleLogin = async (e: FormEvent) => {
@@ -33,16 +25,25 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('http://localhost:5001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+console.log(data);
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
 
-      if (data.session) {
-        document.cookie = `sb-access-token=${data.session.access_token}; path=/; max-age=${data.session.expires_in}`;
-        localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.access_token) {
+        setAuthData(data.access_token, data.user_metadata);
         router.push("/intrendapp/dashboard");
       } else {
         setError("Authentication failed. Please try again.");

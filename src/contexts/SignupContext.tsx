@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateUserInput } from '@/utils/validation';
+import { setAuthData } from '@/utils/auth';
 
 interface SignupContextType {
 	formData: {
@@ -51,7 +52,7 @@ export function SignupProvider({ children }: { children: React.ReactNode }) {
 				return;
 			}
 
-			const response = await fetch('/api/auth/register', {
+			const response = await fetch('http://localhost:5001/api/auth/register', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -60,7 +61,7 @@ export function SignupProvider({ children }: { children: React.ReactNode }) {
 			});
 
 			const data = await response.json();
-
+console.log(data);
 			if (!response.ok) {
 				throw new Error(data.error || 'Failed to register');
 			}
@@ -75,7 +76,12 @@ export function SignupProvider({ children }: { children: React.ReactNode }) {
 				role: 'general_user'
 			});
 
-			router.push('/login');
+			if (data.token) {
+				setAuthData(data.token, data.user);
+				router.push('/intrendapp/dashboard');
+			} else {
+				router.push('/login');
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
 		}

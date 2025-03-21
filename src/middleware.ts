@@ -1,8 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase';
 
 export async function middleware(req: NextRequest) {
-
   const publicRoutes = ['/login', '/signup', '/about', '/contact', '/api/auth'];
   const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route));
 
@@ -10,23 +8,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const supabaseToken = req.cookies.get('sb-access-token')?.value;
+  const token = req.cookies.get('access_token')?.value;
 
-  if (!supabaseToken) {
+  if (!token) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser(supabaseToken);
-
-    if (error || !user) {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
-
-    return NextResponse.next();
-  } catch (error) {
-    return NextResponse.redirect(new URL('/login', req.url));
-  }
+  return NextResponse.next();
 }
 
 export const config = {

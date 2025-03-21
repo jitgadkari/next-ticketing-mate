@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { supabase } from '@/lib/supabase';
+import { isAuthenticated } from '@/utils/auth';
+
 
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
@@ -12,20 +13,18 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
-    
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthValid(!!session);
+    setIsAuthValid(isAuthenticated());
+
+    // Listen for storage events to detect auth changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'access_token') {
+        setIsAuthValid(isAuthenticated());
+      }
     };
 
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthValid(!!session);
-    });
-
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
