@@ -32,7 +32,7 @@ const stepsOrder = [
   "Step 2 : Message Decoded",
   "Step 3 : Message Template for vendors",
   "Step 4 : Vendor Selection",
-  "Step 5: Messages from Vendors",
+  "Step 5 : Messages from Vendors",
   "Step 6 : Vendor Message Decoded",
   "Step 7 : Customer Message Template",
   "Step 8 : Customer Response",
@@ -54,7 +54,7 @@ const TicketDetailsPage = () => {
   const fetchTicket = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/${ticketId}`
       );
       const data = await response.json();
       setTicket(data.ticket);
@@ -179,13 +179,15 @@ const TicketDetailsPage = () => {
         />
         );
 
-      case "Step 5: Messages from Vendors":
-        console.log(ticket.steps[step])
-        console.log(ticket.steps[step].latest.vendors)
+      case "Step 5 : Messages from Vendors":
+        const step5Data = ticket.steps[step];
+        const vendorMessages = step5Data?.latest?.vendors || {};
+        console.log("Step 5 data:", step5Data);
+        console.log("Vendor messages:", vendorMessages);
         return (
           <Step5
             ticketNumber={ticket.ticket_number}
-            vendorMessages={ticket.steps[step].latest.vendors }
+            vendorMessages={vendorMessages}
             isCurrentStep={step === ticket.current_step}
             ticket={ticket}
             setActiveStep={setActiveStep}

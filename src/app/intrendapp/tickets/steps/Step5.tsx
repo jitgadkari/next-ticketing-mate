@@ -78,7 +78,7 @@ const Step5: React.FC<Step5Props> = ({
   >({});
 
   const allVersions = useMemo(() => {
-    const stepData = ticket.steps["Step 5: Messages from Vendors"] || {};
+    const stepData = ticket.steps["Step 5 : Messages from Vendors"] || {};
     const versions = stepData.versions || [];
 
     const versionList = [
@@ -146,7 +146,7 @@ const Step5: React.FC<Step5Props> = ({
         try {
           // Fetch decoded message
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_vendor_message_decode`,
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/groq/vendor_message_decode`,
             {
               method: "POST",
               headers: {
@@ -224,7 +224,7 @@ const Step5: React.FC<Step5Props> = ({
             decoded_messages: vendorDecodedMessages,
             time: currentTime,
           },
-          step_number: "Step 5: Messages from Vendors",
+          step_number: "Step 5 : Messages from Vendors",
           updated_date: currentTime,
         };
 
@@ -271,25 +271,31 @@ const Step5: React.FC<Step5Props> = ({
       })
     );
 
+    const formattedVendors = vendors.map(vendor => ({
+      vendor_id: vendor.vendor_id,
+      name: vendor.vendor_name,
+      response_received: vendor.response_received,
+      response_message: vendor.response_message || ""
+    }));
+
     const payload = {
       ticket_id: ticket.id,
       step_info: {
-        vendors,
+        vendors: formattedVendors
       },
-      step_number: ticket.current_step,
-      updated_date: new Date().toISOString(),
+      step_number: "Step 5 : Messages from Vendors"
     };
     console.log("update payload.....", payload);
 
     try {
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         }
       );
     } catch (error) {
@@ -358,7 +364,7 @@ const Step5: React.FC<Step5Props> = ({
   const fetchVendors = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors_all`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`
       );
       const data = await response.json();
       console.log(data);
@@ -396,7 +402,7 @@ const Step5: React.FC<Step5Props> = ({
         return;
       }
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
         {
           method: "POST",
           headers: {
@@ -440,7 +446,7 @@ const Step5: React.FC<Step5Props> = ({
 
     // After fetchTicket completes, use the updated ticket prop
     const updatedVendorMessages =
-      ticket.steps["Step 5: Messages from Vendors"]?.latest?.vendors || {};
+      ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors || {};
     console.log("Updated vendor messages:", updatedVendorMessages);
     // Update state with the latest vendor messages
     setMessages(updatedVendorMessages);
@@ -457,7 +463,7 @@ const Step5: React.FC<Step5Props> = ({
       <div className="flex justify-between py-2">
         <div className="flex items-center space-x-4">
           <h3 className="text-xl font-bold mb-4">
-            Step 5: Messages from Vendors
+            Step 5 : Messages from Vendors
           </h3>
           {isCurrentStep && allVersions.length > 1 && (
             <select
@@ -484,7 +490,7 @@ const Step5: React.FC<Step5Props> = ({
         <div key={vendor_id} className="mb-4">
           <div className=" flex justify-between items-center">
             <label className="block text-gray-700 font-bold mb-2">
-              {message.vendor_name}
+              {message.name}
             </label>
             <label className="block text-gray-700 font-bold mb-2">
               Vendor Responded : {message.response_received ? "YES" : "NO"}

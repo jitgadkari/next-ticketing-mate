@@ -14,14 +14,13 @@ interface AddTicketFormProps {
 export interface Customer {
   id: string;
   name: string;
+  status: 'Active' | 'Inactive';
   customer_people_list: Person[];
 }
 
 export interface Person {
-  _id: string;
+  id: string;
   name: string;
-  email: string;
-  phone: string;
 }
 
 interface FormData {
@@ -52,9 +51,10 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers/all/`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers`);
         const data = await response.json();
-        setCustomers(data);
+        console.log("Customer Data",data)
+        setCustomers(data.customers);
 
         if (initialCustomer) {
           const selectedCustomer = data.find((c: Customer) => c.name === initialCustomer);
@@ -118,7 +118,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
     }
 
     const currentDate = new Date().toISOString();
-    
+
     const payload = {
       customer_id: formData.customer_id,
       customer_name: formData.customer_name,
@@ -132,11 +132,11 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       // updated_date: currentDate,
       status: "Active"
     };
-    
+
     try {
       console.log("Submitting Ticket:", payload);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/create/?user_id=573c7b4-0621-4d23-8d02-d964c66025b3&user_agent=user-test`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/create?userId=573c7b4-0621-4d23-8d02-d964c66025b3&userAgent=user-test`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +144,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
         },
         body: JSON.stringify(payload),
       });
-      
+
       const responseData = await response.json().catch(() => ({}));
       console.log("Server response:", responseData);
 
@@ -188,13 +188,18 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
         {showDropDown && (
           <div className="bg-white shadow rounded-lg w-full max-h-40 overflow-auto">
             <ul className="py-2 text-sm text-gray-700">
-              {customers.map((customer) => (
+              {Array.isArray(customers) && customers.map((customer) => (
                 <li
                   key={customer.id}
-                  className="block px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className={`block px-4 py-2 hover:bg-gray-100 cursor-pointer ${customer.status === 'Inactive' ? 'opacity-60' : ''}`}
                   onClick={() => handleCustomerSelect(customer)}
                 >
-                  {customer.name}
+                  <div className="flex justify-between items-center">
+                    <span>{customer.name}</span>
+                    {customer.status === 'Inactive' && (
+                      <span className="text-xs px-2 py-1 bg-gray-200 rounded-full">Inactive</span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -220,41 +225,21 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       {/* Person Selection */}
       {formData.customer_people_list.length > 0 && (
         <div className="mb-4">
-          <label>Person</label>
-          <button
-            className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5"
-            type="button"
-            onClick={() => setShowPersonDropDown(!showPersonDropDown)}
+          <label className="block text-sm font-medium text-gray-700 mb-1">Person</label>
+          <select
+            name="person_name"
+            value={formData.person_name}
+            onChange={handleChange}
+            className="border rounded-lg px-4 py-2 w-full bg-white"
+            required
           >
-            {formData.person_name || "Select Person"}
-          </button>
-
-          {showPersonDropDown && (
-            <div className="bg-white shadow rounded-lg w-44">
-              <ul className="py-2 text-sm text-gray-700">
-                {people.length > 0 ? (
-                  people.map((person) => (
-                    <li
-                      key={person._id}
-                      className="block px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          person_name: person.name,
-                          from_number: person.phone + "@c.us",
-                        });
-                        setShowPersonDropDown(false);
-                      }}
-                    >
-                      {person.name}
-                    </li>
-                  ))
-                ) : (
-                  <li className="block px-4 py-2 text-gray-500">No people available</li>
-                )}
-              </ul>
-            </div>
-          )}
+            <option value="">Select Person</option>
+            {formData.customer_people_list.map((person) => (
+              <option key={person.id} value={person.name}>
+                {person.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 

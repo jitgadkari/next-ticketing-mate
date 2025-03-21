@@ -167,7 +167,7 @@ const Step2: React.FC<Step2Props> = ({
     console.log("Payload:", JSON.stringify(payload));
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -198,62 +198,9 @@ const Step2: React.FC<Step2Props> = ({
   const handleSave = async () => {
     const updatedData = JSON.parse(message);
     console.log("updatedData from save button: ", updatedData);
-    await handleUpdate(updatedData);
-    setIsEditing(false);
-  };
-
-  const handleNextStep = async () => {
-    setLoading(true);
     try {
-      const messageText =
-        typeof originalMessage === "string"
-          ? originalMessage
-          : JSON.parse(originalMessage).text || "";
-      console.log(ticket.ticket_number, messageText);
-      console.log("payload...",JSON.stringify({
-        vendor_name: "{VENDOR}",
-        customerMessage: messageText,
-        ticket_number: ticket.ticket_number,
-        asked_details:ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages,
-        asked_details_required: false,
-      }))
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            vendor_name: "{VENDOR}",
-            customerMessage: messageText,
-            ticket_number: ticket.ticket_number,
-            asked_details:ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages,
-            asked_details_required: false,
-          }),
-        }
-      );
-      console.log(response);
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(
-          `Failed to generate vendor message template: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      console.log(data);
-      const vendorMessageTemplate = data;
-      console.log(vendorMessageTemplate);
-
-      console.log("payload...",({
-        ticket_id: ticket.id,
-        step_info: { vendor_message_temp: vendorMessageTemplate },
-        step_number: step,
-      }))
-      const updateResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -261,24 +208,68 @@ const Step2: React.FC<Step2Props> = ({
           },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_info: { vendor_message_temp: vendorMessageTemplate },
+            step_info: {
+              decoded_messages: updatedData
+            },
             step_number: step,
           }),
         }
       );
-      console.log(updateResponse);
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json();
-        console.error("Error response:", errorData);
-        throw new Error(
-          `Failed to update next step: ${updateResponse.statusText}`
-        );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Update failed:", errorData);
+        toast.error("Failed to save changes");
+        return;
       }
-      const responseData = await updateResponse.json();
+      
+      const responseData = await response.json();
       console.log("Update successful:", responseData);
+      toast.success("Changes saved successfully");
+      await fetchTicket(ticket.id);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error during save:", error);
+      toast.error("Failed to save changes");
+    }
+  };
+
+  const handleNextStep = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              vendor_message_temp: "", // This will be populated by the backend
+              decoded_messages: JSON.parse(message)
+            },
+            step_number: step
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        toast.error("Failed to proceed to next step");
+        setLoading(false);
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log("Next step update successful:", responseData);
       await handleNext();
     } catch (error) {
       console.error("Error preparing for next step:", error);
+      toast.error("Failed to proceed to next step");
+      setLoading(false);
     }
   };
   console.log(message);

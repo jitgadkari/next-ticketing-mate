@@ -309,7 +309,7 @@ const Step7: React.FC<Step7Props> = ({
 
   const handleNext = async () => {
     await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
       {
         method: "PUT",
         headers: {
@@ -338,7 +338,7 @@ const Step7: React.FC<Step7Props> = ({
       const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
 
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -380,7 +380,7 @@ const Step7: React.FC<Step7Props> = ({
 
       console.log("Moving to next step...");
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
         {
           method: "PUT",
           headers: {

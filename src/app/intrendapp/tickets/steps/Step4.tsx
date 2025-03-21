@@ -22,12 +22,10 @@ interface Vendor {
 }
 
 interface VendorData {
-  vendor_name: string;
+  name: string;
+  vendor_id: string;
   message_temp?: string;
-  message_sent?: {
-    whatsapp: boolean;
-    email: boolean;
-  };
+  message_sent?: boolean;
 }
 
 interface Step4Props {
@@ -68,7 +66,7 @@ const Step4: React.FC<Step4Props> = ({
   }
 
   const stepData = ticket.steps[ticket.current_step] || {};
-  const versions = stepData.versions || [];
+  const versions = Array.isArray(stepData.versions) ? stepData.versions : [];
 
   // Add latest version to the versions array for unified handling
   const allVersions = [
@@ -78,14 +76,18 @@ const Step4: React.FC<Step4Props> = ({
       vendors: stepData.latest?.vendors || {}
     },
     ...versions.map((v: StepVersion) => ({
-      version: v.time,
-      time: v.time,
-      vendors: v.vendors
+      version: v.time || 'unknown',
+      time: v.time || 'No timestamp',
+      vendors: v.vendors || {}
     }))
-  ];
+  ].filter(v => v.time && typeof v.time === 'string');
 
   // Sort versions by time in descending order (newest first)
-  allVersions.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  allVersions.sort((a, b) => {
+    if (a.time === 'No timestamp') return -1;
+    if (b.time === 'No timestamp') return 1;
+    return new Date(b.time).getTime() - new Date(a.time).getTime();
+  });
 
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
 
@@ -115,17 +117,18 @@ const Step4: React.FC<Step4Props> = ({
 
         // Update selected options
         const selectedVendorOptions = (Object.entries(vendors) as Array<[string, VendorData]>).map(([id, vendorData]) => ({
-          label: vendorData.vendor_name,
-          value: vendorData.vendor_name,
-          id: id,
+          label: vendorData.name,
+          value: vendorData.name,
+          id: vendorData.vendor_id,
         }));
+        console.log("selectedVendorOptions:", selectedVendorOptions);
         setSelectedOptions(selectedVendorOptions);
 
         // Update vendor messages
         const newMessages: Record<string, string> = {};
         (Object.entries(vendors) as Array<[string, VendorData]>).forEach(([id, vendorData]) => {
           if (vendorData.message_temp) {
-            newMessages[vendorData.vendor_name] = vendorData.message_temp;
+            newMessages[vendorData.name] = vendorData.message_temp;
           }
         });
         setVendorMessages(newMessages);
@@ -141,9 +144,9 @@ const Step4: React.FC<Step4Props> = ({
   console.log("selectedVendors1:", selectedVendors1);
   const [selectedOptions, setSelectedOptions] = useState<MultiSelectOption[]>(
     Object.entries(selectedVendors1.vendors || {}).map(([id, vendor]: [string, VendorData]) => ({
-      label: vendor.vendor_name,
-      value: vendor.vendor_name,
-      id: id,
+      label: vendor.name,
+      value: vendor.name,
+      id: vendor.vendor_id,
     }))
   );
   console.log("selectedOptions:", selectedOptions);
@@ -176,6 +179,7 @@ const Step4: React.FC<Step4Props> = ({
     console.log("Step 4 updated vendors:", updatedVendors);
     const vendorsToUpdate = updatedVendors.map((vendorName) => {
       const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
+      console.log("Vendor found:", vendor);
       return {
         vendor_id: vendor?.id,
         vendor_name: vendorName,
@@ -191,7 +195,7 @@ const Step4: React.FC<Step4Props> = ({
     try {
       // Save Step 4 data
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_specific_step/?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -233,7 +237,7 @@ const Step4: React.FC<Step4Props> = ({
 
       // await fetchTicket(ticket.id);
       // setLoading(false);
-      // setActiveStep("Step 5: Messages from Vendors");
+      // setActiveStep("Step 5 : Messages from Vendors");
       // toast.success("Step 4 completed");
     } catch (error) {
       console.error("Error updating steps:", error);
@@ -242,56 +246,32 @@ const Step4: React.FC<Step4Props> = ({
 
   const handleUpdate = async (updatedVendors: string[]) => {
     console.log("Updating Step 4 vendors:", updatedVendors);
-    console.log("vendor details", vendorDetails);
-
-    // Map updatedVendors to the desired structure
-    const vendorsToUpdate = updatedVendors
-      .map((vendorName) => {
-        const vendor = vendorDetails.find((v) => v.name === vendorName);
-        // If vendor or vendor._id is not found, skip this entry or provide a fallback
-        if (!vendor || !vendor.id) {
-          console.error(`Vendor ID not found for ${vendorName}`);
-          return null; // or return a fallback object if appropriate
-        }
-        return {
-          vendor_id: vendor.id, // Ensured to be a string
-          vendor_name: vendorName,
-          message_temp: vendorMessages[vendorName] || "",
-          message_sent: {
-            whatsapp: false,
-            email: false,
-          },
-        };
-      })
-      .filter((vendor) => vendor !== null); // remove any null entries
-
-    console.log("mapped vendors......", vendorsToUpdate);
-
-    try {
-      // Get the current step data
-      const currentStepData = ticket.steps[ticket.current_step] || {};
-      const currentVersions = currentStepData.versions || [];
-
-      // Create new version data
-      const newVersion = {
-        time: new Date().toISOString(),
-        vendors: vendorsToUpdate.reduce((acc: Record<string, any>, vendor: any) => {
-          if (vendor && vendor.vendor_id) {
-            acc[vendor.vendor_id] = {
-              vendor_name: vendor.vendor_name,
-              message_temp: vendor.message_temp,
-              message_sent: vendor.message_sent
-            };
-          }
-          return acc;
-        }, {})
+  
+    // Convert vendors array to object with vendor_id as keys
+    const vendorsObject = updatedVendors.reduce((acc, vendorName) => {
+      const vendor = vendorDetails.find((v) => v.name === vendorName);
+      if (!vendor || !vendor.id) {
+        console.error(`Vendor ID not found for ${vendorName}`);
+        return acc;
+      }
+  
+      // Get existing message sent status if available
+      const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
+  
+      acc[vendor.id] = {
+        vendor_id: vendor.id,
+        name: vendorName, // Make sure the name is correctly set
+        message_temp: vendorMessages[vendorName] || "",
+        message_sent: existingVendorData.message_sent || false
       };
-
-      // Add current version to versions array
-      const updatedVersions = [newVersion, ...currentVersions];
-
+      return acc;
+    }, {} as Record<string, any>);
+  
+    console.log("Mapped vendors for save:", vendorsObject);
+  
+    try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -299,23 +279,18 @@ const Step4: React.FC<Step4Props> = ({
           },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_number: ticket.current_step,
             step_info: {
-              vendors: vendorsToUpdate,
-              versions: updatedVersions,
-              latest: {
-                time: newVersion.time,
-                vendors: newVersion.vendors
-              }
+              vendors: vendorsObject
             },
+            step_number: ticket.current_step
           }),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`Failed to save: ${response.status}`);
       }
-
+  
       await fetchTicket(ticket.id);
       toast.success("Changes saved successfully");
     } catch (error) {
@@ -323,6 +298,7 @@ const Step4: React.FC<Step4Props> = ({
       toast.error("Failed to save changes");
     }
   };
+  
 
   // Initialize version data and vendor messages when component mounts
   useEffect(() => {
@@ -336,12 +312,12 @@ const Step4: React.FC<Step4Props> = ({
       const newMessages: Record<string, string> = {};
       const newSelectedOptions = (Object.entries(vendors) as Array<[string, VendorData]>).map(([id, vendor]) => {
         if (vendor.message_temp) {
-          newMessages[vendor.vendor_name] = vendor.message_temp;
+          newMessages[vendor.name] = vendor.message_temp;
         }
         return {
-          label: vendor.vendor_name,
-          value: vendor.vendor_name,
-          id: id,
+          label: vendor.name,
+          value: vendor.name,
+          id: vendor.vendor_id,
         };
       });
 
@@ -364,8 +340,9 @@ const Step4: React.FC<Step4Props> = ({
 
       // Update messages for currently selected vendors
       selectedOptions.forEach((option) => {
-        if (option.id && vendors[option.id]?.message_temp) {
-          newMessages[option.value] = vendors[option.id].message_temp;
+        const vendorData = vendors[option.id];
+        if (vendorData?.message_temp) {
+          newMessages[vendorData.name] = vendorData.message_temp;
         } else {
           // Keep existing message if available, otherwise empty string
           newMessages[option.value] = vendorMessages[option.value] || '';
@@ -388,11 +365,11 @@ const Step4: React.FC<Step4Props> = ({
   console.log("selectedOptions", selectedOptions);
   console.log("template", template);
   useEffect(() => {
-    if (selectedOptions.length > 0 && template) {
+    if (selectedOptions.length > 0) {
       console.log("Selected options:", selectedOptions);
       generateVendorMessages();
     }
-  }, [selectedOptions, template]);
+  }, [selectedOptions]);
 
   // const fetchCustomer=async()=>{
   //   try {
@@ -411,110 +388,84 @@ const Step4: React.FC<Step4Props> = ({
 
 
   const fetchVendors = async () => {
-    console.log("Fetching vendors with filters...");
+    console.log("Fetching all vendors...");
     try {
+      // Commented filtered vendors code for future reference
+      /*
       const decoded_messages = ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages;
-      console.log("Decoded messages:", decoded_messages);
-
-      // Construct filters dictionary from decoded messages
-      // Clean and validate decoded messages
       const cleanDecodedMessages = Object.entries(decoded_messages).reduce((acc, [key, value]) => {
-        // Only include non-null and non-"Null" values
         if (value && value !== "Null" && value !== "null") {
           acc[key] = value;
         }
         return acc;
       }, {} as Record<string, any>);
 
-      console.log("Cleaned decoded messages:", cleanDecodedMessages);
-
-      // Construct filters dictionary from cleaned messages
-      const filters_dict: Record<string, any> = {
-        epi: cleanDecodedMessages.ppi,
-        ppi: cleanDecodedMessages.ppi,
-        unit: cleanDecodedMessages.unit,
-        weave: cleanDecodedMessages.weave,
-        width1: cleanDecodedMessages.width1,
-        width2: cleanDecodedMessages.width2,
-        width3: cleanDecodedMessages.width3,
-        content: cleanDecodedMessages.content,
-        special: cleanDecodedMessages.special,
-        quantity: cleanDecodedMessages.quantity,
-        approvals: cleanDecodedMessages.approvals,
-        warp_type: cleanDecodedMessages.warp_type,
-        weft_type: cleanDecodedMessages.weft_type,
-        other_info: cleanDecodedMessages.other_info,
-        warp_count: cleanDecodedMessages.warp_count,
-        weave_type: cleanDecodedMessages.weave_type,
-        weft_count: cleanDecodedMessages.weft_count,
-        fabric_type: cleanDecodedMessages.fabric_type,
-        construction: cleanDecodedMessages.construction,
-        warp_content: cleanDecodedMessages.warp_content,
-        weft_content: cleanDecodedMessages.weft_content,
-        certifications: cleanDecodedMessages.certifications,
-        additional_info: cleanDecodedMessages.additional_info,
-        content_percentage: cleanDecodedMessages.content_percentage
+      const filters_dict = {
+        // ... filters dictionary construction
       };
-
-      // Remove undefined values from filters_dict
-      const cleanedFilters = Object.entries(filters_dict).reduce((acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as Record<string, any>);
-
-      // Prepare request payload
-      const requestPayload = {
-        filters_dict: cleanedFilters,
-        limit: 10,
-        offset: 0,
-        sort_field: "created_date",
-        sort_order: "desc"
-      };
-      console.log(requestPayload.filters_dict)
-      console.log("Request payload for filtered vendors:", JSON.stringify(requestPayload, null, 2));
+      */
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendors/filtered`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors?limit=10`,
         {
-          method: "POST",
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestPayload),
+          }
         }
       );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("API Response Data:", data);
-      console.log("Raw API Response:", JSON.stringify(data, null, 2));
+      const vendorsData = await response.json();
+      console.log("Fetched vendors:", vendorsData);
 
-      // Handle the response data
-      const rawVendors = Array.isArray(data) ? data : data.vendors || [];
-      const vendorsList = rawVendors.map((v: any): Vendor => ({
-        id: v.id,
-        name: v.name,
-        group: v.group,
-        email: v.email,
-        phone: v.phone
-      }));
+      // Handle both array and object response formats
+      const vendorData = Array.isArray(vendorsData.vendors) ? vendorsData.vendors : Object.values(vendorsData.vendors || {});
+      console.log("Vendor data from API:", vendorData);
+      
+      // Map vendors ensuring all required fields
+      const vendorsList = vendorData
+        .filter((v: any) => v && (v.id || v.vendor_id)) // Ensure we have an ID
+        .map((v: any): Vendor => {
+          // Get the correct ID and name fields
+          const vendorId = v.vendor_id || v.id;
+          const vendorName = v.name || (ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]?.name) || 'Unnamed Vendor';
+          
+          return {
+            id: vendorId,
+            name: vendorName,
+            group: v.group || "",
+            email: v.email || "",
+            phone: v.phone || ""
+          };
+        });
 
+      console.log("Mapped vendors list:", vendorsList);
+      
       if (vendorsList.length > 0) {
-        console.log("Successfully fetched filtered vendors:", vendorsList);
-        setVendors(
-          vendorsList.map((vendor: Vendor) => ({
-            label: vendor.name,
-            value: vendor.name,
+        console.log("Setting vendors in dropdown...");
+        // Use existing vendor data from ticket if available
+        const vendorOptions = vendorsList.map((vendor: Vendor) => {
+          // Check if we have existing data for this vendor in the ticket
+          const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id];
+          const option = {
+            label: existingVendor?.name || vendor.name,
+            value: existingVendor?.name || vendor.name,
             id: vendor.id,
-          }))
-        );
+          };
+          console.log("Created vendor option:", option);
+          return option;
+        });
+        
+        console.log("Final vendor options:", vendorOptions);
+        setVendors(vendorOptions);
         setVendorDetails(vendorsList);
       } else {
-        console.error("Unexpected response format. Expected {vendors: Array}. Got:", data);
+        console.log("No valid vendors found");
+        toast.error("No valid vendors available");
       }
     } catch (error) {
       console.error("Error fetching filtered vendors:", error);
@@ -531,31 +482,86 @@ const Step4: React.FC<Step4Props> = ({
 
   const generateVendorMessages = async () => {
     const messages: Record<string, string> = {};
+    const customerMessage = ticket.steps["Step 1 : Customer Message Received"]?.latest?.text;
+    const decodedMessages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
+    
     for (const option of selectedOptions) {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/replace_vendor_with_name`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              message_template: template,
               vendor_name: option.value,
+              customerMessage: customerMessage,
+              ticket_number: ticket.ticket_number,
+              asked_details: {
+                epi: decodedMessages.epi || "Null",
+                ppi: decodedMessages.ppi || "Null",
+                unit: decodedMessages.unit || "Null",
+                weave: decodedMessages.weave || "Null",
+                width1: decodedMessages.width1 || "Null",
+                width2: decodedMessages.width2 || "Null",
+                width3: decodedMessages.width3 || "Null",
+                content: decodedMessages.content || "Null",
+                special: decodedMessages.special || "Null",
+                quantity: decodedMessages.quantity || "Null",
+                approvals: decodedMessages.approvals || "Null",
+                warp_type: decodedMessages.warp_type || "Null",
+                weft_type: decodedMessages.weft_type || "Null",
+                other_info: decodedMessages.other_info || "Null",
+                warp_count: decodedMessages.warp_count || "Null",
+                weave_type: decodedMessages.weave_type || "Null",
+                weft_count: decodedMessages.weft_count || "Null",
+                fabric_type: decodedMessages.fabric_type || "Null",
+                construction: decodedMessages.construction || "Null",
+                warp_content: decodedMessages.warp_content || "Null",
+                weft_content: decodedMessages.weft_content || "Null",
+                certifications: decodedMessages.certifications || "Null",
+                additional_info: decodedMessages.additional_info || "Null",
+                content_percentage: decodedMessages.content_percentage || "Null"
+              },
+              asked_details_required: false
             }),
           }
         );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-        messages[
-          option.value
-        ] = `${data}\n Ticket Number: ${ticket.ticket_number}`;
+        
+        // Handle different response formats
+        let vendorMessage;
+        if (data[option.value]?.message) {
+          // New format with nested vendor object
+          vendorMessage = data[option.value].message;
+        } else if (typeof data === 'string') {
+          // Handle case where API returns direct string
+          vendorMessage = data;
+        } else if (data.message) {
+          // Handle case where message is directly in response
+          vendorMessage = data.message;
+        } else {
+          throw new Error('Invalid response format: message not found');
+        }
+
+        // Store the message for this vendor
+        messages[option.value] = vendorMessage;
+        
+        // Log success for debugging
+        console.log(`Successfully generated message for ${option.value}:`, vendorMessage);
       } catch (error) {
         console.error(
           `Error generating message for vendor ${option.value}:`,
           error
         );
-        messages[option.value] = "Error generating message";
+        messages[option.value] = "Error generating message. Please try again.";
+        toast.error(`Failed to generate message for ${option.value}`);
       }
     }
     setVendorMessages(messages);
@@ -571,7 +577,8 @@ const Step4: React.FC<Step4Props> = ({
     await handleUpdate(updatedVendors);
   };
 
-  console.log(ticket.steps[ticket.current_step].latest);
+  const currentStepData = ticket.steps[ticket.current_step]?.latest;
+  console.log('Current step data:', currentStepData ? JSON.stringify(currentStepData) : 'No data available');
 
   const handleSendMessage = async () => {
     setIsWhatsAppSending(true);
@@ -607,12 +614,9 @@ const Step4: React.FC<Step4Props> = ({
         // Return vendor info with updated message_sent status
         return {
           vendor_id: vendor.id,
-          vendor_name: vendor.name,
+          name: vendor.name, // Changed from vendor_name to name
           message_temp: vendorMessages[option.value] || "",
-          message_sent: {
-            whatsapp: true,
-            email: false, // unchanged for now
-          },
+          message_sent: true // Changed to boolean
         };
       });
 
@@ -630,19 +634,26 @@ const Step4: React.FC<Step4Props> = ({
 
   interface VendorResult {
     vendor_id: string;
-    vendor_name: string;
+    name: string; // Changed from vendor_name to name
     message_temp: string;
-    message_sent: {
-      whatsapp: boolean;
-      email: boolean;
-    };
+    message_sent: boolean; // Changed from object to boolean
   }
 
   const updateTicketWithSentStatus = async (results: VendorResult[]) => {
     try {
-      // Here, results already contain the updated vendor data.
+      // Convert results array to object with vendor_id as keys
+      const vendorsObject = results.reduce((acc, vendor) => {
+        acc[vendor.vendor_id] = {
+          name: vendor.name,
+          vendor_id: vendor.vendor_id,
+          message_temp: vendor.message_temp,
+          message_sent: vendor.message_sent
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -651,7 +662,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_number: ticket.current_step,
-            step_info: { vendors: results },
+            step_info: { vendors: vendorsObject },
           }),
         }
       );
@@ -726,7 +737,7 @@ const Step4: React.FC<Step4Props> = ({
   const updateTicketWithSentStatusEmail = async (results: VendorResult[]) => {
     try {
       await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -746,89 +757,85 @@ const Step4: React.FC<Step4Props> = ({
   };
 
 
-  // This function now builds the Step 5 payload as an array of vendor objects
   const handleNextStep = async () => {
-    // Get vendor names from the selected options
-    const updatedVendors = selectedOptions.map((option) => option.value);
-    console.log("Next Step vendors:", updatedVendors);
-
-    // For each vendor, use saved message status if it exists; otherwise default to false
-    const vendorsToUpdate = updatedVendors.map((vendorName) => {
-      const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
-      if (!vendor) {
-        console.error(`Vendor not found for ${vendorName}`);
-        return null;
-      }
-      // Look for any saved data for this vendor from Step 4 using the vendor's id as key
-      const savedData = ticket.steps[ticket.current_step]?.latest[vendor.id] || {};
-      return {
-        vendor_id: vendor.id,
-        vendor_name: vendorName,
-        message_temp: vendorMessages[vendorName] || "",
-        message_sent: savedData.message_sent
-          ? savedData.message_sent
-          : { whatsapp: false, email: false },
-      };
-    }).filter((v): v is NonNullable<typeof v> => v !== null);
-
-    console.log("Mapped vendors for Step 4 update:", vendorsToUpdate);
-    console.log("payload", JSON.stringify({
-      ticket_id: ticket.id,
-      step_number: ticket.current_step,
-      step_info: { vendors: vendorsToUpdate },
-    }));
-
     try {
-      // Update Step 4 with the vendor details (including the message sent status)
-      await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ticket_id: ticket.id,
-            step_number: ticket.current_step,
-            step_info: { vendors: vendorsToUpdate },
-          }),
+      // First, update current step (Step 4)
+      const step4VendorsObj = selectedOptions.reduce((acc, option) => {
+        const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
+        if (!vendor) {
+          console.error(`Vendor not found for ${option.value}`);
+          return acc;
         }
-      );
-
-      // Initialize Step 5 payload as an array instead of an object
-      const emptyVendorMessages = selectedOptions.map((option) => {
-        const vendor = vendorDetails.find((v) => v.name === option.value);
-        return {
-          vendor_id: vendor?.id,
-          vendor_name: vendor?.name,
-          response_received: false,
-          response_message: "",
-          message_received_time: "", // Could also be a timestamp if needed
+        const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
+        
+        acc[vendor.id] = {
+          vendor_id: vendor.id,
+          name: option.value,
+          message_temp: vendorMessages[option.value] || "",
+          message_sent: existingVendorData.message_sent || false
         };
-      });
+        return acc;
+      }, {} as Record<string, any>);
 
-      console.log("Step 5 initial vendor messages:", emptyVendorMessages);
+      console.log("Step 4 vendors object:", step4VendorsObj);
 
-      // Update Step 5 with the empty messages array
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+      // Update Step 4 with object format
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_info: { vendors: emptyVendorMessages },
-            step_number: ticket.current_step,
+            step_info: { vendors: step4VendorsObj },
+            step_number: ticket.current_step
           }),
         }
       );
-      console.log(response);
 
-      // Optionally fetch updated ticket data and move to Step 5
+      // Initialize Step 5 vendors with empty responses (as array for Step 5)
+      const step5VendorsArray = selectedOptions.map((option) => {
+        const vendor = vendorDetails.find((v) => v.name === option.value);
+        if (!vendor) {
+          console.error(`Vendor not found for ${option.value}`);
+          return null;
+        }
+        return {
+          vendor_id: vendor.id,
+          name: option.value,
+          response_received: false,
+          response_message: ""
+        };
+      }).filter((v): v is NonNullable<typeof v> => v !== null);
+
+      console.log("Step 5 vendors array:", step5VendorsArray);
+
+      // Update next step (Step 5) with array format
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: { vendors: step5VendorsArray },
+            step_number: "Step 5 : Messages from Vendors"
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update next step: ${response.status}`);
+      }
+
       await fetchTicket(ticket.id);
       setLoading(false);
-      setActiveStep("Step 5: Messages from Vendors");
+      setActiveStep("Step 5 : Messages from Vendors");
       toast.success("Step 4 completed");
     } catch (error) {
       console.error("Error updating steps:", error);
+      toast.error("Failed to proceed to next step");
+      setLoading(false);
     }
   };
 
@@ -864,7 +871,7 @@ const Step4: React.FC<Step4Props> = ({
           <div className="py-1 mb-4">
             <h1 className="text-xl font-bold ">Customer Message</h1>
             <div>
-              {ticket.steps["Step 1 : Customer Message Received"].latest.text}
+              {ticket.steps["Step 1 : Customer Message Received"]?.latest?.text || 'No customer message available'}
             </div>
           </div>
           <div className="flex justify-between items-center mb-4">
@@ -897,8 +904,8 @@ const Step4: React.FC<Step4Props> = ({
                     {option.value}
                   </label>
                   <textarea
-                    defaultValue={vendorMessages[option.value] || ''}
-                    onBlur={(e) => handleVendorMessageChange(option.value, e.target.value)}
+                    value={vendorMessages[option.value] || ''}
+                    onChange={(e) => handleVendorMessageChange(option.value, e.target.value)}
                     className="w-full h-32 p-2 border rounded mt-2"
                     placeholder="Enter message for vendor"
                   />

@@ -47,7 +47,7 @@ const Step1: React.FC<Step1Props> = ({
       // Decode the message
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_customer_message_decode`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/groq/customer_message_decode`,
         {
           method: "POST",
           headers: {
@@ -64,17 +64,17 @@ const Step1: React.FC<Step1Props> = ({
       }
 
       const decoded_messages = await response.json();
-      const parsedMessage = JSON.parse(decoded_messages);
-      // console.log(parsedMessage);
       console.log("payload", {
         ticket_id: ticket.id,
-        step_info:  { decoded_messages: parsedMessage },
+        step_info: { decoded_messages },
         step_number: step,
       });
       // Update Step 2 with the decoded message
-    if(ticket.id, decoded_messages){
+      if (ticket.id && decoded_messages) {
+        const updatedTicket = await fetchTicket(ticket.id);
+        console.log("updated ticket", updatedTicket);
       const updateResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -82,7 +82,7 @@ const Step1: React.FC<Step1Props> = ({
           },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_info:  { decoded_messages: parsedMessage },
+            step_info: { decoded_messages },
             step_number: step,
           }),
         }

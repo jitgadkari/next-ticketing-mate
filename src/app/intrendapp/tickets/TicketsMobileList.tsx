@@ -107,7 +107,7 @@ export default function TicketsMobileList({
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL
-          }/tickets?${queryParams.toString()}`
+          }/api/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
         // console.log("Raw ticket data:", data.tickets);
@@ -145,7 +145,7 @@ export default function TicketsMobileList({
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers`
         );
         const data = await response.json();
         setCustomers(data.customers);
@@ -159,7 +159,7 @@ export default function TicketsMobileList({
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/${ticketId}`,
         {
           method: "DELETE",
         }

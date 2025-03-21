@@ -4,10 +4,11 @@ import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import toast from "react-hot-toast";
+import { types } from "util";
 
 interface Step3Props {
   ticketNumber: string;
-  template: string;
+  template: Template;
   customerName: string;
   originalMessage: string;
   isCurrentStep: boolean;
@@ -24,6 +25,10 @@ interface Step3Props {
   };
   step: string;
 }
+
+type Template = {
+  message: string;
+};
 
 const Step3: React.FC<Step3Props> = ({
   ticketNumber,
@@ -88,46 +93,64 @@ const Step3: React.FC<Step3Props> = ({
       }
     }
   };
-  const [message, setMessage] = useState(template);
+  console.log("template", template);
+  const [message, setMessage] = useState(() => {
+    // Initialize from latest version if available, otherwise use template
+    if (stepData.latest?.vendor_message_temp) {
+      return stepData.latest.vendor_message_temp;
+    }
+    return template?.message ?? '';
+  });
+  console.log("message",message)
   // Initialize includeCustomerName based on whether the template includes customer name
   const [includeCustomerName, setIncludeCustomerName] = useState(() => {
-    return template ? template.includes(`Customer Name: ${customerName}`) : true;
+    // Support both active and inactive customers per SelectCustomerDropdown requirements
+    const templateMessage = template?.message ?? '';
+    return templateMessage.includes(`Customer Name: ${customerName}`);
   });
   const [includeSampleQuery, setIncludeSampleQuery] = useState(() => {
-    return template ? template.includes('This is a Sample Query') : false;
+    const templateMessage = template?.message ?? '';
+    return templateMessage.includes('This is a Sample Query');
   });
   const [includeDecodedMessage, setIncludeDecodedMessage] = useState(() => {
     // Initialize based on whether the template includes decoded messages
     return template && ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages
-      ? message === template // If template exists, check if current message matches it
+      ? message === template.message // If template exists, check if current message matches it
       : false;
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const initializeState = async () => {
-      if (!template) {
-        fetchTicket(ticket.id);
+      // If we have stepData with a message, use that
+      if (stepData.latest?.vendor_message_temp) {
+        setMessage(stepData.latest.vendor_message_temp);
         return;
       }
-      setMessage(template);
-
-      // Check if the initial template matches what would be returned with decoded messages
-      try {
-        const decodedTemplate = await message_decoder(true);
-        setIncludeDecodedMessage(template === decodedTemplate);
-      } catch (error) {
-        console.error('Error checking initial decoded message state:', error);
+      
+      // Otherwise fall back to template
+      if (template?.message) {
+        setMessage(template.message);
+        // Check if the initial template matches what would be returned with decoded messages
+        try {
+          const decodedTemplate = await message_decoder(true);
+          setIncludeDecodedMessage(template.message === decodedTemplate);
+        } catch (error) {
+          console.error('Error checking initial decoded message state:', error);
+        }
+      } else {
+        // If no template, try to fetch ticket data
+        fetchTicket(ticket.id);
       }
     };
 
     initializeState();
-  }, [template]);
+  }, [template, stepData]);
 
   const handleUpdate = async (updatedTemplate: string) => {
     console.log(updatedTemplate);
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
       {
         method: "PUT",
         headers: {
@@ -138,7 +161,7 @@ const Step3: React.FC<Step3Props> = ({
           step_info: {
             vendor_message_temp: updatedTemplate,
           },
-          step_number: step,
+          step_number: "Step 3 : Message Template for vendors",
         }),
       }
     );
@@ -151,8 +174,9 @@ const Step3: React.FC<Step3Props> = ({
     try {
       setLoading(true);
       await handleUpdate(message);
-      await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+      
+      const nextStepResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -161,16 +185,25 @@ const Step3: React.FC<Step3Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: [] },
-            step_number: step,
+            step_number: "Step 3 : Message Template for vendors",
           }),
         }
       );
+
+      if (!nextStepResponse.ok) {
+        const errorData = await nextStepResponse.json();
+        throw new Error(`Failed to update next step: ${errorData.message || nextStepResponse.statusText}`);
+      }
+
+      const nextStepData = await nextStepResponse.json();
+      console.log('Next step update successful:', nextStepData);
 
       setActiveStep("Step 4 : Vendor Selection");
       toast.success("Step 3 completed");
       await fetchTicket(ticket.id);
     } catch (error) {
       console.error("Error updating ticket:", error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update ticket');
     } finally {
       setLoading(false);
     }
@@ -195,10 +228,10 @@ const Step3: React.FC<Step3Props> = ({
     setIncludeCustomerName(!includeCustomerName);
     if (!includeCustomerName) {
       setMessage(
-        (prevMessage) => `${prevMessage}\n\nCustomer Name: ${customerName}`
+        (prevMessage: string) => `${prevMessage}\n\nCustomer Name: ${customerName}`
       );
     } else {
-      setMessage((prevMessage) =>
+      setMessage((prevMessage: string) =>
         prevMessage.replace(`\n\nCustomer Name: ${customerName}`, "")
       );
     }
@@ -207,9 +240,9 @@ const Step3: React.FC<Step3Props> = ({
   const toggleSampleQuery = () => {
     setIncludeSampleQuery(!includeSampleQuery);
     if (!includeSampleQuery) {
-      setMessage((prevMessage) => `${prevMessage}\n\nThis is a Sample Query`);
+      setMessage((prevMessage: string) => `${prevMessage}\n\nThis is a Sample Query`);
     } else {
-      setMessage((prevMessage) =>
+      setMessage((prevMessage: string) =>
         prevMessage.replace(`\n\nThis is a Sample Query`, "")
       );
     }
@@ -247,7 +280,7 @@ const Step3: React.FC<Step3Props> = ({
 
   const message_decoder = async (includeDecodedMessage: boolean) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_vendor_direct_message`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
       {
         method: "POST",
         headers: {
@@ -274,7 +307,7 @@ const Step3: React.FC<Step3Props> = ({
 
     const data = await response.json();
     console.log(data);
-    const vendorMessageTemplate = data;
+    const vendorMessageTemplate = data.message;
     console.log(vendorMessageTemplate);
     return vendorMessageTemplate;
   };

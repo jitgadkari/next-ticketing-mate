@@ -45,7 +45,7 @@ const Step9: React.FC<Step9Props> = ({
     console.log("Closing ticket with status:", closingStatus);
     setLoading(true);
     await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
         {
             method: "PUT",
             headers: {
@@ -71,7 +71,7 @@ const Step9: React.FC<Step9Props> = ({
     console.log("Sending final-status:", status);
     
     await fetch(
-       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_step/specific?user_id=1234&user_agent=user-test`,
+       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
         {
             method: "PUT",
             headers: {

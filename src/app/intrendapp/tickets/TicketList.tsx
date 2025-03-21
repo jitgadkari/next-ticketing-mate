@@ -102,7 +102,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
         const response = await fetch(
           `${
             process.env.NEXT_PUBLIC_ENDPOINT_URL
-          }/tickets?${queryParams.toString()}`
+          }/api/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
         console.log(data)
@@ -135,7 +135,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers`
         );
         const data = await response.json();
         setCustomers(data.customers);
@@ -149,7 +149,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/delete`,
+    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/delete`,
         {
           method: 'DELETE',
           headers: {
@@ -157,8 +157,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           },
           body: JSON.stringify({
             ticket_id: ticketId,
-            user_id: '1',
-            user_agent: 'user-test'
+            userId: '1',
+            userAgent: 'user-test'
           }),
         }
       );
@@ -178,7 +178,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const handleSoftDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/soft_delete`,
+    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/soft_delete`,
         {
           method: 'PUT',
           headers: {
@@ -187,8 +187,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           body: JSON.stringify({
             ticket_id: ticketId,
             changed_status: 'Closed',
-            user_id: '1',
-            user_agent: 'user-test'
+            userId: '1',
+            userAgent: 'user-test'
           }),
         }
       );
