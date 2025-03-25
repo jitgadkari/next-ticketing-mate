@@ -31,6 +31,7 @@ interface Customer {
   additional_info: string;
   code: string;
   mark_up: string;
+  whatsapp_groups?: { id: string; name: string }[];
   status?: string;
   created_date?: string;
   updated_date?: string;
@@ -54,6 +55,21 @@ interface Person {
   linked: string;
   linked_to: string | null;
   linked_to_id: string | null;
+}
+
+interface IntegrationResponse {
+  latest?: {
+    integrations?: {
+      whatsapp?: {
+        groups?: Array<{
+          id: string;
+          group_id?: string;
+          name: string;
+          group_name?: string;
+        }>;
+      };
+    };
+  };
 }
 
 const CustomerDetailsPage: React.FC = () => {
@@ -82,12 +98,14 @@ const CustomerDetailsPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [whatsappGroups, setWhatsappGroups] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     if (id) {
       fetchCustomer(id as string);
       fetchDefaultAttributes();
       fetchUnlinkedPeople();
+      fetchWhatsappGroups();
     }
   }, [id]);
 
@@ -175,6 +193,23 @@ const CustomerDetailsPage: React.FC = () => {
     }
   };
 
+  const fetchWhatsappGroups = async () => {
+    try {
+      const response = await fetch("http://localhost:5001/api/integrations/latest");
+      if (response.ok) {
+        const data: IntegrationResponse = await response.json();
+        const groups = data.latest?.integrations?.whatsapp?.groups || [];
+        const formattedGroups = groups.map(group => ({
+          id: group.id || group.group_id || '',
+          name: group.name || group.group_name || 'Unnamed Group'
+        }));
+        setWhatsappGroups(formattedGroups);
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp groups:", error);
+    }
+  };
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -191,6 +226,16 @@ const CustomerDetailsPage: React.FC = () => {
       ...prevState,
       [name]: selected.map((option: Option) => option.value),
     }));
+  };
+
+  const handleWhatsappGroupsChange = (selected: Option[]) => {
+    if (customer) {
+      const selectedGroups = selected.map(option => JSON.parse(option.value));
+      setCustomer({
+        ...customer,
+        whatsapp_groups: selectedGroups
+      });
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -406,6 +451,21 @@ const CustomerDetailsPage: React.FC = () => {
           labelledBy="Select Customer People"
         />
       </div>
+      <div>
+        <label className="block text-gray-700">WhatsApp Groups</label>
+        <MultiSelect
+          options={whatsappGroups.map(group => ({
+            label: group.name,
+            value: JSON.stringify(group)
+          }))}
+          value={(customer.whatsapp_groups || []).map(group => ({
+            label: group.name,
+            value: JSON.stringify(group)
+          }))}
+          onChange={handleWhatsappGroupsChange}
+          labelledBy="Select WhatsApp Groups"
+        />
+      </div>
       <div className="flex justify-end space-x-4">
         <Button
           type="button"
@@ -495,6 +555,18 @@ const CustomerDetailsPage: React.FC = () => {
                   </li>
                 )
               )}
+            </ul>
+          ) : (
+            "None"
+          )}
+        </p>
+        <p>
+          <strong>WhatsApp Groups:</strong>{" "}
+          {customer.whatsapp_groups && customer.whatsapp_groups.length > 0 ? (
+            <ul>
+              {customer.whatsapp_groups.map((group, index) => (
+                <li key={index}>{group.name}</li>
+              ))}
             </ul>
           ) : (
             "None"

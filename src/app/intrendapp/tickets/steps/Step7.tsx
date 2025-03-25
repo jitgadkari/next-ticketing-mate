@@ -87,7 +87,7 @@ const Step7: React.FC<Step7Props> = ({
 
   interface CustomerData {
     customer_people_list: CustomerPerson[];
-    group?: Record<string, string>;
+    whatsapp_groups?: Array<{ id: string; name: string }>;
   }
 
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
@@ -241,10 +241,10 @@ const Step7: React.FC<Step7Props> = ({
 
   const handleGroupSelect = (groupId: string) => {
     setSelectedGroup(groupId);
-    // Find the group name from groupOptions
-    const selectedGroupName = Object.entries(groupOptions).find(([name, id]) => id === groupId)?.[0];
+    // Find the group details from whatsapp_groups array
+    const selectedGroupData = customerData?.whatsapp_groups?.find(group => group.id === groupId);
     console.log("Selected Group Details:", {
-      groupName: selectedGroupName,
+      groupName: selectedGroupData?.name,
       groupId: groupId,
     });
   };
@@ -311,15 +311,16 @@ const Step7: React.FC<Step7Props> = ({
         // Initialize with default empty values following the pattern
         setCustomerData({
           customer_people_list: customer.customer_people_list || [],
-          group: customer.group || {}
+          whatsapp_groups: customer.whatsapp_groups || []
         });
         setPeopleOptions(customer.people || []);
-        setGroupOptions(customer.group || {});
+        // No need for groupOptions since we'll use whatsapp_groups directly
+        setGroupOptions({}); 
       } else {
         // Set default empty values if no data
         setCustomerData({
           customer_people_list: [],
-          group: {}
+          whatsapp_groups: []
         });
         setPeopleOptions([]);
         setGroupOptions({});
@@ -330,7 +331,7 @@ const Step7: React.FC<Step7Props> = ({
       // Set default empty values on error
       setCustomerData({
         customer_people_list: [],
-        group: {}
+        whatsapp_groups: []
       });
       setPeopleOptions([]);
       setGroupOptions({});
@@ -522,11 +523,17 @@ const Step7: React.FC<Step7Props> = ({
 
         const data = await response.json();
         console.log("WhatsApp message response:", data);
-        setSendingStatus("WhatsApp message sent successfully");
-        setMessagesSent((prev) => ({
-          ...prev,
-          whatsApp: true,
-        }));
+        
+        if (data.success) {
+          setSendingStatus("WhatsApp message sent successfully");
+          toast.success("WhatsApp message sent successfully");
+          setMessagesSent((prev) => ({
+            ...prev,
+            whatsapp: true,
+          }));
+        } else {
+          throw new Error(data.message || "Failed to send WhatsApp message");
+        }
       } else if (type === "whatsAppGroup") {
         if (!selectedGroup) {
           toast.error("Please select a group");
@@ -539,7 +546,7 @@ const Step7: React.FC<Step7Props> = ({
         console.log("Sending WhatsApp message to group:", targetNumber);
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
           {
             method: "POST",
             headers: {
@@ -547,7 +554,7 @@ const Step7: React.FC<Step7Props> = ({
             },
             body: JSON.stringify({
               to: targetNumber,
-              message: template.trim()
+              content: template.trim()
             }),
           }
         );
@@ -558,14 +565,20 @@ const Step7: React.FC<Step7Props> = ({
 
         const data = await response.json();
         console.log("WhatsApp message response:", data);
-        setSendingStatus("WhatsApp message sent successfully");
-        setMessagesSent((prev) => ({
-          ...prev,
-          whatsApp: true,
-        }));
+        
+        if (data.success) {
+          setSendingStatus("WhatsApp message sent successfully");
+          toast.success("WhatsApp message sent successfully");
+          setMessagesSent((prev) => ({
+            ...prev,
+            whatsapp: true,
+          }));
+        } else {
+          throw new Error(data.message || "Failed to send WhatsApp message");
+        }
       } else if (type === "email") {
         const sendEmailResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/send_email/`,
           {
             method: "POST",
             headers: {
@@ -610,14 +623,17 @@ const Step7: React.FC<Step7Props> = ({
         );
         const data = await response.json();
         console.log("Person data:", data);
-        if (data.person && data.person[0]?.phone) {
-          const person = data.person[0];
-          console.log("Setting phone number:", person.phone);
-          setSelectedPersonPhone(person.phone);
+        
+        // Access the person object from the response
+        const personData = data.person;
+        console.log("Person data:", personData);
+        if (personData && personData.phone) {
+          setSelectedPersonPhone(personData.phone);
           setSelectedContact({
-            id: personId,
-            name: person.name || ''
+            id: personData.id,
+            name: personData.name
           });
+          toast.success(`Selected ${personData.name}`);
         } else {
           setSelectedPersonPhone("");
           setSelectedContact(null);
@@ -813,9 +829,9 @@ const Step7: React.FC<Step7Props> = ({
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select a group...</option>
-                {Object.entries(groupOptions).map(([groupName, groupId]) => (
-                  <option key={groupId} value={groupId}>
-                    {groupName}
+                {(customerData?.whatsapp_groups || []).map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
                   </option>
                 ))}
               </select>
