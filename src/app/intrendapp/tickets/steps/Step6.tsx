@@ -68,8 +68,8 @@ const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (path
       type={typeof value === "number" ? "number" : "text"}
       value={value?.toString() || ""}
       onChange={(e) => {
-        const newValue = e.target.type === "number" ? 
-          (e.target.value === "" ? "" : parseFloat(e.target.value)) : 
+        const newValue = e.target.type === "number" ?
+          (e.target.value === "" ? "" : parseFloat(e.target.value)) :
           e.target.value;
         onEdit?.(path, newValue);
       }}
@@ -88,8 +88,8 @@ const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (path
                   {key.replace(/_/g, " ")}
                 </td>
                 <td className="py-1 px-2 text-sm">
-                  {isEditing && onEdit && typeof val !== "object" ? 
-                    renderInput([...path, key], val) : 
+                  {isEditing && onEdit && typeof val !== "object" ?
+                    renderInput([...path, key], val) :
                     renderValue([...path, key], val)}
                 </td>
               </tr>
@@ -98,9 +98,9 @@ const NestedDataTable: React.FC<{ data: any; isEditing?: boolean; onEdit?: (path
         </table>
       );
     }
-    
-    return isEditing && onEdit ? 
-      renderInput(path, value) : 
+
+    return isEditing && onEdit ?
+      renderInput(path, value) :
       String(value) || "Not Found";
   };
 
@@ -170,7 +170,7 @@ const Step6: React.FC<Step6Props> = ({
     useState<DecodedMessages>(decodedMessages);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
- 
+
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
 
   const allVersions = useMemo(() => {
@@ -225,12 +225,12 @@ const Step6: React.FC<Step6Props> = ({
     console.log('Step 6 - Selected version:', selectedVersion);
     const versionData = allVersions.find(v => v.version === selectedVersion);
     console.log('Step 6 - Version data found:', versionData);
-    
+
     if (versionData?.data) {
       // Following initialization pattern from MEMORY
       const decodedMessages = versionData.data.decoded_messages || {};
       console.log('Step 6 - Setting messages:', decodedMessages);
-      
+
       // Always provide default values for decoded_messages state
       const newState = { decoded_messages: decodedMessages };
       setAllDecodedMessages(newState);
@@ -247,29 +247,29 @@ const Step6: React.FC<Step6Props> = ({
   ) => {
     setAllDecodedMessages((prev) => {
       const updated = structuredClone(prev);
-      const bulkData = updated.decoded_messages[vendor].decoded_response[type];
-
-      // Navigate to the correct nested object using the path
-      let target = bulkData;
-      const lastKey = path[path.length - 1];
       
-      // Navigate through the path except the last key
+      // Get reference to the nested object
+      let target = updated.decoded_messages[vendor].decoded_response;
+      
+      // Navigate through the path to set the value
       for (let i = 0; i < path.length - 1; i++) {
+        if (!target[path[i]]) {
+          target[path[i]] = {};
+        }
         target = target[path[i]];
       }
-
-      // Update the value at the final path
-      if (target && typeof target === 'object') {
-        target[lastKey] = value;
-      }
-
+      
+      // Set the value at the final path
+      const lastKey = path[path.length - 1];
+      target[lastKey] = value;
+      
       // Also update selectedMessages to stay in sync
       setSelectedMessages(structuredClone(updated));
       return updated;
     });
   };
-  
-  
+
+
 
   const handleNext = async () => {
     console.log("Handling next for Step 6");
@@ -283,7 +283,7 @@ const Step6: React.FC<Step6Props> = ({
     setSelectedMessages((prev) => {
       const updated = structuredClone(prev);
       if (!updated.decoded_messages) updated.decoded_messages = {};
-      
+
       if (isChecked) {
         // Remove this vendor's messages
         delete updated.decoded_messages[vendor];
@@ -291,7 +291,7 @@ const Step6: React.FC<Step6Props> = ({
         // Add this vendor's messages back
         updated.decoded_messages[vendor] = allDecodedMessages.decoded_messages[vendor];
       }
-      
+
       return updated;
     });
   };
@@ -304,7 +304,7 @@ const Step6: React.FC<Step6Props> = ({
     console.log("Updating Step 6 messages:", allDecodedMessages);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
@@ -349,77 +349,122 @@ const Step6: React.FC<Step6Props> = ({
 
   const handleNextStep = async () => {
     try {
-        setLoading(true);
-        console.log("Selected Messages:", selectedMessages);
+      setLoading(true);
+      console.log("Selected Messages:", selectedMessages);
 
-        // Extract vendor information properly (excluding unnecessary metadata)
-        // const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
-        //     (acc, [vendorId, vendorData]) => {
-        //         acc[vendorData.vendor_name] = vendorData.decoded_response;
-        //         return acc;
-        //     }, 
-        //     {} as Record<string, any>
-        // );
+      // Extract vendor information properly with the correct nested structure
+      const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
+          (acc, [vendorId, vendorData]) => {
+              // Extract message types (Bulk, Sample, etc) from the decoded_response
+              const messageTypes = vendorData.decoded_response?.message?.message || {};
+              
+              // Format each message type with its rate and schedule details
+              acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
+                  (typeAcc, [type, details]: [string, any]) => {
+                      typeAcc[type] = {
+                          rate: details.rate || {},
+                          schedule: details.schedule || {}
+                      };
+                      return typeAcc;
+                  }, 
+                  {}
+              );
+              return acc;
+          },
+          {} as Record<string, any>
+      );
 
-        // // Create the correct request payload
-        // const requestPayload = {
-        //     customer_name: customerName,
-        //     customerMessage: originalMessage,
-        //     vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
-        //     ticket_number: ticket.ticket_number,
-        //     send_vendor_name: true,
-        //     customerMessageRequired: true,
-        // };
+      // Create the correct request payload
+      const requestPayload = {
+          customer_name: customerName,
+          customer_message: originalMessage,
+          vendor_delivery_info: formattedVendorInfo,
+          ticket_number: ticket.ticket_number,
+          send_vendor_name: true,
+          customer_message_required: true
+      };
 
-        // console.log("Corrected Request Payload:", requestPayload);
+      console.log("Generating template with payload:", requestPayload);
 
-        // // Generate client message template
-        // const response = await fetch(
-        //     `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
-        //     {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         },
-        //         body: JSON.stringify(requestPayload), 
-        //     }
-        // );
+      // Generate client message template
+      const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/client_direct_message`,
+          {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify(requestPayload), 
+          }
+      );
 
-        // if (!response.ok) {
-        //     throw new Error("Failed to generate client message template");
-        // }
+      if (!response.ok) {
+          throw new Error("Failed to generate client message template");
+      }
 
-        // const data = await response.json();
-        // const clientMessageTemplate = data.client_message_template;
-        // console.log("Client Message Template:", clientMessageTemplate);
+      const data = await response.json();
+      // The template is in data.message for this API
+      const clientMessageTemplate = data.message;
+      console.log("Generated template:", clientMessageTemplate);
 
-        // Update Step 7 with the generated template
-        await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ticket_id: ticket.id,
-                    step_info: {
-                        customer_message_template: "",
-                        message_sent: { whatsapp: false, email: false },
-                    },
-                    step_number: ticket.current_step,
-                }),
-            }
-        );
+      // First update Step 6 with selected messages
+      const step6Response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              decoded_messages: selectedMessages.decoded_messages,
+              customer_message_template: clientMessageTemplate
+            },
+            step_number: "Step 6 : Vendor Message Decoded"
+          }),
+        }
+      );
 
-        handleNext(); // Proceed to the next step
+      if (!step6Response.ok) {
+        throw new Error("Failed to update Step 6");
+      }
+
+      // Then update Step 7 with the generated template
+      const step7Response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              customer_message_template: clientMessageTemplate,
+              message_sent: {
+                whatsapp: false,
+                email: false
+              }
+            },
+            step_number: "Step 6 : Vendor Message Decoded"
+          }),
+        }
+      );
+
+      if (!step7Response.ok) {
+        throw new Error("Failed to update Step 7");
+      }
+
+      await fetchTicket(ticket.id);
+      handleNext(); // Proceed to the next step
     } catch (error) {
-        console.error("Error preparing for next step:", error);
-        toast.error("Failed to proceed to next step");
+      console.error("Error preparing for next step:", error);
+      toast.error("Failed to proceed to next step: " + (error instanceof Error ? error.message : String(error)));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   console.log("allDecodedMessages", allDecodedMessages);
   return (
@@ -427,7 +472,7 @@ const Step6: React.FC<Step6Props> = ({
       <div className="py-1 mb-4">
         <h1 className="text-xl font-bold">Customer Message</h1>
         <div>
-          {ticket.steps["Step 1 : Customer Message Received"].latest.text}
+          {ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}
         </div>
       </div>
 
@@ -478,7 +523,7 @@ const Step6: React.FC<Step6Props> = ({
         )}
       </div>
 
-      {Object.entries(allDecodedMessages.decoded_messages).map(
+      {Object.entries(allDecodedMessages?.decoded_messages || {}).map(
         ([vendorId, vendorData]) => (
           <div
             key={vendorId}
@@ -487,53 +532,50 @@ const Step6: React.FC<Step6Props> = ({
             {/* Vendor Header Information */}
             <div className="mb-4 border-b pb-4">
               <h4 className="text-lg font-semibold text-blue-600">
-                {vendorData.vendor_name}
+                {vendorData.vendor_name || "Unknown Vendor"}
               </h4>
               <p className="text-sm text-gray-600">
-                Original Message: {vendorData.original_message}
+                Original Message: {vendorData.original_message || "Not Provided"}
               </p>
               <p className="text-sm text-gray-600">
                 Response Time:{" "}
-                {new Date(vendorData.response_received_time).toLocaleString()}
+                {vendorData.response_received_time
+                  ? new Date(vendorData.response_received_time).toLocaleString()
+                  : "Not Provided"}
               </p>
             </div>
 
-            {/* Bulk Details */}
-            {Object.entries(vendorData.decoded_response).map(([key, value]) => {
-              if (key.startsWith("Bulk")) {
-                const bulkData = value as BulkDetails;
-                return (
-                  <div key={key} className="mb-4 bg-gray-50 p-4 rounded-lg">
-                    <h5 className="font-medium text-lg mb-2">{key}</h5>
-                    {/* <p className="mb-3 text-gray-700">
-                    <span className="font-medium">Query:</span> {bulkData.query}
-                  </p> */}
+            {/* Decoded Response Details */}
+            {Object.entries(vendorData.decoded_response?.message?.message || {}).map(([type, details]) => {
+              return (
+                <div key={type} className="mb-4 bg-gray-50 p-4 rounded-lg">
+                  <h5 className="font-medium text-lg mb-2">{type}</h5>
 
-                    {/* Rate Details */}
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div className="bg-white p-3 rounded shadow-sm">
-                        <h6 className="font-medium mb-2 text-blue-600">Rate Details</h6>
-                        <NestedDataTable 
-                          data={bulkData.rate} 
-                          isEditing={isEditing}
-                          onEdit={(path, value) => handleInputChange(vendorId, key, ['rate', ...path], value)}
-                        />
-                      </div>
-
-                      {/* Schedule Details */}
-                      <div className="bg-white p-3 rounded shadow-sm">
-                        <h6 className="font-medium mb-2 text-blue-600">Schedule Details</h6>
-                        <NestedDataTable 
-                          data={bulkData.schedule} 
-                          isEditing={isEditing}
-                          onEdit={(path, value) => handleInputChange(vendorId, key, ['schedule', ...path], value)}
-                        />
-                      </div>
+                  {/* Rate Details */}
+                  {details.rate && (
+                    <div className="bg-white p-3 rounded shadow-sm mb-4">
+                      <h6 className="font-medium mb-2 text-blue-600">Rate Details</h6>
+                      <NestedDataTable
+                        data={details.rate}
+                        isEditing={isEditing}
+                        onEdit={(path, value) => handleInputChange(vendorId, type, ['message', 'message', type, 'rate', ...path], value)}
+                      />
                     </div>
-                  </div>
-                );
-              }
-              return null;
+                  )}
+
+                  {/* Schedule Details */}
+                  {details.schedule && (
+                    <div className="bg-white p-3 rounded shadow-sm">
+                      <h6 className="font-medium mb-2 text-blue-600">Schedule Details</h6>
+                      <NestedDataTable
+                        data={details.schedule}
+                        isEditing={isEditing}
+                        onEdit={(path, value) => handleInputChange(vendorId, type, ['message', 'message', type, 'schedule', ...path], value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
             })}
 
             {/* Vendor Selection Checkbox */}
@@ -556,18 +598,18 @@ const Step6: React.FC<Step6Props> = ({
         )
       )}
 
+
       {/* Bottom Action Buttons */}
       <div className="space-y-4">
-       
+
 
         <div className="flex justify-end">
           <Button
             onClick={handleNextStep}
-            className={`font-bold py-2 px-4 rounded ${
-              isCurrentStep
+            className={`font-bold py-2 px-4 rounded ${isCurrentStep
                 ? "bg-green-500 hover:bg-green-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+              }`}
             disabled={!isCurrentStep}
           >
             Next

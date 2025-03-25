@@ -44,53 +44,81 @@ const Step9: React.FC<Step9Props> = ({
 }) => {
     console.log("Closing ticket with status:", closingStatus);
     setLoading(true);
-    await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
+    try {
+      const currentTime = new Date().toISOString();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              final_decision: closingStatus.final_decision,
+              status: closingStatus.status,
+              time: currentTime
             },
-            body: JSON.stringify({
-                ticket_id: ticket.id,
-                step_info: {
-                    "final_decision": closingStatus.final_decision,
-                    "status": closingStatus.status,
-                },
-                step_number: "Step 9: Final Status",
-            }),
+            step_number: "Step 9 : Final Status",
+            updated_date: currentTime
+          }),
         }
-    );
-    setLoading(false);
-    router.push("/intrendapp/tickets");
-    toast.success("Ticket process completed and closed!");
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to close ticket');
+      }
+
+      await fetchTicket(ticket.id);
+      router.push("/intrendapp/tickets");
+      toast.success("Ticket process completed and closed!");
+    } catch (error) {
+      console.error('Error closing ticket:', error);
+      toast.error('Failed to close ticket');
+    } finally {
+      setLoading(false);
+    }
 };
   const handleUpdate = async () => {
-    // Using the current state values instead of prop values
-    console.log("Sending final-decision:", finalDecision); // Log what we're actually sending
-    console.log("Sending final-status:", status);
-    
-    await fetch(
-       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
+    try {
+      console.log("Sending final-decision:", finalDecision);
+      console.log("Sending final-status:", status);
+      
+      const currentTime = new Date().toISOString();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              final_decision: finalDecision,
+              status: status,
+              time: currentTime
             },
-            body: JSON.stringify({
-                ticket_id: ticket.id,
-                step_info: {
-                    "final_decision": finalDecision, // Use state instead of prop
-                    "status": status, // Use state instead of prop
-                },
-                step_number: "Step 9: Final Status",
-            }),
+            step_number: "Step 9 : Final Status",
+            updated_date: currentTime
+          }),
         }
-    );
-    
-    // Optionally fetch the ticket to update the UI
-    await fetchTicket(ticket.id);
-    console.log("Update completed");
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update status');
+      }
+      
+      await fetchTicket(ticket.id);
+      console.log("Update completed");
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+      throw error;
+    }
 };
 
 
@@ -102,10 +130,11 @@ const handleSave = async () => {
 
   const handleCloseTicket = async () => {
     if (finalDecision === "") {
-      alert("Please select a final decision before closing the ticket.");
+      toast.error("Please select a final decision before closing the ticket.");
       return;
     }
-    const closingStatus = { status: "closed", final_decision: finalDecision };
+    // Use the current status instead of forcing it to "closed"
+    const closingStatus = { status: status, final_decision: finalDecision };
     console.log("Closing ticket with status:", closingStatus);
     await handleClose(closingStatus);
   };
@@ -121,9 +150,9 @@ const handleSave = async () => {
     <div className="space-y-4">
        <div className="py-1 mb-4">
             <h1 className="text-xl font-bold ">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"].latest.text}</div>
+            <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
           </div>
-      <h3 className="text-xl font-bold">Step 9: Final Status</h3>
+      <h3 className="text-xl font-bold">Step 9 : Final Status</h3>
       <div className="flex items-center gap-2">
       <label
         className="block text-gray-700 font-bold mb-2"
@@ -149,8 +178,8 @@ const handleSave = async () => {
               Open{" "}
             </li>
             <li
-              className={`block px-4 py-2 rounded-lg text-black  cursor-pointer ${status ==='close'&& "bg-green-600 text-white"} `}
-              onClick={() => setStatus("close")}
+              className={`block px-4 py-2 rounded-lg text-black  cursor-pointer ${status ==='closed'&& "bg-green-600 text-white"} `}
+              onClick={() => setStatus("closed")}
             >
               Closed{" "}
             </li>

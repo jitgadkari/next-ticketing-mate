@@ -61,7 +61,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     offset: getOffset(),
     start_date: "",
     end_date: "",
-    sort_order:false
+    sort_order: true  // true = descending order, newest first
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -96,7 +96,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
         ticket_num: filterState.ticket_num || "",
         start_date:filterState.start_date || "",
         end_date:filterState.end_date || "",
-        sort_order: filterState.sort_order?'asc':'desc'
+        sort_order: filterState.sort_order ? 'desc' : 'asc'
       });
       try {
         const response = await fetch(
@@ -113,9 +113,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
           current_step: ticket.current_step,
           created_date: ticket.created_date,
           customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
-          status: ticket.steps["Step 9: Final Status"]?.status || "open",
+          status: ticket.steps["Step 9 : Final Status"]?.latest?.status || "open",
           final_decision:
-            ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+            ticket.steps["Step 9 : Final Status"]?.latest?.final_decision || "pending",
         }));
         setAllTickets(parsedTickets);
         setPageInfo({
@@ -230,35 +230,42 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     "Actions",
   ];
   const handlePrevious = () => {
+    const newOffset = Math.max(filterState.offset - filterState.limit, 0);
+    console.log(`Moving to previous page, new offset: ${newOffset}`);
     setFilterState((prev) => ({
       ...prev,
-      offset: Math.max(prev.offset - prev.limit, 0),
+      offset: newOffset
     }));
-    console.log(filterState);
+  };
+
+  const handleNext = () => {
+    if (pageInfo.has_next) {
+      const newOffset = filterState.offset + filterState.limit;
+      console.log(`Moving to next page, new offset: ${newOffset}`);
+      setFilterState((prev) => ({
+        ...prev,
+        offset: newOffset
+      }));
+    }
   };
 
   useEffect(() => {
     localStorage.setItem("ticketListOffset", String(filterState.offset));
+    console.log(`Updated offset in localStorage: ${filterState.offset}`);
   }, [filterState.offset]);
-
-  const handleNext = () => {
-    setFilterState((prev) => ({
-      ...prev,
-      offset: prev.offset + prev.limit,
-    }));
-    console.log(filterState);
-  };
   const handlePageChange = (page: number) => {
+    const newOffset = (page - 1) * filterState.limit;
+    console.log(`Changing to page ${page}, new offset: ${newOffset}`);
     setFilterState((prev) => ({
       ...prev,
-      offset: (page - 1) * prev.limit,
+      offset: newOffset
     }));
-    console.log(`Page: ${page}, Offset: ${(page - 1) * filterState.limit}`);
   };
-  const  handleChangeSortOrder= () => {
+  const handleChangeSortOrder = () => {
     setFilterState((prev) => ({
       ...prev,
-      sort_order:!prev.sort_order,
+      sort_order: !prev.sort_order,
+      offset: 0 // Reset to first page when changing sort order
     }));
   };
 
@@ -569,7 +576,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                   offset: 0,
                   start_date: "",
                   end_date: "",
-                  sort_order:false
+                  sort_order: true  // Keep descending order when resetting filters
                 }))
               }
             >

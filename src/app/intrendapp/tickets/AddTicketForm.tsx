@@ -188,18 +188,13 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
         {showDropDown && (
           <div className="bg-white shadow rounded-lg w-full max-h-40 overflow-auto">
             <ul className="py-2 text-sm text-gray-700">
-              {Array.isArray(customers) && customers.map((customer) => (
+              {Array.isArray(customers) && customers.filter(customer => customer.status === 'Active').map((customer) => (
                 <li
                   key={customer.id}
-                  className={`block px-4 py-2 hover:bg-gray-100 cursor-pointer ${customer.status === 'Inactive' ? 'opacity-60' : ''}`}
+                  className="block px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleCustomerSelect(customer)}
                 >
-                  <div className="flex justify-between items-center">
-                    <span>{customer.name}</span>
-                    {customer.status === 'Inactive' && (
-                      <span className="text-xs px-2 py-1 bg-gray-200 rounded-full">Inactive</span>
-                    )}
-                  </div>
+                  {customer.name}
                 </li>
               ))}
             </ul>

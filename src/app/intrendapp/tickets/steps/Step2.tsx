@@ -109,11 +109,13 @@ const Step2: React.FC<Step2Props> = ({
   const allVersions = [
     {
       version: 'latest',
+      id: 'latest',
       time: stepData.latest?.time || 'No timestamp',
       decoded_messages: stepData.latest?.decoded_messages || {}
     },
-    ...versions.map((v: StepVersion) => ({
-      version: v.time, // Using time as version identifier
+    ...versions.map((v: StepVersion, index: number) => ({
+      version: v.time,
+      id: `version-${index}-${v.time}`, // Create a unique id for each version
       time: v.time,
       decoded_messages: v.decoded_messages
     }))
@@ -237,7 +239,36 @@ const Step2: React.FC<Step2Props> = ({
   const handleNextStep = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
+      // First update the current step's data
+      await handleSave();
+
+      // Generate vendor message template
+      const templateResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            vendor_name: "{VENDOR}",
+            customerMessage: ticket.steps["Step 1 : Customer Message Received"]?.latest?.text,
+            ticket_number: ticket.ticket_number,
+            asked_details: JSON.parse(message),
+            asked_details_required: false
+          }),
+        }
+      );
+
+      if (!templateResponse.ok) {
+        const errorData = await templateResponse.json();
+        throw new Error(`Failed to generate vendor message template: ${errorData.message || templateResponse.statusText}`);
+      }
+
+      const templateData = await templateResponse.json();
+      
+      // Update next step with the generated template
+      const nextStepResponse = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
@@ -247,7 +278,7 @@ const Step2: React.FC<Step2Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: {
-              vendor_message_temp: "", // This will be populated by the backend
+              vendor_message_temp: templateData.message,
               decoded_messages: JSON.parse(message)
             },
             step_number: step
@@ -255,20 +286,16 @@ const Step2: React.FC<Step2Props> = ({
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        toast.error("Failed to proceed to next step");
-        setLoading(false);
-        return;
+      if (!nextStepResponse.ok) {
+        const errorData = await nextStepResponse.json();
+        throw new Error(errorData.message || nextStepResponse.statusText);
       }
 
-      const responseData = await response.json();
-      console.log("Next step update successful:", responseData);
       await handleNext();
     } catch (error) {
       console.error("Error preparing for next step:", error);
-      toast.error("Failed to proceed to next step");
+      toast.error(error instanceof Error ? error.message : "Failed to proceed to next step");
+    } finally {
       setLoading(false);
     }
   };
@@ -281,7 +308,7 @@ const Step2: React.FC<Step2Props> = ({
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       <div className="py-2">
         <h1 className="text-xl font-bold ">Customer Message</h1>
-        <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+        <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
       </div>
       {!isEditing ? (
         <div>
@@ -294,8 +321,8 @@ const Step2: React.FC<Step2Props> = ({
                   onChange={(e) => handleVersionChange(e.target.value)}
                   className="border rounded px-2 py-1 text-sm"
                 >
-                  {allVersions.map(({version, time}) => (
-                    <option key={version} value={version}>
+                  {allVersions.map(({version, time, id}) => (
+                    <option key={id} value={version}>
                       {version === 'latest' ? 'Latest Version' : formatTime(time)}
                     </option>
                   ))}

@@ -102,29 +102,40 @@ const Step8: React.FC<Step8Props> = ({
 
   const handleUpdate = async (updatedResponse: string) => {
     const responseReceived = updatedResponse.trim() !== "";
-    const currentTime = new Date().toISOString();
-    
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      const payload = {
+        ticket_id: ticket.id,
+        step_info: {
+          customer_message_template: customerTemplate,
+          customer_response_received: responseReceived,
+          customer_message_received: updatedResponse
         },
-        body: JSON.stringify({
-          ticket_id: ticket.id,
-          step_info: {
-            "customer_message_template": customerTemplate,
-            "customer_response_received": responseReceived,
-            "customer_message_received": updatedResponse,
-            "customer_response_received_time": currentTime,
-            "time": currentTime
+        step_number: ticket.current_step
+      };
+
+      console.log("Updating step with payload:", payload);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
           },
-          step_number: ticket.current_step,
-        }),
+          body: JSON.stringify(payload),
+        }
+      );
+toast.success("Step updated successfully");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update step");
       }
-    );
-    fetchTicket(ticket.id);
+
+      await fetchTicket(ticket.id);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Error updating step:", errorMessage);
+      toast.error(`Failed to update step: ${errorMessage}`);
+    }
   };
 
   const handleSave = async () => {
@@ -133,35 +144,57 @@ const Step8: React.FC<Step8Props> = ({
 
   const handleNextStep = async () => {
     setLoading(true);
-    await handleUpdate(response);
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      await handleUpdate(response);
+      const currentTime = new Date().toISOString();
+      const payload = {
+        ticket_id: ticket.id,
+        step_info: {
+          status: "open",
+          final_decision: "pending",
+          time: currentTime,
+          customer_message_template: customerTemplate,
+          customer_response: response,
+          customer_response_received: response.trim() !== "",
+          customer_response_received_time: currentTime
         },
-        body: JSON.stringify({
-          ticket_id: ticket.id,
-          step_info: {
-            "final_decision": `pending`,
-            "status": "Closed",
+        step_number: ticket.current_step
+      };
+
+      console.log("Moving to next step with payload:", payload);
+      const apiResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
           },
-          step_number: ticket.current_step,
-        }),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json();
+        throw new Error(errorData.message || "Failed to update step");
       }
-    );
-    fetchTicket(ticket.id);
-    setLoading(false);
-    setActiveStep("Step 9: Final Status");
-    toast.success("Step 8 completed");
+
+      await fetchTicket(ticket.id);
+      setActiveStep("Step 9 : Final Status");
+      toast.success("Step 8 completed");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Error moving to next step:", errorMessage);
+      toast.error(`Failed to complete step: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
       <div className="py-1 mb-4">
         <h1 className="text-xl font-bold">Customer Message</h1>
-        <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+        <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
       </div>
       <div className="flex justify-between items-center my-4">
         <h3 className="text-xl font-bold">Step 8: Customer Response</h3>

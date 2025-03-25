@@ -60,6 +60,7 @@ const Step4: React.FC<Step4Props> = ({
   setActiveStep,
   ticket,
 }) => {
+  console.log("Step 3 latest template:", ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp);
   interface StepVersion {
     time: string;
     vendors: Record<string, VendorData>;
@@ -246,7 +247,7 @@ const Step4: React.FC<Step4Props> = ({
 
   const handleUpdate = async (updatedVendors: string[]) => {
     console.log("Updating Step 4 vendors:", updatedVendors);
-  
+
     // Convert vendors array to object with vendor_id as keys
     const vendorsObject = updatedVendors.reduce((acc, vendorName) => {
       const vendor = vendorDetails.find((v) => v.name === vendorName);
@@ -254,10 +255,10 @@ const Step4: React.FC<Step4Props> = ({
         console.error(`Vendor ID not found for ${vendorName}`);
         return acc;
       }
-  
+
       // Get existing message sent status if available
       const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
-  
+
       acc[vendor.id] = {
         vendor_id: vendor.id,
         name: vendorName, // Make sure the name is correctly set
@@ -266,9 +267,9 @@ const Step4: React.FC<Step4Props> = ({
       };
       return acc;
     }, {} as Record<string, any>);
-  
+
     console.log("Mapped vendors for save:", vendorsObject);
-  
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
@@ -286,11 +287,11 @@ const Step4: React.FC<Step4Props> = ({
           }),
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`Failed to save: ${response.status}`);
       }
-  
+
       await fetchTicket(ticket.id);
       toast.success("Changes saved successfully");
     } catch (error) {
@@ -298,7 +299,7 @@ const Step4: React.FC<Step4Props> = ({
       toast.error("Failed to save changes");
     }
   };
-  
+
 
   // Initialize version data and vendor messages when component mounts
   useEffect(() => {
@@ -320,7 +321,7 @@ const Step4: React.FC<Step4Props> = ({
           id: vendor.vendor_id,
         };
       });
-
+      console.log("newMessages", newMessages)
       setSelectedOptions(newSelectedOptions);
       setVendorMessages(newMessages);
       setSelectedVersion('latest');
@@ -425,7 +426,7 @@ const Step4: React.FC<Step4Props> = ({
       // Handle both array and object response formats
       const vendorData = Array.isArray(vendorsData.vendors) ? vendorsData.vendors : Object.values(vendorsData.vendors || {});
       console.log("Vendor data from API:", vendorData);
-      
+
       // Map vendors ensuring all required fields
       const vendorsList = vendorData
         .filter((v: any) => v && (v.id || v.vendor_id)) // Ensure we have an ID
@@ -433,7 +434,7 @@ const Step4: React.FC<Step4Props> = ({
           // Get the correct ID and name fields
           const vendorId = v.vendor_id || v.id;
           const vendorName = v.name || (ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]?.name) || 'Unnamed Vendor';
-          
+
           return {
             id: vendorId,
             name: vendorName,
@@ -444,7 +445,7 @@ const Step4: React.FC<Step4Props> = ({
         });
 
       console.log("Mapped vendors list:", vendorsList);
-      
+
       if (vendorsList.length > 0) {
         console.log("Setting vendors in dropdown...");
         // Use existing vendor data from ticket if available
@@ -459,7 +460,7 @@ const Step4: React.FC<Step4Props> = ({
           console.log("Created vendor option:", option);
           return option;
         });
-        
+
         console.log("Final vendor options:", vendorOptions);
         setVendors(vendorOptions);
         setVendorDetails(vendorsList);
@@ -484,7 +485,7 @@ const Step4: React.FC<Step4Props> = ({
     const messages: Record<string, string> = {};
     const customerMessage = ticket.steps["Step 1 : Customer Message Received"]?.latest?.text;
     const decodedMessages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
-    
+
     for (const option of selectedOptions) {
       try {
         const response = await fetch(
@@ -528,13 +529,13 @@ const Step4: React.FC<Step4Props> = ({
             }),
           }
         );
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Handle different response formats
         let vendorMessage;
         if (data[option.value]?.message) {
@@ -552,7 +553,7 @@ const Step4: React.FC<Step4Props> = ({
 
         // Store the message for this vendor
         messages[option.value] = vendorMessage;
-        
+
         // Log success for debugging
         console.log(`Successfully generated message for ${option.value}:`, vendorMessage);
       } catch (error) {
@@ -586,29 +587,43 @@ const Step4: React.FC<Step4Props> = ({
       toast.loading("Sending WhatsApp messages...");
       const messagePromises = selectedOptions.map(async (option) => {
         const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
-        console.log(vendor)
+        console.log("vendor", vendor)
         console.log(vendorMessages[option.value])
         if (!vendor || !vendor.phone) {
           throw new Error(`Missing vendor details or phone number for ${option.value}`);
         }
+
+        // Format phone number: remove spaces, +, ensure it starts with country code and ends with @c.us
+        let formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/^\+/, '');
+        if (!formattedPhone.startsWith('91')) {
+          formattedPhone = '91' + formattedPhone;
+        }
+        formattedPhone = formattedPhone + '@c.us';
+
+        const messageContent = (ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value);
+        console.log("Sending to:", formattedPhone);
+        console.log("Message content:", messageContent);
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              to: `${vendor.phone}@c.us`,
-              message: vendorMessages[option.value],
+              to: formattedPhone,
+              content: messageContent
             }),
           }
         );
-        console.log(response);
+
         const data = await response.json();
-        console.log(data);
+        console.log("response data", data);
+        
         if (!response.ok) {
-          throw new Error(`Failed to send WhatsApp to ${option.value}`);
+          const errorMessage = data.error || data.message || 'Unknown error';
+          throw new Error(`Failed to send WhatsApp to ${option.value}: ${errorMessage}`);
         }
 
         // Return vendor info with updated message_sent status
@@ -629,6 +644,8 @@ const Step4: React.FC<Step4Props> = ({
       console.error("Error sending WhatsApp messages:", error);
       toast.dismiss();
       toast.error("Failed to send WhatsApp messages.");
+    } finally {
+      setIsWhatsAppSending(false);
     }
   };
 
@@ -767,7 +784,7 @@ const Step4: React.FC<Step4Props> = ({
           return acc;
         }
         const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
-        
+
         acc[vendor.id] = {
           vendor_id: vendor.id,
           name: option.value,
@@ -778,7 +795,7 @@ const Step4: React.FC<Step4Props> = ({
       }, {} as Record<string, any>);
 
       console.log("Step 4 vendors object:", step4VendorsObj);
-
+      console.log(ticket.current_step)
       // Update Step 4 with object format
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
@@ -819,7 +836,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: step5VendorsArray },
-            step_number: "Step 5 : Messages from Vendors"
+            step_number: ticket.current_step
           }),
         }
       );
@@ -904,7 +921,7 @@ const Step4: React.FC<Step4Props> = ({
                     {option.value}
                   </label>
                   <textarea
-                    value={vendorMessages[option.value] || ''}
+                    value={(ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value)}
                     onChange={(e) => handleVendorMessageChange(option.value, e.target.value)}
                     className="w-full h-32 p-2 border rounded mt-2"
                     placeholder="Enter message for vendor"
@@ -921,8 +938,8 @@ const Step4: React.FC<Step4Props> = ({
                   {emailSendingStatus[option.value] && (
                     <p
                       className={`mt-1 ${emailSendingStatus[option.value] === "Email Sent"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        ? "text-green-600"
+                        : "text-red-600"
                         }`}
                     >
                       Status: {emailSendingStatus[option.value]}
@@ -931,9 +948,9 @@ const Step4: React.FC<Step4Props> = ({
                   {whatsappSendingStatus[option.value] && (
                     <p
                       className={`mt-1 ${whatsappSendingStatus[option.value] ===
-                          "Whatsapp Message Sent"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        "Whatsapp Message Sent"
+                        ? "text-green-600"
+                        : "text-red-600"
                         }`}
                     >
                       Status: {whatsappSendingStatus[option.value]}
@@ -954,8 +971,8 @@ const Step4: React.FC<Step4Props> = ({
             <Button
               onClick={handleWhatsAppPopUp}
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
-                  selectedOptions.length === 0 ||
-                  isWhatsAppSending) &&
+                selectedOptions.length === 0 ||
+                isWhatsAppSending) &&
                 "opacity-50 cursor-not-allowed"
                 }`}
               disabled={
@@ -977,8 +994,8 @@ const Step4: React.FC<Step4Props> = ({
             <Button
               onClick={handleSendEmailPopUp}
               className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
-                  selectedOptions.length === 0 ||
-                  isEmailSending) &&
+                selectedOptions.length === 0 ||
+                isEmailSending) &&
                 "opacity-50 cursor-not-allowed "
                 }`}
               disabled={
@@ -997,8 +1014,8 @@ const Step4: React.FC<Step4Props> = ({
             <Button
               onClick={handleNextStep}
               className={`font-bold py-2 px-4 rounded ${isCurrentStep
-                  ? "bg-blue-500 hover:bg-blue-700 text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? "bg-blue-500 hover:bg-blue-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               disabled={!isCurrentStep || selectedOptions.length === 0}
             >
@@ -1076,8 +1093,8 @@ const Step4: React.FC<Step4Props> = ({
             <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
             <p className="mb-4">
               {`You haven't sent ${!isMessageSent.emailSent ? "Email" : ""}${!isMessageSent.emailSent && !isMessageSent.whatsappMessageSent
-                  ? ", "
-                  : ""
+                ? ", "
+                : ""
                 }${!isMessageSent.whatsappMessageSent ? "WhatsApp" : ""
                 } messages yet. Would you like to proceed without sending?`}
             </p>

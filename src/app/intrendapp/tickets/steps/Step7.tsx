@@ -72,7 +72,7 @@ const Step7: React.FC<Step7Props> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState<string | null>(null);
   const [messagesSent, setMessagesSent] = useState({
-    whatsApp: messageSentStatus.whatsapp,
+    whatsapp: messageSentStatus.whatsapp,
     email: messageSentStatus.email,
   });
   const [includeVendorName, setIncludeVendorName] = useState(true);
@@ -104,8 +104,8 @@ const Step7: React.FC<Step7Props> = ({
       messagesSent: { whatsApp: false, email: false },
     };
 
-    const versions = (stepData.versions || []).map((version: StepVersion) => ({
-      version: version.time,
+    const versions = (stepData.versions || []).map((version: StepVersion, index: number) => ({
+      version: `version_${version.time}_${index}`,
       time: version.time,
       data: version,
     }));
@@ -175,47 +175,67 @@ const Step7: React.FC<Step7Props> = ({
     customerName: string,
     originalMessage: string
   ) => {
-    console.log(decoded_messages, includeCustomerMessage, includeVendorName);
+    console.log('Generating template with:', {
+      decoded_messages,
+      includeCustomerMessage,
+      includeVendorName,
+      customerName,
+      originalMessage
+    });
+
+    // Extract vendor information from decoded messages
     const formattedVendorInfo = Object.entries(decoded_messages).reduce(
       (acc, [vendorId, vendorData]) => {
-        acc[vendorData.vendor_name] = vendorData.decoded_response;
+        // Extract message types (Bulk, Sample, etc) from the decoded_response
+        const messageTypes = vendorData.decoded_response?.message?.message || {};
+        console.log('Message types:', messageTypes);
+        // Format each message type with its rate and schedule details
+        acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
+          (typeAcc, [type, details]: [string, any]) => {
+            typeAcc[type] = {
+              rate: details.rate || {},
+              schedule: details.schedule || {}
+            };
+            return typeAcc;
+          },
+          {}
+        );
         return acc;
       },
-      {} as Record<string, string>
+      {} as Record<string, any>
     );
 
-    console.log(formattedVendorInfo);
-    // Create the correct request payload
+    console.log('Formatted vendor info:', formattedVendorInfo);
+
     const requestPayload = {
       customer_name: customerName,
-      customerMessage: originalMessage,
-      vendor_delivery_info: formattedVendorInfo, // Send the correctly formatted object
+      customer_message: includeCustomerMessage ? originalMessage : '',
+      vendor_delivery_info: formattedVendorInfo,
       ticket_number: ticket.ticket_number,
       send_vendor_name: includeVendorName,
-      customerMessageRequired: includeCustomerMessage,
+      customer_message_required: includeCustomerMessage
     };
 
-    console.log("Corrected Request Payload:", requestPayload);
+    console.log('Request payload:', requestPayload);
 
-    // Generate client message template
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/post_message_template_for_client_direct_message`,
+      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/client_direct_message`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload),
       }
     );
 
     if (!response.ok) {
-      throw new Error("Failed to generate client message template");
+      throw new Error('Failed to generate client message template');
     }
 
     const data = await response.json();
-    const clientMessageTemplate = data.client_message_template;
-    console.log("Client Message Template:", clientMessageTemplate);
+    const clientMessageTemplate = data.message;
+    console.log('Generated template:', clientMessageTemplate);
     return clientMessageTemplate;
   };
 
@@ -229,33 +249,49 @@ const Step7: React.FC<Step7Props> = ({
     });
   };
 
-  const toggleIncludeVendorName = () => {
-    setIncludeVendorName((prev) => {
-      const newIncludeVendorName = !prev;
-      updateTemplate(includeCustomerMessage, newIncludeVendorName);
-      return newIncludeVendorName;
-    });
+  const toggleIncludeVendorName = async () => {
+    const newIncludeVendorName = !includeVendorName;
+    console.log('Toggling vendor name:', { current: includeVendorName, new: newIncludeVendorName });
+    
+    try {
+      const newTemplate = await generateMessageTemplate(
+        ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
+        includeCustomerMessage,
+        newIncludeVendorName,
+        ticket.customer_name,
+        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+      );
+      
+      setTemplate(newTemplate);
+      setIncludeVendorName(newIncludeVendorName);
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast.error('Failed to update template');
+    }
   };
 
-  const toggleIncludeCustomerMessage = () => {
-    setIncludeCustomerMessage((prev) => {
-      const newIncludeCustomerMessage = !prev;
-      updateTemplate(newIncludeCustomerMessage, includeVendorName);
-      return newIncludeCustomerMessage;
-    });
+  const toggleIncludeCustomerMessage = async () => {
+    const newIncludeCustomerMessage = !includeCustomerMessage;
+    console.log('Toggling customer message:', { current: includeCustomerMessage, new: newIncludeCustomerMessage });
+
+    try {
+      const newTemplate = await generateMessageTemplate(
+        ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
+        newIncludeCustomerMessage,
+        includeVendorName,
+        ticket.customer_name,
+        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+      );
+      
+      setTemplate(newTemplate);
+      setIncludeCustomerMessage(newIncludeCustomerMessage);
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast.error('Failed to update template');
+    }
   };
 
-  // Function to manually regenerate the template
-  const updateTemplate = async (newIncludeCustomerMessage: boolean, newIncludeVendorName: boolean) => {
-    const generatedTemplate = await generateMessageTemplate(
-      ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
-      newIncludeCustomerMessage,
-      newIncludeVendorName,
-      ticket.customer_name,
-      ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
-    );
-    setTemplate(generatedTemplate);
-  };
+
 
   useEffect(() => {
     setTemplate(customerTemplate);
@@ -266,7 +302,7 @@ const Step7: React.FC<Step7Props> = ({
     try {
       const customerName = ticket.customer_name;
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers/?name=${encodeURIComponent(customerName)}`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/?name=${encodeURIComponent(customerName)}`
       );
       const data = await response.json();
       console.log("Customer Data", data);
@@ -301,104 +337,73 @@ const Step7: React.FC<Step7Props> = ({
     }
   };
 
-  const step5Messages = ticket.steps["Step 5: Messages from Vendors"];
+  const step5Messages = ticket.steps["Step 5 : Messages from Vendors"]?.latest || {};
 
   const keys = Object.keys(step5Messages);
 
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ticket_id: ticket.id,
-          step_info: {
-            customer_message_template: template,
-            customer_response_received: false,
-            customer_message_received: "",
-            customer_response_received_time: null,
-          },
-          step_number: ticket.current_step,
-        }),
-      }
-    );
-    fetchTicket(ticket.id);
-    setActiveStep("Step 8 : Customer Response");
-    toast.success("Step 7 completed");
-  };
-
-  const handleUpdate = async (updatedTemplate: string) => {
-    try {
-      const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
-      const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
-
-      await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step/?userId=1234&userAgent=user-test`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ticket_id: ticket.id,
-            step_info: {
-              customer_message_template: updatedTemplate,
-              whatsApp: whatsAppMessage,
-              email: emailMessage,
-              customer_message_template_time: new Date().toISOString(),
-            },
-            step_number: ticket.current_step,
-          }),
-        }
-      );
-      fetchTicket(ticket.id);
-    } catch (error) {
-      console.error("Error updating Step 7:", error);
-      toast.error("Failed to update template");
-    }
-  };
-
-  const handleSave = async () => {
-    await handleUpdate(template);
-  };
-
-  const handleNextStep = async () => {
     setLoading(true);
     try {
+      // Check if both messages have been sent
+      const whatsappSent = messagesSent?.whatsapp || false;
+      const emailSent = messagesSent?.email || false;
+
+      // If either message hasn't been sent, show the reminder popup
+      if (!whatsappSent || !emailSent) {
+        setShowPopup(prev => ({
+          ...prev,
+          sendReminder: true
+        }));
+        setLoading(false);
+        return;
+      }
+
       console.log("Starting Step 7 completion...");
+      console.log("Current step:", ticket.current_step);
 
-      const whatsAppMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.whatsApp || "";
-      const emailMessage = ticket?.steps?.["Step 7 : Customer Message Template"]?.email || "";
-
+      // First update the current step's template
       console.log("Updating Step 7 template...");
-      await handleUpdate(customerTemplate);
+      await handleUpdate(template);
 
+      // If both messages are sent, proceed with the next step
+      const currentTime = new Date().toISOString();
+      const payload = {
+        ticket_id: ticket.id,
+        step_info: {
+          customer_message_template: template,
+          message_sent: {
+            whatsapp: whatsappSent,
+            email: emailSent,
+          },
+          customer_response_received: false,
+          customer_message_received: "",
+          customer_response_received_time: "",
+          time: currentTime
+        },
+        step_number: ticket.current_step,
+        updated_date: currentTime
+      };
+  
+      console.log("Request Payload:", JSON.stringify(payload, null, 2));
+  
       console.log("Moving to next step...");
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?userId=1234&userAgent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ticket_id: ticket.id,
-            step_info: {
-              customer_message_template: customerTemplate,
-              whatsApp: whatsAppMessage,
-              email: emailMessage,
-              customer_message_template_time: new Date().toISOString(),
-            },
-            step_number: ticket.current_step,
-          }),
+          body: JSON.stringify(payload),
         }
       );
-
+  
+      const responseData = await response.json();
+      console.log("Response Status:", response.status);
+      console.log("Response Body:", JSON.stringify(responseData, null, 2));
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update step");
@@ -408,8 +413,8 @@ const Step7: React.FC<Step7Props> = ({
       await fetchTicket(ticket.id);
 
       setLoading(false);
-      setActiveStep("Step 8: Message Sent");
-      toast.success("Step 7 completed");
+      setActiveStep("Step 8 : Customer Response");
+      toast.success("Moving to Step 8: Customer Response");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       console.error("Error moving to next step:", errorMessage);
@@ -417,6 +422,53 @@ const Step7: React.FC<Step7Props> = ({
       setLoading(false);
     }
   };
+  
+
+  const handleUpdate = async (updatedTemplate: string) => {
+    try {
+      // Get current message sent status from ticket or use defaults
+      const currentMessageSent = {
+        whatsapp: false,
+        email: false
+      };
+
+      // Only update if messagesSent exists
+      if (messagesSent) {
+        currentMessageSent.whatsapp = messagesSent.whatsapp || false;
+        currentMessageSent.email = messagesSent.email || false;
+      }
+
+      await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: {
+              customer_message_template: updatedTemplate,
+              message_sent: currentMessageSent
+            },
+            step_number: ticket.current_step
+          }),
+        }
+      );
+      fetchTicket(ticket.id);
+      toast.success("Template updated successfully");
+    } catch (error) {
+      console.error("Error updating Step 7:", error);
+      toast.error("Failed to update template");
+    }
+  };
+
+  const handleSave = async () => {
+    await handleUpdate(template);
+    console.log("Template saved successfully:",template);
+  };
+
+
 
   const handleSendMessage = (type: "whatsAppPerson" | "whatsAppGroup" | "email") => {
     setShowPopup((prev) => ({
@@ -451,7 +503,7 @@ const Step7: React.FC<Step7Props> = ({
 
         console.log("Sending WhatsApp message to person:", selectedPersonPhone);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_whatsapp_message/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
           {
             method: "POST",
             headers: {
@@ -459,7 +511,7 @@ const Step7: React.FC<Step7Props> = ({
             },
             body: JSON.stringify({
               to: `${selectedPersonPhone}@c.us`,
-              message: template.trim()
+              content: template.trim()
             }),
           }
         );
@@ -554,7 +606,7 @@ const Step7: React.FC<Step7Props> = ({
       try {
         console.log("Fetching details for person ID:", personId);
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/persons/${personId}`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${personId}`
         );
         const data = await response.json();
         console.log("Person data:", data);
@@ -587,7 +639,7 @@ const Step7: React.FC<Step7Props> = ({
     <div>
       <div className="py-1 mb-4">
         <h1 className="text-xl font-bold ">Customer Message</h1>
-        <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+        <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
       </div>
       <div className="flex justify-between items-center my-4">
         <h3 className="text-xl font-bold">
@@ -615,67 +667,71 @@ const Step7: React.FC<Step7Props> = ({
         className="w-full h-64 p-2 border rounded"
       />
 
-      <div className="flex justify-between mt-4">
-        <Button
-          onClick={handleSave}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Save
-        </Button>
-        <div className="flex gap-4">
+      <div className="space-y-4 mt-4">
+        {/* Top row - Template Controls */}
+        <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
           <Button
-            onClick={toggleIncludeCustomerMessage}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={handleSave}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md flex items-center gap-2 transition-all"
           >
-            {includeCustomerMessage
-              ? "Remove Customer Message"
-              : "Include Customer Message"}
+            {/* <span className="material-icons-outlined text-sm">save</span> */}
+            Save 
           </Button>
-          <Button
-            onClick={toggleIncludeVendorName}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            {includeVendorName ? "Remove Vendor Name" : "Include Vendor Name"}
-          </Button>
-        </div>
-        <div className="flex flex-col justify-center items-center gap-2">
-          <div className="md:flex gap-2 items-center">
+          <div className="flex gap-3">
             <Button
-              onClick={() => handleSendMessage("whatsAppPerson")}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
-              disabled={!isCurrentStep || isSending}
+              onClick={toggleIncludeCustomerMessage}
+              className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >
-              {isSending ? "Sending..." : "Send to Person"}
-              <FaWhatsapp />
+              {includeCustomerMessage ? "Hide Customer Message" : "Show Customer Message"}
             </Button>
             <Button
-              onClick={() => handleSendMessage("whatsAppGroup")}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
-              disabled={!isCurrentStep || isSending}
+              onClick={toggleIncludeVendorName}
+              className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >
-              {isSending ? "Sending..." : "Send to Group"}
-              <FaWhatsapp />
-            </Button>
-            <Button
-              onClick={() => handleSendMessage("email")}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed"}`}
-              disabled={!isCurrentStep || isSending}
-            >
-              {isSending ? "Sending..." : "Send"}
-              <MdEmail />
+              {includeVendorName ? "Hide Vendor Names" : "Show Vendor Names"}
             </Button>
           </div>
         </div>
-        <Button
-          onClick={handleNextStep}
-          className={`font-bold py-2 px-4 rounded ${isCurrentStep
-            ? "bg-blue-500 hover:bg-blue-700 text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+
+        {/* Bottom row - Communication Actions */}
+        <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+          <div className="flex gap-3">
+            <Button
+              onClick={() => handleSendMessage("whatsAppPerson")}
+              className={`bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-md flex items-center gap-2 transition-all ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed hover:bg-emerald-600"}`}
+              disabled={!isCurrentStep || isSending}
+            >
+              <FaWhatsapp className="text-lg" />
+              {isSending ? "Sending..." : "Send to Person"}
+            </Button>
+            <Button
+              onClick={() => handleSendMessage("whatsAppGroup")}
+              className={`bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-md flex items-center gap-2 transition-all ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed hover:bg-emerald-600"}`}
+              disabled={!isCurrentStep || isSending}
+            >
+              <FaWhatsapp className="text-lg" />
+              {isSending ? "Sending..." : "Send to Group"}
+            </Button>
+            <Button
+              onClick={() => handleSendMessage("email")}
+              className={`bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-md flex items-center gap-2 transition-all ${(!isCurrentStep || isSending) && "opacity-50 cursor-not-allowed hover:bg-blue-600"}`}
+              disabled={!isCurrentStep || isSending}
+            >
+              <MdEmail className="text-lg" />
+              {isSending ? "Sending..." : "Send Email"}
+            </Button>
+          </div>
+          <Button
+            onClick={handleNext}
+            className={`font-medium py-2.5 px-6 rounded-md flex items-center gap-2 transition-all ${isCurrentStep
+              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
-          disabled={!isCurrentStep}
-        >
-          Next
-        </Button>
+            disabled={!isCurrentStep}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       {sendingStatus && (
@@ -837,29 +893,67 @@ const Step7: React.FC<Step7Props> = ({
             <div className="flex justify-end">
               <Button
                 onClick={() => setShowPopup((prev) => ({ ...prev, sendReminder: false }))}
-                className="mr-2  bg-blue-500 hover:bg-blue-700 text-whitefont-bold py-2 px-4 rounded"
+                className="mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 Cancel
               </Button>
               <Button
                 onClick={async () => {
-                  await handleNext();
                   setShowPopup((prev) => ({ ...prev, sendReminder: false }));
+                  const payload = {
+                    ticket_id: ticket.id,
+                    step_info: {
+                      customer_message_template: template,
+                      message_sent: {
+                        whatsapp: messagesSent?.whatsapp || false,
+                        email: messagesSent?.email || false,
+                      },
+                      customer_response_received: false,
+                      customer_message_received: "",
+                      customer_response_received_time: "",
+                    time: new Date().toISOString(),
+                    },
+                    step_number: ticket.current_step,
+                  };
+
+                  setLoading(true);
+                  try {
+                    // First update the current step's template
+                    await handleUpdate(template);
+
+                    // Then move to next step
+                    const response = await fetch(
+                      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+                      {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                      }
+                    );
+
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || "Failed to update step");
+                    }
+
+                    await fetchTicket(ticket.id);
+                    setActiveStep("Step 8 : Customer Response");
+                    toast.success("Step 7 completed");
+                  } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+                    console.error("Error moving to next step:", errorMessage);
+                    toast.error(`Failed to complete step: ${errorMessage}`);
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
-                className=" bg-gray-300 hover:bg-gray-400 text-black  font-bold py-2 px-4 rounded"
+                className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
               >
                 Proceed without sending
               </Button>
-              {/* <Button
-                onClick={() => {
-                  if (!messagesSent.whatsApp) handleSendMessage("whatsApp");
-                  if (!messagesSent.email) handleSendMessage("email");
-                  setShowPopup((prev) => ({ ...prev, sendReminder: false }));
-                }}
-                className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Send now
-              </Button> */}
+
             </div>
           </div>
         </div>

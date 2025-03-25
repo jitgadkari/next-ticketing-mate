@@ -36,7 +36,7 @@ const stepsOrder = [
   "Step 6 : Vendor Message Decoded",
   "Step 7 : Customer Message Template",
   "Step 8 : Customer Response",
-  "Step 9: Final Status",
+  "Step 9 : Final Status",
 ];
 
 const TicketDetailsPage = () => {
@@ -77,18 +77,25 @@ const TicketDetailsPage = () => {
     );
     if (!confirmed) return;
 
+    console.log('Refreshing ticket - ID:', ticket?.id);
+    console.log('Refreshing ticket - Step:', step);
+    console.log('Full ticket object:', ticket);
+
     try {
+      const payload = {
+        ticket_id: ticket?.id,
+        step_number: step,
+      };
+      console.log('Request payload:', payload);
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/ticket_refresher/`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/ticket_refresher?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ticket_id: ticket?.id,
-            step_number: step,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -147,6 +154,8 @@ const TicketDetailsPage = () => {
 
       case "Step 3 : Message Template for vendors":
         console.log(ticket.steps[step])
+        console.log(ticket)
+        console.log(ticket.steps[step]?.latest?.vendor_message_temp)
         return (
           <Step3
           ticketNumber={ticket.ticket_number}
@@ -417,18 +426,17 @@ const TicketDetailsPage = () => {
           />
         );
 
-      case "Step 9: Final Status":
+      case "Step 9 : Final Status":
         console.log("Rendering Step 9. Current step data:", ticket.steps[step]);
+        const finalStatus = ticket.steps[step]?.latest || { status: "open", final_decision: "pending" };
         return (
           <Step9
-          ticketNumber={ticket.ticket_number}
-          finalStatus={
-            ticket.steps[step].latest as { status: string; final_decision: string }
-          }
-          fetchTicket={fetchTicket}
-          ticket={ticket}
-          isCurrentStep={step === ticket.current_step}
-        />
+            ticketNumber={ticket.ticket_number}
+            finalStatus={finalStatus}
+            fetchTicket={fetchTicket}
+            ticket={ticket}
+            isCurrentStep={step === ticket.current_step}
+          />
         );
 
       default:

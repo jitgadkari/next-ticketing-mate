@@ -140,8 +140,12 @@ const Step5: React.FC<Step5Props> = ({
       console.log("Processing vendor message:", message);
 
       if (message.response_message.trim() !== "") {
-        let formatmsg = `query from customer: ${ticket.steps["Step 1 : Customer Message Received"].latest.text} vendor reply: ${message.response_message}`;
-        console.log("Formatted message:", formatmsg);
+        console.log(message.response_message);
+        const requestBody = {
+          customer_query: ticket.steps["Step 1 : Customer Message Received"]?.latest?.text,
+          vendor_reply: message.response_message
+        };
+        console.log("Request body:", requestBody);
 
         try {
           // Fetch decoded message
@@ -152,7 +156,7 @@ const Step5: React.FC<Step5Props> = ({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ text: formatmsg }),
+              body: JSON.stringify(requestBody),
             }
           );
 
@@ -165,8 +169,10 @@ const Step5: React.FC<Step5Props> = ({
 
           vendorDecodedMessages.push({
             vendor_id: vendorId,
-            vendor_name: message.vendor_name,
-            decoded_response: decodedMessage, // Correct key structure
+            vendor_name: message.name,
+            decoded_response: {
+              message: decodedMessage // Wrapping in message object to match Step 6 structure
+            },
             original_message: message.response_message,
             response_received_time: message.message_received_time,
           });
@@ -176,36 +182,24 @@ const Step5: React.FC<Step5Props> = ({
           // If decoding fails, use a default structure
           vendorDecodedMessages.push({
             vendor_id: vendorId,
-            vendor_name: message.vendor_name,
+            vendor_name: message.name,
             decoded_response: {
-              Sample: {
-                rate: {
-                  price_per_meter: "Not Found",
-                  price_method: "Not Found",
-                  currency: "INR",
-                  quantity: "Not Found",
-                  other_info: "Not Found",
-                },
-                schedule: {
-                  starting_delivery: { days: "Not Found", quantity: "Not Found" },
-                  completion_delivery: { days: "Not Found", quantity: "Not Found" },
-                  delivery_point: "Not Found",
-                },
-              },
-              Bulk: {
-                rate: {
-                  price_per_meter: "Not Found",
-                  price_method: "Not Found",
-                  currency: "INR",
-                  quantity: "Not Found",
-                  other_info: "Not Found",
-                },
-                schedule: {
-                  starting_delivery: { days: "Not Found", quantity: "Not Found" },
-                  completion_delivery: { days: "Not Found", quantity: "Not Found" },
-                  delivery_point: "Not Found",
-                },
-              },
+              message: {
+                Bulk: {
+                  rate: {
+                    price_per_meter: "NOT FOUND",
+                    price_method: "Ex-mill",
+                    currency: "NOT FOUND",
+                    quantity: "NOT FOUND",
+                    other_info: "NOT FOUND"
+                  },
+                  schedule: {
+                    starting_delivery: { days: "NOT FOUND", quantity: "NOT FOUND" },
+                    completion_delivery: { days: "NOT FOUND", quantity: "NOT FOUND" },
+                    delivery_point: "NOT FOUND"
+                  }
+                }
+              }
             },
             original_message: message.response_message,
             response_received_time: message.message_received_time,
@@ -230,7 +224,7 @@ const Step5: React.FC<Step5Props> = ({
 
         console.log("Transformed payload:", payload);
         const updateResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
           {
             method: "PUT",
             headers: {
@@ -257,26 +251,20 @@ const Step5: React.FC<Step5Props> = ({
       toast.error("No messages to decode. Please enter messages for vendors.");
     }
   };
+  
   const handleUpdate = async (
     updatedMessages: Record<string, VendorMessage>
   ) => {
     console.log("Updating Step 5 messages:", updatedMessages);
 
-    const vendors = Object.entries(updatedMessages).map(
+    const formattedVendors = Object.entries(updatedMessages).map(
       ([vendorId, message]) => ({
         vendor_id: vendorId,
-        vendor_name: message.vendor_name,
-        response_received: message.response_message.trim() !== "", // Set to true if response_message is not empty
-        response_message: message.response_message,
+        name: message.name,  // Using the correct property name from the message object
+        response_received: message.response_message.trim() !== "",
+        response_message: message.response_message
       })
     );
-
-    const formattedVendors = vendors.map(vendor => ({
-      vendor_id: vendor.vendor_id,
-      name: vendor.vendor_name,
-      response_received: vendor.response_received,
-      response_message: vendor.response_message || ""
-    }));
 
     const payload = {
       ticket_id: ticket.id,
@@ -288,7 +276,7 @@ const Step5: React.FC<Step5Props> = ({
     console.log("update payload.....", payload);
 
     try {
-      await fetch(
+      const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
@@ -298,10 +286,18 @@ const Step5: React.FC<Step5Props> = ({
           body: JSON.stringify(payload)
         }
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      toast.success("Successfully updated vendor messages");
     } catch (error) {
       console.error("Error updating Step 5 messages:", error);
+      toast.error("Failed to update vendor messages");
     }
-    fetchTicket(ticket.id);
+    
+    await fetchTicket(ticket.id);
   };
 
   // useEffect(() => {
@@ -318,6 +314,11 @@ const Step5: React.FC<Step5Props> = ({
   // }, [messages]);
 
   const handleChange = (vendor: string, value: string) => {
+    // Only allow changes if the vendor is editable
+    if (!editableVendors[vendor]) {
+      return;
+    }
+
     setMessages((prevMessage) => {
       const updatedMessages = {
         ...prevMessage,
@@ -337,13 +338,17 @@ const Step5: React.FC<Step5Props> = ({
   };
 
   const handleNextStep = async () => {
+    if (!Object.values(messages).some(msg => msg.response_message?.trim())) {
+      toast.error("No messages to decode. Please enter messages for vendors.");
+      return;
+    }
+
     setIsDecoding(true);
     try {
-      // First, save the current messages
-      // await handleSave();
-      // const updatedData = await updateTicket(ticket.id);
-      // Then proceed to the next step
       await handleNext();
+    } catch (error) {
+      console.error("Error in handleNextStep:", error);
+      toast.error("Failed to decode messages. Please try again.");
     } finally {
       setIsDecoding(false);
     }
@@ -457,7 +462,7 @@ const Step5: React.FC<Step5Props> = ({
       <div className="py-1 mb-4">
         <h1 className="text-xl font-bold ">Customer Message</h1>
         <div>
-          {ticket.steps["Step 1 : Customer Message Received"].latest.text}
+          {ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}
         </div>
       </div>
       <div className="flex justify-between py-2">

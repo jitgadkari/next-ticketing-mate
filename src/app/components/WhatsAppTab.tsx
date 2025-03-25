@@ -32,7 +32,7 @@ export default function WhatsAppTab() {
       if (!response.ok) throw new Error('Failed to fetch status');
       
       const data = await response.json();
-      
+      console.log("data", data)
       setState(prev => {
         // Always update if we have a QR code
         if (data.state === 'QR_READY' && data.qr) {

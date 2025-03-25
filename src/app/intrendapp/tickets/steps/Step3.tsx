@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import toast from "react-hot-toast";
-import { types } from "util";
 
 interface Step3Props {
   ticketNumber: string;
@@ -88,6 +87,7 @@ const Step3: React.FC<Step3Props> = ({
     if (isCurrentStep) {
       setSelectedVersion(version);
       const selectedVersion = allVersions.find(v => v.version === version);
+      console.log("Selected version:", selectedVersion);
       if (selectedVersion) {
         setMessage(selectedVersion.vendor_message_temp);
       }
@@ -121,31 +121,42 @@ const Step3: React.FC<Step3Props> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+  
     const initializeState = async () => {
-      // If we have stepData with a message, use that
-      if (stepData.latest?.vendor_message_temp) {
-        setMessage(stepData.latest.vendor_message_temp);
-        return;
-      }
-      
-      // Otherwise fall back to template
-      if (template?.message) {
-        setMessage(template.message);
-        // Check if the initial template matches what would be returned with decoded messages
-        try {
-          const decodedTemplate = await message_decoder(true);
-          setIncludeDecodedMessage(template.message === decodedTemplate);
-        } catch (error) {
-          console.error('Error checking initial decoded message state:', error);
+      try {
+        // Check for existing step data
+        if (stepData.latest?.vendor_message_temp) {
+          if (mounted) setMessage(stepData.latest.vendor_message_temp);
+          return;
         }
-      } else {
-        // If no template, try to fetch ticket data
-        fetchTicket(ticket.id);
+  
+        // Fallback to the template message
+        if (template?.message) {
+          if (mounted) setMessage(template.message);
+          try {
+            const decodedTemplate = await message_decoder(originalMessage, ticket, true);
+            if (mounted) setIncludeDecodedMessage(template.message === decodedTemplate);
+          } catch (error) {
+            console.error('Error checking initial decoded message state:', error);
+          }
+        } else {
+          // Attempt to fetch the ticket data if no message or template
+          if (mounted) await fetchTicket(ticket.id);
+        }
+      } catch (error) {
+        console.error("Error in initializeState:", error);
+        if (mounted) toast.error("Failed to initialize message template");
       }
     };
-
+  
     initializeState();
-  }, [template, stepData]);
+  
+    return () => {
+      mounted = false;
+    };
+  }, [template, stepData, ticket.id]);
+  
 
   const handleUpdate = async (updatedTemplate: string) => {
     console.log(updatedTemplate);
@@ -250,83 +261,80 @@ const Step3: React.FC<Step3Props> = ({
   const handleIncludeDecodedMessage = async () => {
     setIncludeDecodedMessage((prevState) => !prevState); // Toggle state first
     const newState = !includeDecodedMessage; // Get new state
-
+  
     try {
-      const vendorMessageTemplate = await message_decoder(newState); // ✅ Await API call
-
-      let updatedMessage = vendorMessageTemplate; // Start with decoded message
-
-      // ✅ Check if customer name should be included
-      if (
-        includeCustomerName &&
-        !updatedMessage.includes(`\n\nCustomer Name: ${customerName}`)
-      ) {
+      const vendorMessageTemplate = await message_decoder(originalMessage, ticket, newState);
+      let updatedMessage = vendorMessageTemplate;
+  
+      // ✅ Append customer name if needed
+      if (includeCustomerName && !updatedMessage.includes(`\n\nCustomer Name: ${customerName}`)) {
         updatedMessage += `\n\nCustomer Name: ${customerName}`;
       }
-
-      // ✅ Check if sample query should be included
-      if (
-        includeSampleQuery &&
-        !updatedMessage.includes(`\n\nThis is a Sample Query`)
-      ) {
+  
+      // ✅ Append sample query if needed
+      if (includeSampleQuery && !updatedMessage.includes(`\n\nThis is a Sample Query`)) {
         updatedMessage += `\n\nThis is a Sample Query`;
       }
-
+  
       setMessage(updatedMessage);
     } catch (error) {
       console.error("Error including decoded message:", error);
+      toast.error("Failed to include decoded message.");
     }
   };
+  
 
-  const message_decoder = async (includeDecodedMessage: boolean) => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          vendor_name: "{VENDOR}",
-          customerMessage: originalMessage,
-          ticket_number: ticket.ticket_number,
-          asked_details:
-            ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages,
-          asked_details_required: includeDecodedMessage,
-        }),
-      }
-    );
-    console.log(response);
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Error response:", errorData);
-      throw new Error(
-        `Failed to generate vendor message template: ${response.statusText}`
+  const message_decoder = async (originalMessage, ticket, includeDecodedMessage) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            vendor_name: "{VENDOR}",
+            customerMessage: originalMessage,
+            ticket_number: ticket.ticket_number,
+            asked_details:
+              ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages,
+            asked_details_required: includeDecodedMessage,
+          }),
+        }
       );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to generate vendor message template: ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      return data.message;
+    } catch (error) {
+      console.error("Error in message_decoder:", error);
+      return "";
     }
-
-    const data = await response.json();
-    console.log(data);
-    const vendorMessageTemplate = data.message;
-    console.log(vendorMessageTemplate);
-    return vendorMessageTemplate;
   };
-
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const newMessage = e.target.value;
     setMessage(newMessage);
-    // Update states based on current input
     setIncludeCustomerName(newMessage.includes(`Customer Name: ${customerName}`));
     setIncludeSampleQuery(newMessage.includes('This is a Sample Query'));
-
-    // Check if the new message matches what would be returned with decoded messages
-    try {
-      const decodedTemplate = await message_decoder(true);
-      setIncludeDecodedMessage(newMessage === decodedTemplate);
-    } catch (error) {
-      console.error('Error checking decoded message state:', error);
-    }
+  
+    // Use a timeout to debounce the message decoding check
+    setTimeout(async () => {
+      try {
+        const decodedTemplate = await message_decoder(originalMessage, ticket, true);
+        setIncludeDecodedMessage(newMessage === decodedTemplate);
+      } catch (error) {
+        console.error("Error checking decoded message state:", error);
+      }
+    }, 300); // Debounce interval
   };
+  
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -334,7 +342,7 @@ const Step3: React.FC<Step3Props> = ({
         <>
           <div className="py-1 mb-4">
             <h1 className="text-xl font-bold">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"].text}</div>
+            <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
           </div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">
