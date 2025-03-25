@@ -50,11 +50,40 @@ export default function CustomerDashboard() {
   const [templates, setTemplates] = useState<{ [key: string]: string }>({});
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleCustomerSelect = async (customerName: string) => {
-    setSelectedCustomer(customerName);
-    setFilterState(prev => ({ ...prev, offset: 0 }));
+  
+  const handleCustomerSelect = async (access_token: string) => {
+    console.log("Access Token:", access_token);
+    
+    try {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/dashboard`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      console.log("Customer Dashboard Data:", data);
+      
+      // Handle the data (e.g., set state)
+      // setDashboardData(data);
+    } catch (error) {
+      console.error("Error fetching customer dashboard:", error);
+    }
   };
+  
+  useEffect(() => {
+    const accessToken= localStorage.getItem("access_token");
+    if(!accessToken){
+      throw new Error ("token not available")
+    }
+    handleCustomerSelect(accessToken);
+  }, [selectedCustomer, filterState]);
 
   const fetchTickets = async () => {
     if (!selectedCustomer) return;

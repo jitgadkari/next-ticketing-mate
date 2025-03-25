@@ -33,7 +33,7 @@ const PeopleList = ({
   const [allPeople, setAllPeople] = useState<any[]>([]); // New state for all people
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
+  const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAllPeople = async () => {
@@ -116,6 +116,46 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
     }
   };
 
+  const handleRegisterLogin = async (person: any) => {
+    try {
+      if(person.type_employee !== "External"){
+        throw new Error("user is internal")
+      }
+      console.log(`🚀 Registering user: ${person.email}`);
+
+      // Define the request payload
+      const userPayload = {
+        email: person.email,
+        password: "Str0ngPass!", // ⚠️ Change this as needed
+        role: "general_user", // Default role if not provided
+        status: "Active",
+        person_id: person.id
+      };
+
+      // Make the API call
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userPayload),
+      });
+      console.log("response",response)
+      const data = await response.json();
+      console.log("data...",data)
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
+
+      console.log("✅ User registered successfully:", data);
+      alert("User registered successfully!");
+
+    } catch (error) {
+      console.error("❌ Error registering user:", error);
+      alert("Error registering user: " + error);
+    }
+  };
+
   const columns = ["Name", "Phone", "Email", "Type Employee", "Actions"];
 
   const renderRow = (person: any) => (
@@ -137,11 +177,14 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
             onClick={() => setDeletePeopleId(person.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
-           <MdOutlineFolderDelete
+          <MdOutlineFolderDelete
             onClick={() => setSoftDeletePeopleId(person.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
             title="Soft Delete"
           />
+          <button onClick={() => handleRegisterLogin(person)}>
+            Provide Login
+          </button>
         </div>
       </td>
     </>
@@ -198,7 +241,7 @@ const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null
           </div>
         </dialog>
       )}
-{/* Soft Delete Dialog */}
+      {/* Soft Delete Dialog */}
       {softDeletePeopleId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
