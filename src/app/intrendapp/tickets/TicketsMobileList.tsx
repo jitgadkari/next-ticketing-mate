@@ -81,7 +81,7 @@ export default function TicketsMobileList({
     "Step 2 : Message Decoded",
     "Step 3 : Message Template for vendors",
     "Step 4 : Vendor Selection",
-    "Step 5: Messages from Vendors",
+    "Step 5 : Messages from Vendors",
     "Step 6 : Vendor Message Decoded",
     "Step 7 : Customer Message Template",
     "Step 8 : Customer Response",

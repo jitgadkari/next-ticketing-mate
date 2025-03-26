@@ -89,7 +89,7 @@ export default function VendorsDashboard() {
 
       const parsedTickets = data.tickets.map(ticket => {
         // Get all vendor messages from Step 5
-        const vendorMessages = ticket.steps?.["Step 5: Messages from Vendors"] || {};
+        const vendorMessages = ticket.steps?.["Step 5 : Messages from Vendors"] || {};
 
         return {
           _id: ticket._id,
@@ -222,7 +222,7 @@ export default function VendorsDashboard() {
           },
           body: JSON.stringify({
             ticket_number: ticketNumber,
-            step_number: "Step 5: Messages from Vendors",
+            step_number: "Step 5 : Messages from Vendors",
             step_info: {
               [selectedVendor]: replyMessage
             },

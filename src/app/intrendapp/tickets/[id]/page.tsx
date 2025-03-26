@@ -67,7 +67,7 @@ const TicketDetailsPage = () => {
   console.log(activeStep)
   const listOfStepsWhereRefreshIsntAllowed = [
     "Step 1 : Customer Message Received",
-    // "Step 5: Messages from Vendors",
+    // "Step 5 : Messages from Vendors",
     "Step 6 : Vendor Message Decoded",
     "Step 7 : Customer Message Template",
   ];
@@ -191,7 +191,7 @@ const TicketDetailsPage = () => {
       case "Step 5 : Messages from Vendors":
         const step5Data = ticket.steps[step];
         const vendorMessages = step5Data?.latest?.vendors || {};
-        console.log("Step 5 data:", step5Data);
+        console.log("Step 5 data :", step5Data);
         console.log("Vendor messages:", vendorMessages);
         return (
           <Step5
@@ -230,12 +230,12 @@ const TicketDetailsPage = () => {
       //           body: JSON.stringify({
       //             ticket_number: ticket.ticket_number,
       //             step_info: vendorMessages,
-      //             step_number: "Step 5: Messages from Vendors"
+      //             step_number: "Step 5 : Messages from Vendors"
       //           }),
       //         });
 
       //         fetchTicket(ticket._id);
-      //         setActiveStep("Step 5: Messages from Vendors");
+      //         setActiveStep("Step 5 : Messages from Vendors");
       //       }}
       //       handleUpdate={async (updatedVendors) => {
       //         console.log('Updating Step 4 vendors:', updatedVendors);
@@ -255,7 +255,7 @@ const TicketDetailsPage = () => {
       //     />
       //   );
 
-      // case "Step 5: Messages from Vendors":
+      // case "Step 5 : Messages from Vendors":
       //   return (
       //     <Step5
       //       ticketNumber={ticket.ticket_number}
@@ -297,7 +297,7 @@ const TicketDetailsPage = () => {
       //           },
       //           body: JSON.stringify({
       //             ticket_number: ticket.ticket_number,
-      //             step_number: "Step 5: Messages from Vendors",
+      //             step_number: "Step 5 : Messages from Vendors",
       //             step_info: updatedMessages
       //           }),
       //         });
@@ -381,7 +381,7 @@ const TicketDetailsPage = () => {
 
       case "Step 7 : Customer Message Template":
         console.log("Step 7 data:", ticket.steps[step]); // Debug log
-        console.log("step 5",ticket.steps["Step 5: Messages from Vendors"])
+        console.log("step 5",ticket.steps["Step 5 : Messages from Vendors"])
         let customerTemplate = ticket.steps[step]?.latest.customer_message_template || "";
 
         // Ensure customerTemplate is a string

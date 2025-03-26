@@ -78,7 +78,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     "Step 2 : Message Decoded",
     "Step 3 : Message Template for vendors",
     "Step 4 : Vendor Selection",
-    "Step 5: Messages from Vendors",
+    "Step 5 : Messages from Vendors",
     "Step 6 : Vendor Message Decoded",
     "Step 7 : Customer Message Template",
     "Step 8 : Customer Response",
@@ -149,15 +149,15 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/delete`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/delete`,
         {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ticket_id: ticketId,
-            userId: '1',
+            ticketId: ticketId,
+            userId: 'a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea',
             userAgent: 'user-test'
           }),
         }
@@ -168,41 +168,48 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
         setDeleteTicketId(null);
         toast.success('Ticket deleted successfully');
       } else {
-        console.error('Failed to delete ticket');
+        const errorData = await response.json();
+        console.error('Failed to delete ticket:', errorData);
+        toast.error('Failed to delete ticket');
       }
     } catch (error) {
       console.error('Error deleting ticket:', error);
+      toast.error('Error deleting ticket');
     }
   };
 
   const handleSoftDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
-    `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/soft_delete`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/soft_delete`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ticket_id: ticketId,
+            ticketId: ticketId,
             changed_status: 'Closed',
-            userId: '1',
+            userId: 'a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea',
             userAgent: 'user-test'
           }),
         }
       );
-  const data = await response.json();
-  console.log(data)
+
+      const data = await response.json();
+      console.log('Soft delete response:', data);
+
       if (response.ok) {
         setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
         toast.success('Ticket soft deleted successfully');
       } else {
-        console.error('Failed to soft delete ticket');
+        console.error('Failed to soft delete ticket:', data);
+        toast.error('Failed to soft delete ticket');
       }
     } catch (error) {
       console.error('Error soft deleting ticket:', error);
+      toast.error('Error soft deleting ticket');
     }
   };
 

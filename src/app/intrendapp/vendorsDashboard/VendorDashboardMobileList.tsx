@@ -19,7 +19,7 @@ interface Ticket {
 			text: string;
 			timestamp: string;
 		};
-		"Step 5: Messages from Vendors"?: {
+		"Step 5 : Messages from Vendors"?: {
 			[key: string]: string;
 		};
 		[key: string]: any;
@@ -71,13 +71,13 @@ export default function VendorDashboardMobileList({ selectedVendor, onVendorSele
 					_id: ticket._id,
 					ticket_number: ticket.ticket_number,
 					customer_message: ticket.steps?.["Step 1 : Customer Message Received"]?.text || "",
-					vendor_replies: ticket.steps?.["Step 5: Messages from Vendors"] || {},
+					vendor_replies: ticket.steps?.["Step 5 : Messages from Vendors"] || {},
 					steps: {
 						"Step 1 : Customer Message Received": {
 							text: ticket.steps?.["Step 1 : Customer Message Received"]?.text || "",
 							timestamp: ticket.steps?.["Step 1 : Customer Message Received"]?.timestamp || ""
 						},
-						"Step 5: Messages from Vendors": ticket.steps?.["Step 5: Messages from Vendors"] || {},
+						"Step 5 : Messages from Vendors": ticket.steps?.["Step 5 : Messages from Vendors"] || {},
 						...ticket.steps
 					}
 				}));
@@ -162,7 +162,7 @@ export default function VendorDashboardMobileList({ selectedVendor, onVendorSele
 					},
 					body: JSON.stringify({
 						ticket_number: ticketNumber,
-						step_number: "Step 5: Messages from Vendors",
+						step_number: "Step 5 : Messages from Vendors",
 						step_info: {
 							[selectedVendor]: replyMessage
 						},
