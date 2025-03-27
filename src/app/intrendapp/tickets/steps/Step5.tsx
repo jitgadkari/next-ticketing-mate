@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
@@ -300,18 +299,78 @@ const Step5: React.FC<Step5Props> = ({
     await fetchTicket(ticket.id);
   };
 
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     window.location.reload();
-  //   }, 50000);
-  //   const allMessagesAreFilled = Object.values(messages).every(
-  //     (message) => message.trim() !== ""
-  //   );
-  //   if (allMessagesAreFilled) {
-  //     clearInterval(interval);
-  //   }
-  //   return () => clearInterval(interval);
-  // }, [messages]);
+  const fetchVendorById = async (vendorId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`
+      );
+      const data = await response.json();
+      return data.vendor;
+    } catch (error) {
+      console.error("Error fetching vendor by ID:", error);
+      return null;
+    }
+  };
+
+  const sendReminderToAllRemainingVendors = async () => {
+    Object.entries(messages).map(async ([vendor_id, message]) => {
+      if (!message.response_message) {
+        sendReminder(ticket.ticket_number, vendor_id);
+      }
+    });
+  };
+
+  const sendReminder = async (ticket_number: string, vendorId: string) => {
+    try {
+      const vendor = await fetchVendorById(vendorId);
+      console.log(vendor);
+      if (!vendor) {
+        throw new Error("Vendor not found");
+      }
+
+      const vendorMessage = `Hello ${vendor.name} \n \nWe are still waiting for your response on the ticket number ${ticket_number}.\n \nPlease respond as soon as possible.`;
+
+      // Send to groups
+      const groupPromises = Object.values(vendor.group || {}).map(groupId =>
+        fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: groupId,
+              content: vendorMessage,
+            }),
+          }
+        )
+      );
+
+      // Send to personal number if available
+      const personalPromises = vendor.phone ? [
+        fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: `${vendor.phone}@c.us`,
+              content: vendorMessage,
+            }),
+          }
+        )
+      ] : [];
+
+      await Promise.all([...groupPromises, ...personalPromises]);
+      toast.success(`Reminder sent to ${vendor.name} successfully.`);
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      toast.error(`Failed to send reminder to vendor.`);
+    }
+  };
 
   const handleChange = (vendor: string, value: string) => {
     // Only allow changes if the vendor is editable
@@ -354,82 +413,6 @@ const Step5: React.FC<Step5Props> = ({
     }
   };
 
-  // const updateTicket = async (ticketId: string) => {
-  //   try {
-  //     const response = await fetch(
-  //       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/${ticketId}`
-  //     );
-  //     const data = await response.json();
-  //     console.log(data);
-  //     return data;
-  //   } catch (error) {
-  //     console.error("Error fetching ticket:", error);
-  //   }
-  // };
-  const fetchVendors = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`
-      );
-      const data = await response.json();
-      console.log(data);
-      return data;
-    } catch (error) {
-      console.error("Error fetching vendors:", error);
-    }
-  };
-  const sendReminderToAllRemainingVendors = async () => {
-    Object.entries(messages).map(async ([vendor, message]) => {
-      const fetchedVendors = await fetchVendors();
-      const vendors = fetchedVendors.vendors.filter(
-        (fetchedVendor: any) => fetchedVendor.name === vendor
-      );
-      if (vendors.length > 0) {
-        if (!message) {
-          sendReminder(ticket.ticket_number, vendor);
-        }
-      }
-    });
-  };
-  const sendReminder = async (ticket_number: string, vendorName: string) => {
-    try {
-      const fetchedVendors = await fetchVendors();
-      const vendor = fetchedVendors.vendors.find(
-        (vendor: any) => vendor.name === vendorName
-      );
-      const getGroup = Object.values(vendor.group)[0];
-      if (!getGroup) {
-        throw new Error("Group not found");
-      }
-      const vendorMessage = `Hello ${vendorName} \n \nWe are still waiting for your response on the ticket number ${ticket_number}.\n \nPlease respond as soon as possible.`;
-      if (!vendor) {
-        console.error(`Vendor ${vendorName} not found`);
-        return;
-      }
-      await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            to: getGroup,
-            message: vendorMessage,
-          }),
-        }
-      );
-      toast.success(`Reminder sent to ${vendorName} successfully.`);
-    } catch (error) {
-      toast.error(`Failed to send reminder to ${vendorName}.`);
-    }
-  };
-
-  const handleReminderClick = (vendor: string) => {
-    setSelectedVendor(vendor);
-    setShowReminderPopup(true);
-  };
-
   const handleEditClick = (vendor: string, vendorName: string) => {
     setEditPopupVendor({ vendor_name: vendorName, vendor_id: vendor });
     setSelectedVendor(vendor);
@@ -443,7 +426,6 @@ const Step5: React.FC<Step5Props> = ({
     }));
     setShowEditPopup(false);
   };
-  console.log(messages);
 
   const handleRefresh = async () => {
     console.log("Refreshing page...");
@@ -503,7 +485,7 @@ const Step5: React.FC<Step5Props> = ({
             <div className="flex space-x-2">
               {message.response_message === "" && (
                 <Button
-                  onClick={() => handleReminderClick(vendor_id)}
+                  onClick={() => sendReminder(ticket.ticket_number, vendor_id)}
                   className="bg-gray-500 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
                   disabled={!isCurrentStep}
                 >
@@ -618,5 +600,3 @@ const Step5: React.FC<Step5Props> = ({
 };
 
 export default Step5;
-
-

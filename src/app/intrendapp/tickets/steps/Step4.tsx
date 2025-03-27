@@ -177,23 +177,61 @@ const Step4: React.FC<Step4Props> = ({
 
   const handleNext = async (updatedVendors: string[]) => {
     console.log("Handling next for Step 4");
-    console.log("Step 4 updated vendors:", updatedVendors);
-    const vendorsToUpdate = updatedVendors.map((vendorName) => {
-      const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
-      console.log("Vendor found:", vendor);
-      return {
-        vendor_id: vendor?.id,
-        vendor_name: vendorName,
-        message_temp: vendorMessages[vendorName] || "",
-        message_sent: {
-          whatsapp: false,
-          email: false,
-        },
-      };
+    
+    // Check if any messages are unsent
+    const currentVendors = ticket.steps[ticket.current_step]?.latest?.vendors || {};
+    let hasUnsentEmail = false;
+    let hasUnsentWhatsapp = false;
+
+    selectedOptions.forEach(option => {
+      const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
+      if (!vendor) return;
+      const vendorData = currentVendors[vendor.id];
+      console.log('Checking vendor data for', vendor.name, vendorData);
+      
+      // Check if message_sent is boolean (old format) or object (new format)
+      if (typeof vendorData?.message_sent === 'object') {
+        if (!vendorData?.message_sent?.email) hasUnsentEmail = true;
+        if (!vendorData?.message_sent?.whatsapp) hasUnsentWhatsapp = true;
+      } else {
+        // If using old format or no messages sent
+        if (!vendorData?.message_sent) {
+          hasUnsentEmail = true;
+          hasUnsentWhatsapp = true;
+        }
+      }
     });
 
-    console.log("mapped vendors", vendorsToUpdate);
+    // Update message sent status
+    setIsMessageSent({
+      emailSent: !hasUnsentEmail,
+      whatsappMessageSent: !hasUnsentWhatsapp
+    });
+
+    // If any messages are unsent, show the reminder popup
+    if (hasUnsentEmail || hasUnsentWhatsapp) {
+      setShowReminderPopUp(true);
+      return;
+    }
+
+    // If all messages are sent, proceed with the update
+    setLoading(true);
     try {
+      const vendorsToUpdate = updatedVendors.map((vendorName) => {
+        const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
+        const currentVendorData = currentVendors[vendor?.id || ""] || {};
+        
+        return {
+          vendor_id: vendor?.id,
+          vendor_name: vendorName,
+          message_temp: vendorMessages[vendorName] || "",
+          message_sent: currentVendorData.message_sent || {
+            whatsapp: false,
+            email: false
+          }
+        };
+      });
+
       // Save Step 4 data
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
@@ -204,44 +242,53 @@ const Step4: React.FC<Step4Props> = ({
           },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_number: ticket.current_step,
             step_info: { vendors: vendorsToUpdate },
+            step_number: ticket.current_step
           }),
         }
       );
 
-      // Initialize Step 5 with empty messages
-      const emptyVendorMessages = Object.keys(updatedVendors).reduce(
-        (acc, vendor) => {
-          acc[vendor] = "";
-          return acc;
-        },
-        {} as Record<string, string>
+      // Initialize Step 5 with empty responses
+      const step5VendorsObj = selectedOptions.reduce((acc, option) => {
+        const vendor = vendorDetails.find((v) => v.name === option.value);
+        if (!vendor) return acc;
+
+        acc[vendor.id] = {
+          name: option.value,
+          response_received: false,
+          response_message: ""
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Update next step
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            step_info: { vendors: step5VendorsObj },
+            step_number: ticket.current_step
+          }),
+        }
       );
 
-      console.log("Step 5 initial vendor messages:", emptyVendorMessages);
+      if (!response.ok) {
+        throw new Error(`Failed to update next step: ${response.status}`);
+      }
 
-      // await fetch(
-      //   `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/ticket/update_next_step/?user_id=1234&user_agent=user-test`,
-      //   {
-      //     method: "PUT",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({
-      //       ticket_id: ticket.id,
-      //       step_info: emptyVendorMessages,
-      //       step_number: ticket.current_step,
-      //     }),
-      //   }
-      // );
-
-      // await fetchTicket(ticket.id);
-      // setLoading(false);
-      // setActiveStep("Step 5 : Messages from Vendors");
-      // toast.success("Step 4 completed");
+      await fetchTicket(ticket.id);
+      setActiveStep("Step 5 : Messages from Vendors");
+      toast.success("Step 4 completed");
     } catch (error) {
       console.error("Error updating steps:", error);
+      toast.error("Failed to proceed to next step");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -360,8 +407,13 @@ const Step4: React.FC<Step4Props> = ({
   }, [selectedOptions, ticket.steps, ticket.current_step, vendorMessages, selectedVersion]);
 
   useEffect(() => {
-    fetchVendors();
-  }, []);
+    // Call fetchVendors when decoded messages are available
+    const decodedMessages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages;
+    if (decodedMessages) {
+      console.log("Decoded messages available, fetching filtered vendors...");
+      fetchVendors();
+    }
+  }, [ticket.steps]);
 
   console.log("selectedOptions", selectedOptions);
   console.log("template", template);
@@ -389,30 +441,48 @@ const Step4: React.FC<Step4Props> = ({
 
 
   const fetchVendors = async () => {
-    console.log("Fetching all vendors...");
+    console.log("Fetching filtered vendors...");
     try {
-      // Commented filtered vendors code for future reference
-      /*
-      const decoded_messages = ticket.steps["Step 2 : Message Decoded"].latest.decoded_messages;
+      // Get decoded messages from Step 2
+      const decoded_messages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
+      console.log("Decoded messages:", decoded_messages);
+
+      // Clean and prepare the decoded messages
       const cleanDecodedMessages = Object.entries(decoded_messages).reduce((acc, [key, value]) => {
-        if (value && value !== "Null" && value !== "null") {
+        if (value && value !== "Null" && value !== "null" && value !== "") {
           acc[key] = value;
         }
         return acc;
       }, {} as Record<string, any>);
 
-      const filters_dict = {
-        // ... filters dictionary construction
-      };
-      */
+      // Prepare filters dictionary
+      const filters_dict: Record<string, string[]> = {};
+      
+      // Add certifications if present
+      if (cleanDecodedMessages.certifications) {
+        filters_dict.certifications = cleanDecodedMessages.certifications.split(',').map(cert => cert.trim());
+      }
+
+      // Add fabric type if present
+      if (cleanDecodedMessages.fabric_type) {
+        filters_dict.fabric_type = [cleanDecodedMessages.fabric_type];
+      }
+
+      // Add weave if present
+      if (cleanDecodedMessages.weave) {
+        filters_dict.weave = [cleanDecodedMessages.weave];
+      }
+
+      console.log("Filters dictionary:", filters_dict);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors?limit=10`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/filter/attribute`,
         {
-          method: "GET",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
-          }
+          },
+          body: JSON.stringify({ filters_dict })
         }
       );
 
@@ -658,13 +728,22 @@ const Step4: React.FC<Step4Props> = ({
 
   const updateTicketWithSentStatus = async (results: VendorResult[]) => {
     try {
+      // Get current vendor data to preserve existing message sent status
+      const currentVendors = ticket.steps[ticket.current_step]?.latest?.vendors || {};
+
       // Convert results array to object with vendor_id as keys
       const vendorsObject = results.reduce((acc, vendor) => {
+        const currentVendorData = currentVendors[vendor.vendor_id] || {};
+        const currentMessageSent = currentVendorData.message_sent || { email: false, whatsapp: false };
+
         acc[vendor.vendor_id] = {
           name: vendor.name,
           vendor_id: vendor.vendor_id,
           message_temp: vendor.message_temp,
-          message_sent: vendor.message_sent
+          message_sent: {
+            email: currentMessageSent.email || false,
+            whatsapp: true // Set WhatsApp to true as this is called after WhatsApp send
+          }
         };
         return acc;
       }, {} as Record<string, any>);
@@ -1012,7 +1091,7 @@ const Step4: React.FC<Step4Props> = ({
               <MdEmail />
             </Button>
             <Button
-              onClick={handleNextStep}
+              onClick={() => handleNext(selectedOptions.map(option => option.value))}
               className={`font-bold py-2 px-4 rounded ${isCurrentStep
                 ? "bg-blue-500 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -1092,26 +1171,33 @@ const Step4: React.FC<Step4Props> = ({
           <div className="bg-white p-5 rounded-lg shadow-xl">
             <h2 className="text-xl font-bold mb-4">Unsent Messages</h2>
             <p className="mb-4">
-              {`You haven't sent ${!isMessageSent.emailSent ? "Email" : ""}${!isMessageSent.emailSent && !isMessageSent.whatsappMessageSent
-                ? ", "
-                : ""
-                }${!isMessageSent.whatsappMessageSent ? "WhatsApp" : ""
-                } messages yet. Would you like to proceed without sending?`}
+              {(() => {
+                const unsentTypes = [];
+                if (!isMessageSent.emailSent) unsentTypes.push("Email");
+                if (!isMessageSent.whatsappMessageSent) unsentTypes.push("WhatsApp");
+                
+                if (unsentTypes.length === 0) return null;
+                
+                const messageType = unsentTypes.length === 1 ? 'message' : 'messages';
+                const unsentMessage = unsentTypes.join(' and ');
+                
+                return `You haven't sent ${unsentMessage} ${messageType} to the selected vendors. Would you like to proceed without sending?`;
+              })()}
             </p>
 
             <div className="flex justify-end">
               <Button
                 onClick={() => setShowReminderPopUp(false)}
-                className="mr-2 bg-blue-500 hover:bg-blue-700 text-black font-bold py-2 px-4 rounded"
+                className="mr-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
               >
                 Cancel
               </Button>
               <Button
                 onClick={async () => {
-                  await handleNextStep();
                   setShowReminderPopUp(false);
+                  await handleNextStep(selectedOptions.map(option => option.value));
                 }}
-                className=" bg-gray-300 hover:bg-gray-400 text-black  font-bold py-2 px-4 rounded"
+                className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
               >
                 Proceed without sending
               </Button>
