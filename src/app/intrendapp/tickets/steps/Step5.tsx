@@ -62,10 +62,11 @@ const Step5: React.FC<Step5Props> = ({
   ticket,
   step,
 }) => {
-  const [messages, setMessages] = useState(vendorMessages || {});
+  const [messages, setMessages] = useState(
+    ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors || vendorMessages || {}
+  );
   const [isDecoding, setIsDecoding] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [showReminderPopup, setShowReminderPopup] = useState(false);
+  const [showReminderPopup, setShowReminderPopup] = useState(false);  
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);

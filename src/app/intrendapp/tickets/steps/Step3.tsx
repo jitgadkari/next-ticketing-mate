@@ -369,23 +369,37 @@ const Step3: React.FC<Step3Props> = ({
             value={message}
             onChange={handleInputChange}
             rows={15}
+            disabled={!isCurrentStep}
+            className={!isCurrentStep ? "bg-gray-100 cursor-not-allowed" : ""}
           />
           <div className="flex flex-wrap gap-4 mb-4 mt-4">
             <Button
               onClick={handleSave}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className={`font-bold py-2 px-4 rounded ${isCurrentStep
+                ? "bg-blue-500 hover:bg-blue-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isCurrentStep}
             >
               Save
             </Button>
             <Button
               onClick={toggleSampleQuery}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className={`font-bold py-2 px-4 rounded ${isCurrentStep
+                ? "bg-blue-500 hover:bg-blue-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isCurrentStep}
             >
               {includeSampleQuery ? "Remove Sample Query" : "Add Sample Query"}
             </Button>
             <Button
               onClick={toggleCustomerName}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              className={`font-bold py-2 px-4 rounded ${isCurrentStep
+                ? "bg-green-500 hover:bg-green-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isCurrentStep}
             >
               {includeCustomerName
                 ? "Remove Customer Name"

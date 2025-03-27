@@ -680,13 +680,15 @@ const Step7: React.FC<Step7Props> = ({
       <textarea
         value={template}
         onChange={(e) => setTemplate(e.target.value)}
-        className="w-full h-64 p-2 border rounded"
+        disabled={!isCurrentStep}
+        className={`w-full h-64 p-2 border rounded ${!isCurrentStep ? "bg-gray-100 cursor-not-allowed" : ""}`}
       />
 
       <div className="space-y-4 mt-4">
         {/* Top row - Template Controls */}
         <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
           <Button
+          disabled={!isCurrentStep}
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md flex items-center gap-2 transition-all"
           >
@@ -695,12 +697,14 @@ const Step7: React.FC<Step7Props> = ({
           </Button>
           <div className="flex gap-3">
             <Button
+            disabled={!isCurrentStep}
               onClick={toggleIncludeCustomerMessage}
               className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >
               {includeCustomerMessage ? "Hide Customer Message" : "Show Customer Message"}
             </Button>
             <Button
+            disabled={!isCurrentStep}
               onClick={toggleIncludeVendorName}
               className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >

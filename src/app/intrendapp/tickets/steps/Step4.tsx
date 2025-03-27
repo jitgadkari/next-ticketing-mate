@@ -67,8 +67,9 @@ const Step4: React.FC<Step4Props> = ({
   }
 
   const stepData = ticket.steps[ticket.current_step] || {};
+  console.log(stepData)
   const versions = Array.isArray(stepData.versions) ? stepData.versions : [];
-
+console.log(versions)
   // Add latest version to the versions array for unified handling
   const allVersions = [
     {
@@ -110,8 +111,8 @@ const Step4: React.FC<Step4Props> = ({
 
   const handleVersionChange = (version: string) => {
     if (isCurrentStep) {
-      setSelectedVersion(version);
-      const selectedVersionData = allVersions.find(v => v.version === version);
+    setSelectedVersion(version);
+    const selectedVersionData = allVersions.find(v => v.version === version);
       if (selectedVersionData) {
         // Get vendor data from the selected version
         const vendors = selectedVersionData.vendors || {};
@@ -354,21 +355,21 @@ const Step4: React.FC<Step4Props> = ({
     const currentVersions = currentStepData.versions || [];
     const latestVersion = currentStepData.latest;
 
-    if (latestVersion) {
+    if (latestVersion?.vendors) {
       // Initialize with latest version's data
-      const vendors = latestVersion.vendors || {};
+      const vendors = latestVersion.vendors;
       const newMessages: Record<string, string> = {};
-      const newSelectedOptions = (Object.entries(vendors) as Array<[string, VendorData]>).map(([id, vendor]) => {
+      const newSelectedOptions = Object.entries(vendors).map(([id, vendor]: [string, VendorData]) => {
         if (vendor.message_temp) {
           newMessages[vendor.name] = vendor.message_temp;
         }
         return {
           label: vendor.name,
           value: vendor.name,
-          id: vendor.vendor_id,
+          id: vendor.vendor_id || id,
         };
       });
-      console.log("newMessages", newMessages)
+      console.log("Loading saved vendor data:", newSelectedOptions);
       setSelectedOptions(newSelectedOptions);
       setVendorMessages(newMessages);
       setSelectedVersion('latest');
@@ -972,7 +973,7 @@ const Step4: React.FC<Step4Props> = ({
           </div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Step 4: Select Vendors</h3>
-            {isCurrentStep && versions.length > 0 && (
+            {versions.length > 0 && (
               <select
                 value={selectedVersion}
                 onChange={(e) => handleVersionChange(e.target.value)}
@@ -1043,7 +1044,7 @@ const Step4: React.FC<Step4Props> = ({
             <Button
               onClick={handleSave}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              disabled={!isCurrentStep}
+              disabled={!isCurrentStep || selectedOptions.length === 0}
             >
               Save
             </Button>
@@ -1205,9 +1206,9 @@ const Step4: React.FC<Step4Props> = ({
           </div>
         </div>
       )}
-      {!isCurrentStep && (
+      {/* {!isCurrentStep && (
         <h1 className="text-end text-yellow-500">Messages Already Sent!</h1>
-      )}
+      )} */}
     </div>
   );
 };
