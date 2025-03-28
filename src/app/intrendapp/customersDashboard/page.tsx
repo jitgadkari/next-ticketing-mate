@@ -23,6 +23,7 @@ interface Person {
 interface DashboardData {
   person: Person;
   tickets: Ticket[];
+  dashboardType: 'customer' | 'vendor';
 }
 
 interface Ticket {
@@ -30,6 +31,7 @@ interface Ticket {
   ticket_number: string;
   ticket_type: string;
   customer_message: string;
+  customer_name?: string;
   current_step: string;
   created_date: string;
   status: string;
@@ -48,6 +50,16 @@ interface Ticket {
     'Step 7 : Customer Message Template'?: {
       latest: {
         text: string;
+      }
+    },
+    'Step 5 : Messages from Vendors'?: {
+      latest: {
+        vendors: {
+          [key: string]: {
+            response_message: string;
+            status: string;
+          }
+        }
       }
     }
   };
@@ -117,7 +129,14 @@ export default function CustomerDashboard() {
     setRefreshKey(prev => prev + 1);
   };
 
-  const columns = [
+  const columns = dashboardData?.dashboardType === 'vendor' ? [
+    "Ticket Number",
+    "Type",
+    "Status",
+    "Customer",
+    "Customer Message",
+    "Your Response",
+  ] : [
     "Ticket Number",
     "Type",
     "Status",
@@ -126,7 +145,11 @@ export default function CustomerDashboard() {
     "Intrend Reply",
   ];
 
-  const renderRow = (ticket: Ticket) => (
+  const renderRow = (ticket: Ticket) => {
+    const isVendorView = dashboardData?.dashboardType === 'vendor';
+    const vendorResponse = ticket.steps?.['Step 5 : Messages from Vendors']?.latest?.vendors?.[dashboardData?.person?.id ?? ''];
+    
+    return (
     <>
       <td className="border p-2">{ticket.ticket_number}</td>
       <td className="border p-2">{ticket.ticket_type}</td>
@@ -141,27 +164,35 @@ export default function CustomerDashboard() {
           {ticket.steps?.['Step 9 : Final Status']?.latest?.status ?? "open"}
         </span>
       </td>
-      <td className="border p-2">
-        <span
-          className={`px-2 py-1 rounded ${
-            ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision === "approved"
-              ? "bg-green-200 text-green-800"
-              : ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision === "denied"
-              ? "bg-red-200 text-red-800"
-              : "bg-yellow-200 text-yellow-800"
-          }`}
-        >
-          {ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision ?? "pending"}
-        </span>
-      </td>
+      {isVendorView ? (
+        <td className="border p-2">{ticket.customer_name}</td>
+      ) : (
+        <td className="border p-2">
+          <span
+            className={`px-2 py-1 rounded ${
+              ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision === "approved"
+                ? "bg-green-200 text-green-800"
+                : ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision === "denied"
+                ? "bg-red-200 text-red-800"
+                : "bg-yellow-200 text-yellow-800"
+            }`}
+          >
+            {ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision ?? "pending"}
+          </span>
+        </td>
+      )}
       <td className="border p-2">{ticket.steps?.['Step 1 : Customer Message Received']?.latest?.text ?? ticket.customer_message ?? "N/A"}</td>
       <td className="border p-2">
         <div className="w-full whitespace-pre-wrap text-sm max-h-40 overflow-y-auto">
-          {ticket.steps?.['Step 7 : Customer Message Template']?.latest?.text ?? "No reply yet"}
+          {isVendorView 
+            ? (vendorResponse?.response_message || "No response yet")
+            : (ticket.steps?.['Step 7 : Customer Message Template']?.latest?.text ?? "No reply yet")}
         </div>
       </td>
     </>
-  );
+    );
+  };
+  
 
   if (isLoading) {
     return (
@@ -195,11 +226,11 @@ export default function CustomerDashboard() {
       />
       <div className="p-8 bg-grey-100 rounded shadow text-black hidden md:block">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Customer Dashboard</h1>
+          <h1 className="text-2xl font-bold">{dashboardData?.dashboardType === 'vendor' ? 'Vendor Dashboard' : 'Customer Dashboard'}</h1>
           <div>
             {!showForm ? (
               <Button onClick={() => setShowForm(true)}>
-                Add Ticket
+                {dashboardData?.dashboardType === 'vendor' ? 'Add Response' : 'Add Ticket'}
               </Button>
             ) : (
               <Button onClick={() => setShowForm(false)}>
@@ -223,7 +254,7 @@ export default function CustomerDashboard() {
         <div className="mb-4 flex justify-between items-center">
           {dashboardData?.person && (
             <div className="flex items-center gap-4">
-              <p className="font-semibold">Customer: {dashboardData.person.name}</p>
+              <p className="font-semibold">{dashboardData.dashboardType === 'vendor' ? 'Vendor' : 'Customer'}: {dashboardData.person.name}</p>
               <p>Email: {dashboardData.person.email}</p>
               <p>Phone: {dashboardData.person.phone}</p>
             </div>

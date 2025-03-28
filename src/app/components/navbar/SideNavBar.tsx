@@ -282,16 +282,16 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                   <span
                     className={`duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
-                    Customer
+                    Dashboard
                   </span>
                   <span
                     className={`duration-500 ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden`}
                   >
-                    Dashboard
+                    
                   </span>
                 </Link>
               </li>
-              <li
+              {/* <li
                 onClick={() => {
                   handleLinkClick("vendor-dashboard");
                 }}
@@ -319,7 +319,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     Dashboard
                   </span>
                 </Link>
-              </li>
+              </li> */}
 
             </ul>
           </nav>

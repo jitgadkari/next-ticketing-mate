@@ -29,7 +29,7 @@ const Dashboard = () => {
   const fetchDashBoardData = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/dashboard_info_all`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/dashboard`,
         {
           cache: "no-cache",
         }

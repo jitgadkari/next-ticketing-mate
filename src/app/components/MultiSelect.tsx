@@ -11,9 +11,10 @@ interface MultiSelectProps {
   options: MultiSelectOption[];
   value: MultiSelectOption[];
   onChange: (selected: MultiValue<MultiSelectOption>) => void;
+  onInputChange?: (inputValue: string) => void;
 }
 
-const MultiSelect: React.FC<MultiSelectProps> = ({ options, value, onChange }) => {
+const MultiSelect: React.FC<MultiSelectProps> = ({ options, value, onChange, onInputChange }) => {
   return (
     <div className="mb-4">
       <Select
@@ -21,6 +22,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ options, value, onChange }) =
         options={options}
         value={value}
         onChange={onChange}
+        onInputChange={onInputChange}
         className="basic-multi-select"
         classNamePrefix="select"
       />

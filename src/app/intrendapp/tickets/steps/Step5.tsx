@@ -332,7 +332,7 @@ const Step5: React.FC<Step5Props> = ({
       const vendorMessage = `Hello ${vendor.name} \n \nWe are still waiting for your response on the ticket number ${ticket_number}.\n \nPlease respond as soon as possible.`;
 
       // Send to groups
-      const groupPromises = Object.values(vendor.group || {}).map(groupId =>
+      const groupPromises = (vendor.whatsapp_groups || []).map((group: { id: string }) =>
         fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
           {
@@ -341,7 +341,7 @@ const Step5: React.FC<Step5Props> = ({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              to: groupId,
+              to: group.id,
               content: vendorMessage,
             }),
           }
@@ -379,7 +379,7 @@ const Step5: React.FC<Step5Props> = ({
       return;
     }
 
-    setMessages((prevMessage) => {
+    setMessages((prevMessage: Record<string, { name: string; response_message: string }>) => {
       const updatedMessages = {
         ...prevMessage,
         [vendor]: {

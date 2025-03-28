@@ -40,7 +40,8 @@ interface Vendor {
   factory_location: string;
   gst_number: string;
   pan_number: string;
-  mark_up:string;
+  mark_up: string;
+  whatsapp_groups?: { id: string; name: string }[];
 }
 
 interface AttributesResponse {
@@ -68,6 +69,21 @@ interface Person {
   linked_to_id: string | null;
 }
 
+interface IntegrationResponse {
+  latest?: {
+    integrations?: {
+      whatsapp?: {
+        groups?: Array<{
+          id: string;
+          group_id?: string;
+          name: string;
+          group_name?: string;
+        }>;
+      };
+    };
+  };
+}
+
 const VendorDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
@@ -89,6 +105,7 @@ const VendorDetailsPage: React.FC = () => {
     vendor_people_list: []
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [whatsappGroups, setWhatsappGroups] = useState<{ id: string; name: string }[]>([]);
   const routerHook = useRouter();
 
   useEffect(() => {
@@ -96,6 +113,7 @@ const VendorDetailsPage: React.FC = () => {
       fetchVendor(id as string);
       fetchDefaultAttributes();
       fetchUnlinkedPeople();
+      fetchWhatsappGroups();
     }
   }, [id]);
 
@@ -164,6 +182,33 @@ const VendorDetailsPage: React.FC = () => {
       ...prevState,
       [name]: selected.map((option: Option) => option.value),
     }));
+  };
+
+  const handleWhatsappGroupsChange = (selected: Option[]) => {
+    if (vendor) {
+      const selectedGroups = selected.map(option => JSON.parse(option.value));
+      setVendor({
+        ...vendor,
+        whatsapp_groups: selectedGroups
+      });
+    }
+  };
+
+  const fetchWhatsappGroups = async () => {
+    try {
+      const response = await fetch("http://localhost:5001/api/integrations/latest");
+      if (response.ok) {
+        const data: IntegrationResponse = await response.json();
+        const groups = data.latest?.integrations?.whatsapp?.groups || [];
+        const formattedGroups = groups.map(group => ({
+          id: group.id || group.group_id || '',
+          name: group.name || group.group_name || 'Unnamed Group'
+        }));
+        setWhatsappGroups(formattedGroups);
+      }
+    } catch (error) {
+      console.error("Error fetching WhatsApp groups:", error);
+    }
   };
 
   const handleRemoveBubble = (name: string, value: string) => {
@@ -300,6 +345,18 @@ const VendorDetailsPage: React.FC = () => {
         </p>
         <p><strong>Created Date:</strong> {new Date(vendor.created_date).toLocaleString()}</p>
         <p><strong>Updated Date:</strong> {new Date(vendor.updated_date).toLocaleString()}</p>
+        <p>
+          <strong>WhatsApp Groups:</strong>{" "}
+          {vendor.whatsapp_groups && vendor.whatsapp_groups.length > 0 ? (
+            <ul className="list-disc pl-4">
+              {vendor.whatsapp_groups.map((group, index) => (
+                <li key={index}>{group.name}</li>
+              ))}
+            </ul>
+          ) : (
+            "None"
+          )}
+        </p>
       </div>
     </div>
   );
@@ -440,6 +497,21 @@ const VendorDetailsPage: React.FC = () => {
             }));
           }}
           labelledBy="Select Vendor People"
+        />
+      </div>
+      <div>
+        <label className="block text-gray-700">WhatsApp Groups</label>
+        <MultiSelect
+          options={whatsappGroups.map(group => ({
+            label: group.name,
+            value: JSON.stringify(group)
+          }))}
+          value={(vendor.whatsapp_groups || []).map(group => ({
+            label: group.name,
+            value: JSON.stringify(group)
+          }))}
+          onChange={handleWhatsappGroupsChange}
+          labelledBy="Select WhatsApp Groups"
         />
       </div>
       <div className="flex justify-end space-x-4">

@@ -77,8 +77,8 @@ console.log(versions)
       time: stepData.latest?.time || 'No timestamp',
       vendors: stepData.latest?.vendors || {}
     },
-    ...versions.map((v: StepVersion) => ({
-      version: v.time || 'unknown',
+    ...versions.map((v: StepVersion, index: number) => ({
+      version: `${v.time || 'unknown'}_${index}`,  // Add index to ensure uniqueness
       time: v.time || 'No timestamp',
       vendors: v.vendors || {}
     }))
@@ -441,62 +441,93 @@ console.log(versions)
 
 
 
-  const fetchVendors = async () => {
-    console.log("Fetching filtered vendors...");
+
+  const fetchVendors = async (searchName?: string) => {
+    console.log("Fetching vendors...");
     try {
-      // Get decoded messages from Step 2
-      const decoded_messages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
-      console.log("Decoded messages:", decoded_messages);
+      let vendorData: any[] = [];
 
-      // Clean and prepare the decoded messages
-      const cleanDecodedMessages = Object.entries(decoded_messages).reduce((acc, [key, value]) => {
-        if (value && value !== "Null" && value !== "null" && value !== "") {
-          acc[key] = value;
+      if (searchName?.trim()) {
+        // Use the search API when a search name is provided
+        const searchResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/name?name=${encodeURIComponent(searchName.trim())}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!searchResponse.ok) {
+          throw new Error(`HTTP error! status: ${searchResponse.status}`);
         }
-        return acc;
-      }, {} as Record<string, any>);
 
-      // Prepare filters dictionary
-      const filters_dict: Record<string, string[]> = {};
-      
-      // Add certifications if present
-      if (cleanDecodedMessages.certifications) {
-        filters_dict.certifications = cleanDecodedMessages.certifications.split(',').map(cert => cert.trim());
+        const searchData = await searchResponse.json();
+        console.log('Search response:', searchData);
+        // Handle nested vendors object structure
+        const vendorsResult = searchData.vendors?.vendors || searchData.vendors;
+        vendorData = Array.isArray(vendorsResult) ? vendorsResult : [vendorsResult];
       }
 
-      // Add fabric type if present
-      if (cleanDecodedMessages.fabric_type) {
-        filters_dict.fabric_type = [cleanDecodedMessages.fabric_type];
-      }
+      // If no search data found, or no searchName is given, use the filtered API
+      if (!vendorData.length) {
+        console.log("Fetching filtered vendors...");
 
-      // Add weave if present
-      if (cleanDecodedMessages.weave) {
-        filters_dict.weave = [cleanDecodedMessages.weave];
-      }
+        // Get decoded messages from Step 2
+        const decoded_messages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
+        console.log("Decoded messages:", decoded_messages);
 
-      console.log("Filters dictionary:", filters_dict);
+        // Clean and prepare the decoded messages
+        const cleanDecodedMessages = Object.entries(decoded_messages).reduce((acc, [key, value]) => {
+          if (value && value !== "Null" && value !== "null" && value !== "") {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as Record<string, any>);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/filter/attribute`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ filters_dict })
+        // Prepare filters dictionary
+        const filters_dict: Record<string, string[]> = {};
+        
+        // Add certifications if present
+        if (cleanDecodedMessages.certifications) {
+          filters_dict.certifications = cleanDecodedMessages.certifications.split(',').map(cert => cert.trim());
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Add fabric type if present
+        if (cleanDecodedMessages.fabric_type) {
+          filters_dict.fabric_type = [cleanDecodedMessages.fabric_type];
+        }
+
+        // Add weave if present
+        if (cleanDecodedMessages.weave) {
+          filters_dict.weave = [cleanDecodedMessages.weave];
+        }
+
+        console.log("Filters dictionary:", filters_dict);
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/filter/attribute`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ filters_dict })
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const vendorsData = await response.json();
+        console.log("Fetched vendors:", vendorsData);
+
+        // Handle both array and object response formats
+        vendorData = Array.isArray(vendorsData.vendors) ? vendorsData.vendors : Object.values(vendorsData.vendors || {});
+        console.log("Vendor data from API:", vendorData);
       }
-
-      const vendorsData = await response.json();
-      console.log("Fetched vendors:", vendorsData);
-
-      // Handle both array and object response formats
-      const vendorData = Array.isArray(vendorsData.vendors) ? vendorsData.vendors : Object.values(vendorsData.vendors || {});
-      console.log("Vendor data from API:", vendorData);
 
       // Map vendors ensuring all required fields
       const vendorsList = vendorData
@@ -506,12 +537,15 @@ console.log(versions)
           const vendorId = v.vendor_id || v.id;
           const vendorName = v.name || (ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]?.name) || 'Unnamed Vendor';
 
+          // Get existing vendor data from ticket if available
+          const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId];
+
           return {
             id: vendorId,
             name: vendorName,
-            group: v.group || "",
-            email: v.email || "",
-            phone: v.phone || ""
+            group: v.attributes || v.group || "",  // Use attributes or fall back to group
+            email: v.email || existingVendor?.email || "",
+            phone: v.phone || existingVendor?.phone || ""
           };
         });
 
@@ -540,7 +574,8 @@ console.log(versions)
         toast.error("No valid vendors available");
       }
     } catch (error) {
-      console.error("Error fetching filtered vendors:", error);
+      console.error("Error fetching vendors:", error);
+      toast.error("Failed to fetch vendors. Please try again.");
     }
   };
 
@@ -644,6 +679,12 @@ console.log(versions)
     setSelectedOptions(selected as MultiSelectOption[]);
   };
 
+  const handleVendorSearch = (inputValue: string) => {
+    if (inputValue.length >= 3) { // Only search if at least 3 characters are entered
+      fetchVendors(inputValue);
+    }
+  };
+
   const handleSave = async () => {
     const updatedVendors = selectedOptions.map((option) => option.value);
     await handleUpdate(updatedVendors);
@@ -656,61 +697,100 @@ console.log(versions)
     setIsWhatsAppSending(true);
     try {
       toast.loading("Sending WhatsApp messages...");
+      // Use Promise.allSettled instead of Promise.all to handle partial failures
       const messagePromises = selectedOptions.map(async (option) => {
-        const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
-        console.log("vendor", vendor)
-        console.log(vendorMessages[option.value])
-        if (!vendor || !vendor.phone) {
-          throw new Error(`Missing vendor details or phone number for ${option.value}`);
-        }
-
-        // Format phone number: remove spaces, +, ensure it starts with country code and ends with @c.us
-        let formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/^\+/, '');
-        if (!formattedPhone.startsWith('91')) {
-          formattedPhone = '91' + formattedPhone;
-        }
-        formattedPhone = formattedPhone + '@c.us';
-
-        const messageContent = (ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value);
-        console.log("Sending to:", formattedPhone);
-        console.log("Message content:", messageContent);
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              to: formattedPhone,
-              content: messageContent
-            }),
+        try {
+          // Find vendor by ID first, then by name as fallback
+          const vendor = vendorDetails.find((v: Vendor) => 
+            v.id === option.id || v.name === option.value
+          );
+          console.log("Vendor found:", vendor);
+          console.log("Vendor messages:", vendorMessages[option.value]);
+          
+          if (!vendor) {
+            throw new Error(`Could not find vendor details for ${option.value}`);
           }
-        );
+          
+          if (!vendor.phone) {
+            throw new Error(`Missing phone number for vendor ${vendor.name}`);
+          }
 
-        const data = await response.json();
-        console.log("response data", data);
-        
-        if (!response.ok) {
-          const errorMessage = data.error || data.message || 'Unknown error';
-          throw new Error(`Failed to send WhatsApp to ${option.value}: ${errorMessage}`);
+          // Format phone number: remove spaces, +, ensure it starts with country code and ends with @c.us
+          let formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/^\+/, '');
+          if (!formattedPhone.startsWith('91')) {
+            formattedPhone = '91' + formattedPhone;
+          }
+          formattedPhone = formattedPhone + '@c.us';
+
+          const messageContent = (ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value);
+          console.log("Sending to:", formattedPhone);
+          console.log("Message content:", messageContent);
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                to: formattedPhone,
+                content: messageContent
+              }),
+            }
+          );
+
+          const data = await response.json();
+          console.log("WhatsApp response data:", data);
+          
+          // Check both response.ok and data.success/status
+          if (!response.ok || data.error || data.status === 'failed') {
+            const errorMessage = data.error || data.message || 'Unknown error';
+            console.error(`WhatsApp API error for ${option.value}:`, errorMessage);
+            throw new Error(`Failed to send WhatsApp to ${option.value}: ${errorMessage}`);
+          }
+
+          // Verify the message was actually sent
+          const messageSent = data.status === 'success' || data.success === true;
+          console.log(`Message to ${option.value} sent status:`, messageSent);
+
+          return {
+            vendor_id: vendor.id,
+            name: vendor.name,
+            message_temp: vendorMessages[option.value] || "",
+            message_sent: messageSent
+          };
+        } catch (error) {
+          console.error(`Error sending message to ${option.value}:`, error);
+          // Find vendor even in error case to ensure we have the correct ID
+          const vendor = vendorDetails.find((v: Vendor) => 
+            v.id === option.id || v.name === option.value
+          );
+          return {
+            vendor_id: vendor?.id || option.id,  // Use vendor.id if found, fallback to option.id
+            name: vendor?.name || option.value,  // Use vendor.name if found, fallback to option.value
+            message_temp: vendorMessages[option.value] || "",
+            message_sent: false
+          };
         }
-
-        // Return vendor info with updated message_sent status
-        return {
-          vendor_id: vendor.id,
-          name: vendor.name, // Changed from vendor_name to name
-          message_temp: vendorMessages[option.value] || "",
-          message_sent: true // Changed to boolean
-        };
       });
 
       const results = await Promise.all(messagePromises);
+      const successfulResults = results.filter(result => result.message_sent);
+      const failedResults = results.filter(result => !result.message_sent);
+
       await updateTicketWithSentStatus(results);
-      console.log(results)
+      console.log("All results:", results);
+      console.log("Successful:", successfulResults.length, "Failed:", failedResults.length);
+
       toast.dismiss();
-      toast.success("WhatsApp messages sent successfully!");
+      if (failedResults.length === 0) {
+        toast.success("WhatsApp messages sent successfully!");
+      } else if (successfulResults.length > 0) {
+        toast.warning(`${successfulResults.length} messages sent, ${failedResults.length} failed`);
+      } else {
+        toast.error("Failed to send WhatsApp messages.");
+      }
     } catch (error) {
       console.error("Error sending WhatsApp messages:", error);
       toast.dismiss();
@@ -734,16 +814,21 @@ console.log(versions)
 
       // Convert results array to object with vendor_id as keys
       const vendorsObject = results.reduce((acc, vendor) => {
+        if (!vendor.vendor_id) {
+          console.error('Missing vendor_id for vendor:', vendor);
+          return acc;
+        }
+
         const currentVendorData = currentVendors[vendor.vendor_id] || {};
         const currentMessageSent = currentVendorData.message_sent || { email: false, whatsapp: false };
 
         acc[vendor.vendor_id] = {
           name: vendor.name,
           vendor_id: vendor.vendor_id,
-          message_temp: vendor.message_temp,
+          message_temp: vendor.message_temp || currentVendorData.message_temp || '',
           message_sent: {
             email: currentMessageSent.email || false,
-            whatsapp: true // Set WhatsApp to true as this is called after WhatsApp send
+            whatsapp: vendor.message_sent // Use the result from message sending
           }
         };
         return acc;
@@ -991,6 +1076,7 @@ console.log(versions)
             options={vendors}
             value={selectedOptions}
             onChange={handleVendorChange}
+            onInputChange={handleVendorSearch}
           />
           {selectedOptions.length > 0 && (
             <div className="mt-4">
