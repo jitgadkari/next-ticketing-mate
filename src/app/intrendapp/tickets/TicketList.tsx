@@ -55,8 +55,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     ticket_num: "",
     customer_name: "",
     current_step: "",
-    status: "",
-    final_decision: "",
+    step_status: "",
+    decision_status: "",
     limit: 10,
     offset: getOffset(),
     start_date: "",
@@ -86,18 +86,25 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   ];
   useEffect(() => {
     const fetchTickets = async () => {
-      // Remove empty string values to avoid sending unnecessary parameters
+      // Build filter parameters to match backend implementation
       const filterParams = {
         limit: filterState.limit.toString(),
         offset: filterState.offset.toString(),
-        sort_order: filterState.sort_order ? 'desc' : 'asc'
       };
 
-      if (filterState.customer_name) filterParams.customer_name = filterState.customer_name;
-      if (filterState.current_step) filterParams.current_step = filterState.current_step;
-      if (filterState.status) filterParams.status = filterState.status;
-      if (filterState.final_decision) filterParams.final_decision = filterState.final_decision;
-      if (filterState.ticket_num) filterParams.ticket_num = filterState.ticket_num;
+      // Match backend filter conditions
+      if (filterState.customer_name?.trim()) {
+        filterParams.customer_name = filterState.customer_name.trim();
+      }
+      if (filterState.ticket_num?.trim()) {
+        filterParams.ticket_number = filterState.ticket_num.trim(); // Match backend parameter name
+      }
+      if (filterState.current_step?.trim()) {
+        filterParams.current_step = filterState.current_step.trim();
+      }
+      if (filterState.step_status?.trim()) {
+        filterParams.step_status = filterState.step_status.trim(); // Match backend status filter
+      }
       if (filterState.start_date) filterParams.start_date = filterState.start_date;
       if (filterState.end_date) filterParams.end_date = filterState.end_date;
 
@@ -365,6 +372,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                                 ...prev,
                                 customer_name: customer.name,
                                 showCustomerDropDown: false,
+                                offset: 0 // Reset to first page
                               }))
                             }
                             className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -393,8 +401,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                           onClick={() =>
                             setFilterState((prev) => ({
                               ...prev,
-                              status: "open",
+                              step_status: "open",
                               showStatusDropDown: false,
+                              offset: 0
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -405,8 +414,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                           onClick={() =>
                             setFilterState((prev) => ({
                               ...prev,
-                              status: "closed",
+                              step_status: "closed",
                               showStatusDropDown: false,
+                              offset: 0
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -436,6 +446,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                               ...prev,
                               final_decision: "pending",
                               showDecisionDropDown: false,
+                              offset: 0
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -448,6 +459,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                               ...prev,
                               final_decision: "approved",
                               showDecisionDropDown: false,
+                              offset: 0
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -479,6 +491,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                                   ...prev,
                                   current_step: step,
                                   showStepDropDown: false,
+                                  offset: 0 // Reset to first page
                                 }))
                               }
                               className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -500,6 +513,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                           setFilterState((prevState) => ({
                             ...prevState,
                             start_date: e.target.value,
+                            offset: 0 // Reset to first page
                           }))
                         }
                         className="w-10 h-10 opacity-0  absolute inset-0" 
@@ -518,6 +532,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                           setFilterState((prevState) => ({
                             ...prevState,
                             end_date: e.target.value,
+                            offset: 0 // Reset to first page
                           }))
                         }
                         className="w-10 h-10 opacity-0  absolute inset-0" 
@@ -562,6 +577,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                       setFilterState((prevState) => ({
                         ...prevState,
                         ticket_num: e.target.value,
+                        offset: 0 // Reset to first page
                       }))
                     }
                     placeholder="Search Ticket Number"
@@ -590,7 +606,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                       ticket_num: "",
                       customer_name: "",
                       current_step: "",
-                      status: "",
+                      step_status: "",
                       final_decision: "",
                       start_date: "",
                       end_date: "",

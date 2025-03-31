@@ -26,6 +26,10 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | undefined>(
     undefined
   );
+  const handleDataUpdate = (newData: DashboardData) => {
+    setDashboardData(newData);
+  };
+
   const fetchDashBoardData = async () => {
     try {
       const response = await fetch(
@@ -34,8 +38,9 @@ const Dashboard = () => {
           cache: "no-cache",
         }
       );
-      if (response.status != 200) {
+      if (response.status !== 200) {
         console.log("failed to fetch dashboard data");
+        return;
       }
       const data: DashboardData = await response.json();
       setDashboardData(data);
@@ -153,7 +158,7 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-        <DashboardDetailInput />
+        <DashboardDetailInput onDataFetch={handleDataUpdate} />
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-black mb-4">
             Response Time for Closed Tickets

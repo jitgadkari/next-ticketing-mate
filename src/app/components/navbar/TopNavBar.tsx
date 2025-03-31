@@ -41,10 +41,10 @@ export default function TopNavBar() {
     };
 
     return (
-        <nav className="bg-gray-800 text-white sticky z-[90]">
-            <div className="p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <nav className="bg-gray-800/95 backdrop-blur-sm text-white sticky z-[90] shadow-lg border-b border-gray-700">
+            <div className="px-6 py-4 flex justify-between items-center sticky top-0 z-50">
                 <div className="flex items-center">
-                    <div className="md:hidden mr-4" onClick={toggleMobileMenu}>
+                    <div className="md:hidden mr-4 p-2 hover:bg-gray-700/50 rounded-lg transition-colors" onClick={toggleMobileMenu}>
                         <svg
                             className={`w-6 h-6 transform transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-90' : ''}`}
                             fill="none"
@@ -60,8 +60,8 @@ export default function TopNavBar() {
                             ></path>
                         </svg>
                     </div>
-                    <Link href="/" className="text-3xl font-bold hover:text-gray-300">
-                        IntrendApp
+                    <Link href="/" className="text-3xl font-bold hover:text-gray-300 transition-colors flex items-center space-x-2">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400">Intrend</span>
                     </Link>
                 </div>
 

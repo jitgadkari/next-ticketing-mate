@@ -77,7 +77,7 @@ const PeopleList = ({
   const handleDelete = async (persons_id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${persons_id}?userId=1&userAgent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${persons_id}`,
         { method: "DELETE" }
       );
       if (response.ok) {
@@ -97,7 +97,7 @@ const PeopleList = ({
     console.log(persons_id)
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/soft_delete/${persons_id}?userId=1&userAgent=user-test`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/soft_delete/${persons_id}`,
         {
           method: "DELETE",
         }
