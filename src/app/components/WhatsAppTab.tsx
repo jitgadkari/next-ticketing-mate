@@ -173,7 +173,8 @@ export default function WhatsAppTab() {
         method: 'POST' 
       });
       if (!response.ok) throw new Error('Failed to logout');
-      
+      const data = await response.json();
+      console.log(data)
       toast.success('Logged out successfully', { id: 'whatsapp-logout' });
       setState({ status: 'disconnected', qrCode: null });
     } catch (error) {

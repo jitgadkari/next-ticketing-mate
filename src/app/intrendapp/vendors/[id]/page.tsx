@@ -15,16 +15,20 @@ interface Vendor {
   phone: string;
   code: string;
   attributes: {
-    width?: string[];
-    fabric_type?: string[];
-    content?: string[];
-    type?: string[];
-    certifications?: string[];
-    approvals?: string[];
-    weave?: string[];
-    weave_type?: string[];
-    designs?: string[];
-    delivery_terms?: string[];
+    latest: {
+      attributes: {
+        width?: string[];
+        fabric_type?: string[];
+        content?: string[];
+        type?: string[];
+        certifications?: string[];
+        approvals?: string[];
+        weave?: string[];
+        weave_type?: string[];
+        designs?: string[];
+        delivery_terms?: string[];
+      };
+    };
   };
   vendor_people_list: { id: string; name: string }[];
   state: string;
@@ -47,13 +51,20 @@ interface Vendor {
 interface AttributesResponse {
   timestamp: string;
   attributes: {
-    type: string[];
-    weave: string[];
-    width: string[];
-    content: string[];
-    designs: string[];
-    certifications: string[];
-    delivery_terms: string[];
+    latest: {
+      attributes: {
+        type: string[];
+        weave: string[];
+        width: string[];
+        content: string[];
+        designs: string[];
+        certifications: string[];
+        delivery_terms: string[];
+        fabric_type: string[];
+        weave_type: string[];
+        approvals: string[];
+      };
+    };
   };
   version_note: string;
 }
@@ -88,7 +99,7 @@ const VendorDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [defaultAttributes, setDefaultAttributes] = useState<AttributesResponse | null>(null);
+  const [defaultAttributes, setDefaultAttributes] = useState<Record<string, string[]> | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
   // For vendor people, we store an array of JSON-stringified objects in "vendor_people_list".
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
@@ -125,17 +136,20 @@ const VendorDetailsPage: React.FC = () => {
       const fetchedVendor: Vendor = data.vendor;
       setVendor(fetchedVendor);
       // Initialize selectedAttributes from vendor.attributes
+      const latestAttributes = fetchedVendor.attributes?.latest?.attributes || {};
+      console.log('[VendorDetails] Vendor latest attributes:', latestAttributes);
+      
       setSelectedAttributes({
-        fabric_type: fetchedVendor.attributes?.fabric_type || [],
-        width: fetchedVendor.attributes?.width || [],
-        content: fetchedVendor.attributes?.content || [],
-        type: fetchedVendor.attributes?.type || [],
-        certifications: fetchedVendor.attributes?.certifications || [],
-        approvals: fetchedVendor.attributes?.approvals || [],
-        weave: fetchedVendor.attributes?.weave || [],
-        weave_type: fetchedVendor.attributes?.weave_type || [],
-        designs: fetchedVendor.attributes?.designs || [],
-        delivery_terms: fetchedVendor.attributes?.delivery_terms || [],
+        fabric_type: latestAttributes.fabric_type || [],
+        width: latestAttributes.width || [],
+        content: latestAttributes.content || [],
+        type: latestAttributes.type || [],
+        certifications: latestAttributes.certifications || [],
+        approvals: latestAttributes.approvals || [],
+        weave: latestAttributes.weave || [],
+        weave_type: latestAttributes.weave_type || [],
+        designs: latestAttributes.designs || [],
+        delivery_terms: latestAttributes.delivery_terms || [],
         vendor_people_list: fetchedVendor.vendor_people_list
           ? fetchedVendor.vendor_people_list.map((person) =>
             JSON.stringify({ id: person.id, name: person.name })
@@ -152,8 +166,9 @@ const VendorDetailsPage: React.FC = () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`);
       const data = await response.json();
       console.log("[VendorDetails] Full attributes response:", data);
-      console.log("[VendorDetails] Attributes data structure:", data.attributes);
-      setDefaultAttributes(data.attributes);
+      const latestAttributes = data.attributes.latest.attributes;
+      console.log("[VendorDetails] Latest attributes:", latestAttributes);
+      setDefaultAttributes(latestAttributes);
     } catch (error) {
       console.error("Error fetching default attributes:", error);
     }
@@ -232,17 +247,20 @@ const VendorDetailsPage: React.FC = () => {
         const update_dict = {
           ...vendor,
           attributes: {
-            ...vendor.attributes,
-            fabric_type: selectedAttributes.fabric_type,
-            width: selectedAttributes.width,
-            content: selectedAttributes.content,
-            type: selectedAttributes.type,
-            certifications: selectedAttributes.certifications,
-            approvals: selectedAttributes.approvals,
-            weave: selectedAttributes.weave,
-            weave_type: selectedAttributes.weave_type,
-            designs: selectedAttributes.designs,
-            delivery_terms: selectedAttributes.delivery_terms,
+            latest: {
+              attributes: {
+                fabric_type: selectedAttributes.fabric_type,
+                width: selectedAttributes.width,
+                content: selectedAttributes.content,
+                type: selectedAttributes.type,
+                certifications: selectedAttributes.certifications,
+                approvals: selectedAttributes.approvals,
+                weave: selectedAttributes.weave,
+                weave_type: selectedAttributes.weave_type,
+                designs: selectedAttributes.designs,
+                delivery_terms: selectedAttributes.delivery_terms,
+              }
+            }
           },
           vendor_people_list: vendorPeople, // Top-level vendor_people_list
         };
@@ -287,7 +305,7 @@ const VendorDetailsPage: React.FC = () => {
     }
 
     // Get the default options from the attributes response
-    const defaultOpts = defaultAttributes?.attributes?.[attribute as keyof AttributesResponse['attributes']] || [];
+    const defaultOpts = defaultAttributes?.[attribute] || [];
     const selectedOpts = Array.isArray(selectedAttributes[attribute])
       ? (selectedAttributes[attribute] as string[])
       : [];
@@ -316,9 +334,9 @@ const VendorDetailsPage: React.FC = () => {
         <p><strong>Remarks:</strong> {vendor.remarks || 'N/A'}</p>
         <p>
           <strong>Attributes:</strong>{" "}
-          {vendor.attributes && Object.keys(vendor.attributes).length > 0 ? (
+          {vendor.attributes?.latest?.attributes && Object.keys(vendor.attributes?.latest?.attributes).length > 0 ? (
             <ul className="list-disc pl-4">
-              {Object.entries(vendor.attributes).map(([key, value]) => (
+              {Object.entries(vendor.attributes?.latest?.attributes).map(([key, value]) => (
                 <li key={key}>
                   <strong>{key}:</strong>{" "}
                   {Array.isArray(value) ? value.join(", ") : String(value)}

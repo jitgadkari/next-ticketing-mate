@@ -9,6 +9,7 @@ import { FaEye, FaTrash } from "react-icons/fa";
 import Table from '../../components/Table';
 import Button from '../../components/Button';
 import AddTicketForm from '../tickets/AddTicketForm';
+import toast from "react-hot-toast";
 
 interface Person {
   id: string;
@@ -18,12 +19,27 @@ interface Person {
   linked: boolean;
   type_employee: string;
   status: string;
+  linked_to_id?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface DashboardData {
   person: Person;
   tickets: Ticket[];
   dashboardType: 'customer' | 'vendor';
+}
+
+interface VendorMessage {
+  name: string;
+  response_message: string;
+  response_received: boolean;
+  message_received_time?: string | null;
+}
+
+interface VendorMessages {
+  [key: string]: VendorMessage;
 }
 
 interface Ticket {
@@ -35,6 +51,7 @@ interface Ticket {
   current_step: string;
   created_date: string;
   status: string;
+  ticket_id?: string;
   steps: {
     'Step 9 : Final Status'?: {
       latest: {
@@ -54,12 +71,7 @@ interface Ticket {
     },
     'Step 5 : Messages from Vendors'?: {
       latest: {
-        vendors: {
-          [key: string]: {
-            response_message: string;
-            status: string;
-          }
-        }
+        vendors: VendorMessages
       }
     }
   };
@@ -79,6 +91,8 @@ export default function CustomerDashboard() {
   });
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [replyTicket, setReplyTicket] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
   
   const handleCustomerSelect = async (access_token: string) => {
     setIsLoading(true);
@@ -133,7 +147,7 @@ export default function CustomerDashboard() {
     "Ticket Number",
     "Type",
     "Status",
-    "Customer",
+    // "Customer",
     "Customer Message",
     "Your Response",
   ] : [
@@ -147,7 +161,9 @@ export default function CustomerDashboard() {
 
   const renderRow = (ticket: Ticket) => {
     const isVendorView = dashboardData?.dashboardType === 'vendor';
-    const vendorResponse = ticket.steps?.['Step 5 : Messages from Vendors']?.latest?.vendors?.[dashboardData?.person?.id ?? ''];
+    const vendorId = dashboardData?.person?.linked_to_id?.id ?? '';
+    const vendorMessages = ticket.steps?.['Step 5 : Messages from Vendors']?.latest?.vendors || {};
+    const vendorResponse = vendorMessages[vendorId];
     
     return (
     <>
@@ -164,7 +180,7 @@ export default function CustomerDashboard() {
           {ticket.steps?.['Step 9 : Final Status']?.latest?.status ?? "open"}
         </span>
       </td>
-      {isVendorView ? (
+      {/* {isVendorView ? (
         <td className="border p-2">{ticket.customer_name}</td>
       ) : (
         <td className="border p-2">
@@ -180,12 +196,94 @@ export default function CustomerDashboard() {
             {ticket.steps?.['Step 9 : Final Status']?.latest?.final_decision ?? "pending"}
           </span>
         </td>
-      )}
+      )} */}
       <td className="border p-2">{ticket.steps?.['Step 1 : Customer Message Received']?.latest?.text ?? ticket.customer_message ?? "N/A"}</td>
       <td className="border p-2">
         <div className="w-full whitespace-pre-wrap text-sm max-h-40 overflow-y-auto">
           {isVendorView 
-            ? (vendorResponse?.response_message || "No response yet")
+            ? (
+                !vendorResponse?.response_message && replyTicket === ticket.ticket_number ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={replyMessage}
+                      onChange={(e) => setReplyMessage(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      rows={3}
+                      placeholder="Type your reply here..."
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(
+                              `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+                              {
+                                method: "PUT",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                  ticket_id: ticket.id,
+                                  step_number: "Step 5 : Messages from Vendors",
+                                  step_info: {
+                                    vendors: [
+                                      {
+                                        vendor_id: dashboardData?.person?.linked_to_id?.id ?? '',
+                                        name: dashboardData?.person?.linked_to_id?.name ?? '',
+                                        response_received: true,
+                                        response_message: replyMessage
+                                      }
+                                    ]
+                                  },
+                                }),
+                              }
+                            );
+                            if (response.ok) {
+                              const accessToken = localStorage.getItem("access_token");
+                              if (accessToken) {
+                                await handleCustomerSelect(accessToken);
+                              }
+                              setReplyTicket(null);
+                              setReplyMessage("");
+                              toast.success("Reply sent successfully");
+                            } else {
+                              console.error("Failed to send reply");
+                              toast.error("Failed to send reply");
+                            }
+                          } catch (error) {
+                            console.error("Error sending reply:", error);
+                          }
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Send
+                      </button>
+                      <button
+                        onClick={() => {
+                          setReplyTicket(null);
+                          setReplyMessage("");
+                        }}
+                        className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {!vendorResponse?.response_message ? (
+                      <button
+                        onClick={() => setReplyTicket(ticket.ticket_number)}
+                        className="text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Click to Reply
+                      </button>
+                    ) : (
+                      vendorResponse.response_message
+                    )}
+                  </div>
+                )
+              )
             : (ticket.steps?.['Step 7 : Customer Message Template']?.latest?.text ?? "No reply yet")}
         </div>
       </td>

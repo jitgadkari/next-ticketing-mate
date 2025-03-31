@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import MultiSelect from "../../components/MultiSelect";
 import toast from "react-hot-toast";
 
 interface AddTicketFormProps {
@@ -26,7 +27,7 @@ export interface Person {
 interface FormData {
   customer_id: string;
   customer_name: string;
-  person_name: string;
+  selected_people: Person[];
   message: string;
   from_number: string;
   ticket_type: string;
@@ -39,7 +40,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
   const [formData, setFormData] = useState<FormData>({
     customer_id: "",
     customer_name: initialCustomer || "",
-    person_name: "",
+    selected_people: [],
     message: "",
     from_number: "",
     ticket_type: "General Inquiry",
@@ -87,15 +88,21 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
   };
 
   const handleCustomerSelect = (customer: Customer) => {
+    const customerPeople = customer.customer_people_list || [];
+    
+    if (customerPeople.length === 0) {
+      toast.error(`No people linked to customer ${customer.name}. Please add people to the customer first.`);
+    }
+
     setFormData({
       ...formData,
-      customer_id: customer.id, // Set customer_id
+      customer_id: customer.id,
       customer_name: customer.name,
-      person_name: "",
+      selected_people: [],
       from_number: "",
-      customer_people_list: customer.customer_people_list || [],
+      customer_people_list: customerPeople,
     });
-    setPeople(customer.customer_people_list || []);
+    setPeople(customerPeople);
     setShowDropDown(false);
   };
 
@@ -107,8 +114,8 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       return;
     }
 
-    if (!formData.person_name) {
-      toast.error("Please select a person");
+    if (formData.selected_people.length === 0) {
+      toast.error("Please select at least one person");
       return;
     }
 
@@ -123,7 +130,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       customer_id: formData.customer_id,
       customer_name: formData.customer_name,
       ticket_type: formData.ticket_type,
-      customer_people_list: formData.customer_people_list,
+      customer_people_list: formData.selected_people,
       assigned_internal_people_list: [],
       customer_message: formData.message,
       image_urls: [],
@@ -153,7 +160,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
         setFormData({
           customer_id: "",
           customer_name: "",
-          person_name: "",
+          selected_people: [],
           message: "",
           from_number: "",
           ticket_type: "General Inquiry",
@@ -220,21 +227,25 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       {/* Person Selection */}
       {formData.customer_people_list.length > 0 && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Person</label>
-          <select
-            name="person_name"
-            value={formData.person_name}
-            onChange={handleChange}
-            className="border rounded-lg px-4 py-2 w-full bg-white"
-            required
-          >
-            <option value="">Select Person</option>
-            {formData.customer_people_list.map((person) => (
-              <option key={person.id} value={person.name}>
-                {person.name}
-              </option>
-            ))}
-          </select>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select People</label>
+          <MultiSelect
+            options={formData.customer_people_list.map(person => ({
+              value: person.id,
+              label: person.name
+            }))}
+            value={formData.selected_people.map(person => ({
+              value: person.id,
+              label: person.name
+            }))}
+            onChange={(selected) => {
+              const selectedPeople = selected.map(item => {
+                const person = formData.customer_people_list.find(p => p.id === item.value);
+                return person || { id: item.value, name: item.label };
+              });
+              setFormData(prev => ({ ...prev, selected_people: selectedPeople }));
+            }}
+            placeholder="Select people..."
+          />
         </div>
       )}
 
@@ -242,7 +253,7 @@ const AddTicketForm = ({ onAdd, initialCustomer, disableCustomerSelect }: AddTic
       <Input label="Message" type="textarea" name="message" value={formData.message} onChange={handleChange} required />
 
       {/* Submit Button */}
-      <Button type="submit" className="w-full" disabled={!formData.customer_id || !formData.person_name}>
+      <Button type="submit" className="w-full" disabled={!formData.customer_id || formData.selected_people.length === 0}>
         Add Ticket
       </Button>
     </form>

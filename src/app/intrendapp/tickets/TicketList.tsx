@@ -86,18 +86,24 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   ];
   useEffect(() => {
     const fetchTickets = async () => {
-      const queryParams = new URLSearchParams({
+      // Remove empty string values to avoid sending unnecessary parameters
+      const filterParams = {
         limit: filterState.limit.toString(),
         offset: filterState.offset.toString(),
-        customer_name: filterState.customer_name || "",
-        current_step: filterState.current_step || "",
-        status: filterState.status || "",
-        final_decision: filterState.final_decision || "",
-        ticket_num: filterState.ticket_num || "",
-        start_date:filterState.start_date || "",
-        end_date:filterState.end_date || "",
         sort_order: filterState.sort_order ? 'desc' : 'asc'
-      });
+      };
+
+      if (filterState.customer_name) filterParams.customer_name = filterState.customer_name;
+      if (filterState.current_step) filterParams.current_step = filterState.current_step;
+      if (filterState.status) filterParams.status = filterState.status;
+      if (filterState.final_decision) filterParams.final_decision = filterState.final_decision;
+      if (filterState.ticket_num) filterParams.ticket_num = filterState.ticket_num;
+      if (filterState.start_date) filterParams.start_date = filterState.start_date;
+      if (filterState.end_date) filterParams.end_date = filterState.end_date;
+
+      console.log('Applying filters:', filterParams);
+      
+      const queryParams = new URLSearchParams(filterParams);
       try {
         const response = await fetch(
           `${
@@ -564,31 +570,38 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
                 </li>
               </>
             )}
-            <button
-              className="ml-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              onClick={() =>
-                setFilterState((prevState) => ({
-                  ...prevState,
-                  showDropDown: !prevState.showDropDown,
-                  showCustomerDropDown: false,
-                  showDecisionDropDown: false,
-                  showStatusDropDown: false,
-                  showStepDropDown: false,
-                  ticket_num: "",
-                  customer_name: "",
-                  current_step: "",
-                  status: "",
-                  final_decision: "",
-                  limit: 10,
-                  offset: 0,
-                  start_date: "",
-                  end_date: "",
-                  sort_order: true  // Keep descending order when resetting filters
-                }))
-              }
-            >
-              Filter
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                onClick={() => setFilterState(prev => ({ ...prev, showDropDown: !prev.showDropDown }))}
+              >
+                {filterState.showDropDown ? 'Hide Filters' : 'Show Filters'}
+              </button>
+              {filterState.showDropDown && (
+                <button
+                  className="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  onClick={() => {
+                    setFilterState(prev => ({
+                      ...prev,
+                      showCustomerDropDown: false,
+                      showDecisionDropDown: false,
+                      showStatusDropDown: false,
+                      showStepDropDown: false,
+                      ticket_num: "",
+                      customer_name: "",
+                      current_step: "",
+                      status: "",
+                      final_decision: "",
+                      start_date: "",
+                      end_date: "",
+                      offset: 0
+                    }));
+                  }}
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
           </ul>
         </div>
       </div>

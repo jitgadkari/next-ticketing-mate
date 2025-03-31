@@ -30,6 +30,10 @@ const AttributesPage: React.FC = () => {
   const [attributeHistory, setAttributeHistory] = useState<AttributeVersion[]>([]);
   const [newAttributeKey, setNewAttributeKey] = useState("");
   const [newAttributeValue, setNewAttributeValue] = useState("");
+  const [selectedVersion, setSelectedVersion] = useState<AttributeVersion | null>(() => {
+    const saved = localStorage.getItem('selectedAttributeVersion');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   useEffect(() => {
     fetchAttributes();
@@ -42,10 +46,21 @@ const AttributesPage: React.FC = () => {
       );
       const data = await response.json();
       console.log(data)
-      if (data && data.attributes.attributes) {
-        setAttributes(data.attributes.attributes);
-        setFormData(data.attributes.attributes);
-        initializeInputValues(data.attributes.attributes);
+      if (data && data.attributes) {
+        setAttributeHistory(data.attributes.versions);
+        
+        // If there's a selected version, use that instead of latest
+        if (selectedVersion) {
+          setAttributes(selectedVersion.attributes);
+          setFormData(selectedVersion.attributes);
+          initializeInputValues(selectedVersion.attributes);
+        } else {
+          // Otherwise use the latest version
+          setAttributes(data.attributes.latest.attributes);
+          setFormData(data.attributes.latest.attributes);
+          initializeInputValues(data.attributes.latest.attributes);
+          updateSelectedVersion(data.attributes.latest);
+        }
       }
     } catch (error) {
       console.error("Error fetching attributes:", error);
@@ -124,25 +139,79 @@ const AttributesPage: React.FC = () => {
 
   const closePopup = () => setShowPopup(false);
 
-  const fetchAttributeHistory = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes/history`
-      );
-      const data = await response.json();
-      console.log(data);
-      setAttributeHistory(data.versions);
-    } catch (error) {
-      console.error("Error fetching attribute history:", error);
+  // const fetchAttributeHistory = async () => {
+  //   try {
+  //     const response = await fetch(
+  //       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/attributes/history`
+  //     );
+  //     const data = await response.json();
+  //     console.log(data);
+  //     setAttributeHistory(data.versions);
+  //   } catch (error) {
+  //     console.error("Error fetching attribute history:", error);
+  //   }
+  // };
+console.log(attributeHistory)
+  const updateSelectedVersion = (version: AttributeVersion | null) => {
+    setSelectedVersion(version);
+    if (version) {
+      localStorage.setItem('selectedAttributeVersion', JSON.stringify(version));
+    } else {
+      localStorage.removeItem('selectedAttributeVersion');
     }
   };
 
-  const switchToVersion = (version: AttributeVersion) => {
-    setAttributes(version.attributes);
-    setFormData(version.attributes);
-    initializeInputValues(version.attributes);
-    setShowHistory(false);
-    setEditMode(false);
+  const switchToVersion = async (version: AttributeVersion) => {
+    if (!version || !version.attributes) {
+      console.error('Invalid version data:', version);
+      return;
+    }
+
+    try {
+      // Deep clone the attributes to avoid reference issues
+      const clonedAttributes = JSON.parse(JSON.stringify(version.attributes));
+      
+      // Save this version as the latest version
+      const versionNote = `Switched to version from ${new Date(version.timestamp).toLocaleString()}`;
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attributes: clonedAttributes,
+            version_note: versionNote
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update attributes');
+      }
+
+      // Update local state with the selected version's attributes
+      setAttributes(clonedAttributes);
+      setFormData(clonedAttributes);
+      initializeInputValues(clonedAttributes);
+      
+      // Store the selected version in state and localStorage
+      updateSelectedVersion(version);
+      
+      // Reset form states
+      setNewAttributeKey('');
+      setNewAttributeValue('');
+      setShowHistory(false);
+      setEditMode(false);
+
+      // Show success message
+      setShowPopup(true);
+      console.log('Switched and saved as latest version:', version.timestamp);
+
+      // Refresh attributes to get updated versions list
+      await fetchAttributes();
+    } catch (error) {
+      console.error('Error switching version:', error);
+    }
   };
 
   if (!attributes) return <div>Loading...</div>;
@@ -155,7 +224,7 @@ const AttributesPage: React.FC = () => {
           <Button onClick={() => {
             setShowHistory(!showHistory);
             if (!showHistory) {
-              fetchAttributeHistory();
+              fetchAttributes();
             }
           }}>
             {showHistory ? "Hide History" : "Show Version History"}
