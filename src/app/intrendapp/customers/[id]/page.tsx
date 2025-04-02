@@ -13,7 +13,24 @@ interface Customer {
   name: string;
   email: string;
   phone: string;
-  attributes: {}; // Contains approvals, fabric_type, payment_terms, certifications, delivery_terms, etc.
+  attributes: {
+    latest: {
+      attributes: {
+        type?: string[];
+        weave?: string[];
+        width?: string[];
+        content?: string[];
+        designs?: string[];
+        approvals?: string[];
+        fabric_type?: string[];
+        certifications?: string[];
+        delivery_terms?: string[];
+        payment_terms?: string[];
+      };
+      timestamp: string;
+      version_note: string;
+    };
+  };
   fabric_type: string[]; // These might be redundant if stored in attributes
   certifications: string[];
   approvals: string[];
@@ -42,8 +59,12 @@ export interface Attributes {
   certifications: string[];
   approvals: string[];
   delivery_terms: string[];
-  paymnent_terms: string[]; // Note the typo in the API response
+  payment_terms: string[]; // Note the typo in the API response
   // group: Record<string, string>;
+  weave: string[];
+  width: string[];
+  designs: string[];
+  content: string[];
 }
 
 interface Person {
@@ -119,12 +140,13 @@ const CustomerDetailsPage: React.FC = () => {
       console.log("[CustomerDetails] Customer data received:", data.customer);
       setCustomer(data.customer);
       // Here we read the attribute values from customer.attributes
+      const latestAttributes = data.customer.attributes?.latest?.attributes || {};
       setSelectedAttributes({
-        fabric_type: data.customer.attributes?.fabric_type || [],
-        certifications: data.customer.attributes?.certifications || [],
-        approvals: data.customer.attributes?.approvals || [],
-        delivery_terms: data.customer.attributes?.delivery_terms || [],
-        payment_terms: data.customer.attributes?.payment_terms || [],
+        fabric_type: latestAttributes.type || [],
+        certifications: latestAttributes.certifications || [],
+        approvals: latestAttributes.approvals || [],
+        delivery_terms: latestAttributes.delivery_terms || [],
+        payment_terms: latestAttributes.payment_terms || [],
         customer_people_list: data.customer.customer_people_list || [],
       });
     } catch (error) {
@@ -145,8 +167,8 @@ const CustomerDetailsPage: React.FC = () => {
       console.log("[CustomerDetails] Default attributes received:", data);
       
       // Extract attributes from the nested structure
-      const attrs = data?.attributes?.attributes || {};
-      
+      const attrs = data.attributes.latest.attributes || {};
+      console.log("[CustomerDetails] Default attributes:", attrs);
       const defaultAttrs = {
         fabric_type: attrs.type || [],
         weave: attrs.weave || [],
@@ -155,6 +177,8 @@ const CustomerDetailsPage: React.FC = () => {
         designs: attrs.designs || [],
         certifications: attrs.certifications || [],
         delivery_terms: attrs.delivery_terms || [],
+        approvals : attrs.approvals || [],
+        payment_terms: attrs.payment_terms || []
       };
       
       setDefaultAttributes(defaultAttrs);
@@ -173,6 +197,8 @@ const CustomerDetailsPage: React.FC = () => {
         designs: [],
         certifications: [],
         delivery_terms: [],
+        approvals: [],
+        payment_terms: []
       });
     }
   };
@@ -254,12 +280,17 @@ const CustomerDetailsPage: React.FC = () => {
           ...customerData,
           customer_people_list: selectedAttributes.customer_people_list,
           attributes: {
-            ...customerData.attributes,
-            fabric_type: selectedAttributes.fabric_type,
-            certifications: selectedAttributes.certifications,
-            approvals: selectedAttributes.approvals,
-            delivery_terms: selectedAttributes.delivery_terms,
-            payment_terms: selectedAttributes.payment_terms,
+            latest: {
+              attributes: {
+                type: selectedAttributes.fabric_type,
+                certifications: selectedAttributes.certifications,
+                approvals: selectedAttributes.approvals,
+                delivery_terms: selectedAttributes.delivery_terms,
+                payment_terms: selectedAttributes.payment_terms
+              },
+              timestamp: new Date().toISOString(),
+              version_note: `Updated attributes on ${new Date().toLocaleString()}`
+            }
           },
         };
         console.log("[CustomerDetails] Submitting update:", update_dict);
@@ -303,6 +334,7 @@ const CustomerDetailsPage: React.FC = () => {
   if (!customer || !defaultAttributes || !unlinkedPeople)
     return <div className="p-4">Loading...</div>;
 
+  
   // Build options for attributes. Merging default options with any currently selected values.
   const attributeOptions = (attribute: string): Option[] => {
     const attributeKey =
@@ -529,10 +561,9 @@ const CustomerDetailsPage: React.FC = () => {
         </p>
         <p>
           <strong>Attributes:</strong>{" "}
-          {customer.attributes &&
-          Object.keys(customer.attributes).length > 0 ? (
+          {customer.attributes?.latest?.attributes ? (
             <ul>
-              {Object.entries(customer.attributes).map(([key, value]) => (
+              {Object.entries(customer.attributes.latest.attributes).map(([key, value]) => (
                 <li key={key}>
                   <strong>{key}:</strong>{" "}
                   {Array.isArray(value) ? value.join(", ") : String(value)}
