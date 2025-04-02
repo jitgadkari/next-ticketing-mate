@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
 import { MdOutlineFolderDelete } from "react-icons/md";
+
 interface VendorListProps {
   vendors: Vendor[];
   setVendors: (vendors: Vendor[]) => void;
@@ -17,6 +18,7 @@ interface VendorListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
+  userRole?: 'superuser' | 'admin' | 'general_user';
 }
 
 interface FilterState {
@@ -32,6 +34,7 @@ const VendorList = ({
   onPrevious,
   onNext,
   onPageChange,
+  userRole,
 }: VendorListProps) => {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
@@ -41,6 +44,7 @@ const VendorList = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null);
+
   // Populate filter options for states
   useEffect(() => {
     if (Array.isArray(vendors)) {
@@ -169,10 +173,12 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
               <FaEye />
             </span>
           </Link>
+          {userRole === 'superuser' && (
           <FaTrash
             onClick={() => setDeleteVendorId(vendor.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
+          )}
            <MdOutlineFolderDelete
             onClick={() => setSoftDeleteVendorId(vendor.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"

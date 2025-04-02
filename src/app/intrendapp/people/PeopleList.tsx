@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { useState, useEffect } from "react";
-import { getUserData } from '@/utils/auth';
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "./page";
 import Pagination from "@/app/components/Pagination";
@@ -18,6 +17,7 @@ interface PeopleListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
+  userRole?: 'superuser' | 'admin' | 'general_user';
 }
 
 const PeopleList = ({
@@ -28,6 +28,7 @@ const PeopleList = ({
   onPrevious,
   onNext,
   onPageChange,
+  userRole,
 }: PeopleListProps) => {
   const [deletePeopleId, setDeletePeopleId] = useState<string | null>(null);
   const [filterName, setFilterName] = useState<string>("");
@@ -35,12 +36,8 @@ const PeopleList = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>('');
 
-  useEffect(() => {
-    const userData = getUserData();
-    setUserRole(userData?.role || '');
-  }, []);
+
 
   useEffect(() => {
     const fetchAllPeople = async () => {
@@ -180,23 +177,23 @@ const PeopleList = ({
               <FaEye />
             </span>
           </Link>
+          {(userRole === 'superuser') && (
           <FaTrash
             onClick={() => setDeletePeopleId(person.id)}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
+          )}
           <MdOutlineFolderDelete
             onClick={() => setSoftDeletePeopleId(person.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
             title="Soft Delete"
           />
-          {(userRole === 'admin' || userRole === 'superuser') && (
-            <button 
-              onClick={() => handleRegisterLogin(person)}
-              className="ml-2 px-3 py-1 bg-blue-600  text-white rounded hover:bg-blue-700"
-            >
-              Provide Login
+          <button 
+            onClick={() => handleRegisterLogin(person)}
+            className="ml-2 px-3 py-1 bg-blue-600  text-white rounded hover:bg-blue-700"
+          >
+            Provide Login
             </button>
-          )}
         </div>
       </td>
     </>

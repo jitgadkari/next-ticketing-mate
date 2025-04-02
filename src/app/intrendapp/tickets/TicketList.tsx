@@ -22,7 +22,8 @@ interface Ticket {
 
 interface TicketListProps {
   refreshList: () => void;
-  getOffset: () => number;
+  getOffset: () => number;      
+  userRole?: 'superuser' | 'admin' | 'general_user'; // Add user role prop
 }
 
 export interface FilterState {
@@ -46,7 +47,7 @@ export interface FilterState {
 }
 
 
-const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
+const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
@@ -340,10 +341,12 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
               <FaEye />
             </span>
           </Link>
-          <FaTrash
-            onClick={() => setDeleteTicketId(ticket.id)}
-            className="text-red-500 cursor-pointer hover:text-red-700"
-          />
+          {userRole === 'superuser' && (
+            <FaTrash
+              onClick={() => setDeleteTicketId(ticket.id)}
+              className="text-red-500 cursor-pointer hover:text-red-700"
+            />
+          )}
           <MdOutlineFolderDelete
             onClick={() => setSoftDeleteTicketId(ticket.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"

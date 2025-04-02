@@ -26,6 +26,7 @@ interface CustomerListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
+  userRole?: 'superuser' | 'admin' | 'general_user';
 }
 
 interface FilterState {
@@ -41,6 +42,7 @@ const CustomerList = ({
   onPrevious,
   onNext,
   onPageChange,
+  userRole,
 }: CustomerListProps) => {
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
@@ -183,6 +185,7 @@ const CustomerList = ({
               <FaEye />
             </span>
           </Link>
+          {userRole === 'superuser' && (
           <FaTrash
             onClick={() => {
               console.log("Delete button clicked for customer ID:", customer.id); // Debugging log
@@ -190,6 +193,7 @@ const CustomerList = ({
             }}
             className="text-red-500 cursor-pointer hover:text-red-700"
           />
+          )}
           <MdOutlineFolderDelete
             onClick={() => setSoftDeleteCustomerId(customer.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
