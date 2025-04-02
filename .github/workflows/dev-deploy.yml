@@ -12,12 +12,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy to Vercel
+        
+      - name: Trigger Vercel Deploy Hook
         run: |
-          vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }} \
-          --org ${{ secrets.VERCEL_ORG_ID }} \
-          --project ${{ secrets.VERCEL_PROJECT_ID }}
+          curl -X POST "${{ secrets.VERCEL_DEVELOP_DEPLOY_HOOK }}"
