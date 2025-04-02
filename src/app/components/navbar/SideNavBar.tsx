@@ -96,7 +96,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
       { name: 'People', href: '/intrendapp/people', icon: '/svg/users-svgrepo-com.svg', key: 'people' },
     ],
     general_user: [
-      { name: 'Customer Dashboard', href: '/intrendapp/customersDashboard', icon: '/svg/dashboard-4-svgrepo-com.svg', key: 'customer-dashboard' },
+      { name: 'Dashboard', href: '/intrendapp/customersDashboard', icon: '/svg/dashboard-4-svgrepo-com.svg', key: 'customer-dashboard' },
     ],
   };
 

@@ -165,7 +165,7 @@ const CustomerDetailsPage: React.FC = () => {
       );
       const data = await response.json();
       console.log("[CustomerDetails] Default attributes received:", data);
-      
+
       // Extract attributes from the nested structure
       const attrs = data.attributes.latest.attributes || {};
       console.log("[CustomerDetails] Default attributes:", attrs);
@@ -177,10 +177,10 @@ const CustomerDetailsPage: React.FC = () => {
         designs: attrs.designs || [],
         certifications: attrs.certifications || [],
         delivery_terms: attrs.delivery_terms || [],
-        approvals : attrs.approvals || [],
+        approvals: attrs.approvals || [],
         payment_terms: attrs.payment_terms || []
       };
-      
+
       setDefaultAttributes(defaultAttrs);
       console.log("[CustomerDetails] Default attributes set:", defaultAttrs);
     } catch (error) {
@@ -334,20 +334,37 @@ const CustomerDetailsPage: React.FC = () => {
   if (!customer || !defaultAttributes || !unlinkedPeople)
     return <div className="p-4">Loading...</div>;
 
-  
+
   // Build options for attributes. Merging default options with any currently selected values.
-  const attributeOptions = (attribute: string): Option[] => {
-    const attributeKey =
-      attribute === "payment_terms" ? "paymnent_terms" : attribute;
+  const attributeOptions = (attribute: keyof typeof selectedAttributes): Option[] => {
     const defaultOpts =
-      (defaultAttributes?.[attributeKey as keyof Attributes] as string[]) || [];
-    const customerValues = selectedAttributes[attribute] as string[];
+      (defaultAttributes?.[attribute as keyof Attributes] as string[]) || [];
+    const customerValues = selectedAttributes[attribute];
+  
     const allOptions = Array.from(new Set([...defaultOpts, ...customerValues]));
-    return allOptions.map((value) => ({
-      label: value,
-      value,
-    }));
+  
+    return allOptions.map((value) => {
+      if (typeof value === "string") {
+        return { label: value, value };
+      }
+  
+      // Handle object values like { id, name }
+      if (typeof value === "object" && value !== null && "id" in value && "name" in value) {
+        return {
+          label: value.name,
+          value: JSON.stringify(value),
+        };
+      }
+  
+      // Fallback, just in case
+      return {
+        label: String(value),
+        value: String(value),
+      };
+    });
   };
+  
+  
 
   const renderForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -434,7 +451,7 @@ const CustomerDetailsPage: React.FC = () => {
       {/*
         Render MultiSelect for attributes (excluding customer_people_list)
       */}
-      {Object.entries(selectedAttributes).map(([key, values]) => {
+      {(Object.entries(selectedAttributes) as [keyof typeof selectedAttributes, any][]).map(([key, values]) => {
         if (key !== "customer_people_list") {
           return (
             <div key={key}>
@@ -555,7 +572,7 @@ const CustomerDetailsPage: React.FC = () => {
         <p>
           <strong>Additional Info:</strong>{" "}
           {typeof customer.additional_info === "object" &&
-          Object.keys(customer.additional_info).length > 0
+            Object.keys(customer.additional_info).length > 0
             ? JSON.stringify(customer.additional_info)
             : "None"}
         </p>
@@ -577,7 +594,7 @@ const CustomerDetailsPage: React.FC = () => {
         <p>
           <strong>Customer People:</strong>{" "}
           {customer.customer_people_list &&
-          customer.customer_people_list.length > 0 ? (
+            customer.customer_people_list.length > 0 ? (
             <ul>
               {customer.customer_people_list.map(
                 (person: any, index: number) => (

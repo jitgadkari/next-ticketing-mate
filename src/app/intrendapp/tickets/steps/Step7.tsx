@@ -36,7 +36,7 @@ interface StepVersion {
 
 interface DecodedResponse {
   vendor_name: string;
-  decoded_response: string;
+  decoded_response: Record<string, any>;
 }
 
 interface DecodedMessages {
@@ -183,28 +183,29 @@ const Step7: React.FC<Step7Props> = ({
       originalMessage
     });
 
-    // Extract vendor information from decoded messages
     const formattedVendorInfo = Object.entries(decoded_messages).reduce(
-      (acc, [vendorId, vendorData]) => {
+      (acc: Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>, 
+       [vendorId, vendorData]) => {
         // Extract message types (Bulk, Sample, etc) from the decoded_response
         const messageTypes = vendorData.decoded_response?.message?.message || {};
         console.log('Message types:', messageTypes);
         // Format each message type with its rate and schedule details
         acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
-          (typeAcc, [type, details]: [string, any]) => {
+          (typeAcc: Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>, 
+           [type, details]: [string, any]) => {
             typeAcc[type] = {
               rate: details.rate || {},
               schedule: details.schedule || {}
             };
             return typeAcc;
           },
-          {}
+          {} as Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>
         );
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>
     );
-
+    
     console.log('Formatted vendor info:', formattedVendorInfo);
 
     const requestPayload = {

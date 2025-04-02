@@ -228,7 +228,7 @@ const Step3: React.FC<Step3Props> = ({
 
     // Check if the saved message matches what would be returned with decoded messages
     try {
-      const decodedTemplate = await message_decoder(true);
+      const decodedTemplate = await message_decoder(originalMessage, ticket, true);
       setIncludeDecodedMessage(message === decodedTemplate);
     } catch (error) {
       console.error('Error checking decoded message state:', error);
@@ -284,7 +284,7 @@ const Step3: React.FC<Step3Props> = ({
   };
   
 
-  const message_decoder = async (originalMessage, ticket, includeDecodedMessage) => {
+  const message_decoder = async (originalMessage: string, ticket: any, includeDecodedMessage: boolean) => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,

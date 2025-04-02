@@ -174,11 +174,33 @@ export default function IntegrationsPage() {
       </div>
     );
   }
-
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
+        <p className="text-gray-600">Loading WhatsApp groups...</p>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
+        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Groups</h2>
+        <p className="text-gray-600 text-center">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+  
   return (
     <div className="max-w-5xl mx-auto p-6">
-      {/* Reset error state when rendering main content */}
-      {error && setError(null)}
       <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">WhatsApp Groups Integration</h1>
 
       {/* Existing Integrations */}

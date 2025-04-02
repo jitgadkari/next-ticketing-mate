@@ -354,25 +354,28 @@ const Step6: React.FC<Step6Props> = ({
 
       // Extract vendor information properly with the correct nested structure
       const formattedVendorInfo = Object.entries(selectedMessages.decoded_messages).reduce(
-          (acc, [vendorId, vendorData]) => {
-              // Extract message types (Bulk, Sample, etc) from the decoded_response
-              const messageTypes = vendorData.decoded_response?.message?.message || {};
-              
-              // Format each message type with its rate and schedule details
-              acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
-                  (typeAcc, [type, details]: [string, any]) => {
-                      typeAcc[type] = {
-                          rate: details.rate || {},
-                          schedule: details.schedule || {}
-                      };
-                      return typeAcc;
-                  }, 
-                  {}
-              );
-              return acc;
-          },
-          {} as Record<string, any>
-      );
+        (acc: Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>, 
+         [vendorId, vendorData]) => {
+          // Extract message types (Bulk, Sample, etc) from the decoded_response
+          const messageTypes = vendorData.decoded_response?.message?.message || {};
+          console.log('Message types:', messageTypes);
+          
+          // Format each message type with its rate and schedule details
+          acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
+            (typeAcc: Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>, 
+             [type, details]: [string, any]) => {
+              typeAcc[type] = {
+                rate: details.rate || {},
+                schedule: details.schedule || {}
+              };
+              return typeAcc;
+            },
+            {} as Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>
+          );
+          return acc;
+        },
+        {} as Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>
+      );      
 
       // Create the correct request payload
       const requestPayload = {
@@ -546,7 +549,7 @@ const Step6: React.FC<Step6Props> = ({
             </div>
 
             {/* Decoded Response Details */}
-            {Object.entries(vendorData.decoded_response?.message?.message || {}).map(([type, details]) => {
+            {Object.entries(vendorData.decoded_response?.message?.message || {}).map(([type, details]: [string, any]) => {
               return (
                 <div key={type} className="mb-4 bg-gray-50 p-4 rounded-lg">
                   <h5 className="font-medium text-lg mb-2">{type}</h5>
