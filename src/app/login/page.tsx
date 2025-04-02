@@ -21,7 +21,7 @@ const Login = () => {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setIsLoading(true);
     
     try {
@@ -37,20 +37,21 @@ const Login = () => {
       });
 
       const data = await response.json();
-console.log(data);
+      console.log('Login response:', data);
+
       if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.message || data.error || 'Authentication failed');
       }
 
       if (data.access_token) {
         setAuthData(data.access_token, data.user_metadata);
-        router.push("/intrendapp/dashboard");
+        router.push('/intrendapp/dashboard');
       } else {
-        setError("Authentication failed. Please try again.");
+        throw new Error('No access token received');
       }
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Invalid email or password");
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { useState, useEffect } from "react";
+import { getUserData } from '@/utils/auth';
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "./page";
 import Pagination from "@/app/components/Pagination";
@@ -34,6 +35,12 @@ const PeopleList = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string>('');
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUserRole(userData?.role || '');
+  }, []);
 
   useEffect(() => {
     const fetchAllPeople = async () => {
@@ -182,9 +189,14 @@ const PeopleList = ({
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
             title="Soft Delete"
           />
-          <button onClick={() => handleRegisterLogin(person)}>
-            Provide Login
-          </button>
+          {(userRole === 'admin' || userRole === 'superuser') && (
+            <button 
+              onClick={() => handleRegisterLogin(person)}
+              className="ml-2 px-3 py-1 bg-blue-600  text-white rounded hover:bg-blue-700"
+            >
+              Provide Login
+            </button>
+          )}
         </div>
       </td>
     </>

@@ -106,7 +106,7 @@ export default function CustomerDashboard() {
           "Content-Type": "application/json",
         },
       });
-  
+  console.log(access_token || 'NOT FOUND');
       if (!response.ok) {
         throw new Error(`Failed to fetch dashboard data. Status: ${response.status}`);
       }
@@ -129,7 +129,7 @@ export default function CustomerDashboard() {
   };
   
   useEffect(() => {
-    const accessToken = localStorage.getItem("access_token");
+    const accessToken = localStorage.getItem("auth-token");
     if(!accessToken){
       setError("Authentication token not available");
       setIsLoading(false);
@@ -154,7 +154,7 @@ export default function CustomerDashboard() {
     "Ticket Number",
     "Type",
     "Status",
-    "Decision",
+    // "Decision",
     "Customer Message",
     "Intrend Reply",
   ];
@@ -239,7 +239,7 @@ export default function CustomerDashboard() {
                               }
                             );
                             if (response.ok) {
-                              const accessToken = localStorage.getItem("access_token");
+                              const accessToken = localStorage.getItem("auth-token");
                               if (accessToken) {
                                 await handleCustomerSelect(accessToken);
                               }
