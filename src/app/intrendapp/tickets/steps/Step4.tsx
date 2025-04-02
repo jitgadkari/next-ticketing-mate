@@ -571,7 +571,7 @@ console.log(versions)
         setVendorDetails(vendorsList);
       } else {
         console.log("No valid vendors found");
-        toast.error("No valid vendors available");
+        // toast.error("No valid vendors available");
       }
     } catch (error) {
       console.error("Error fetching vendors:", error);
@@ -787,7 +787,16 @@ console.log(versions)
       if (failedResults.length === 0) {
         toast.success("WhatsApp messages sent successfully!");
       } else if (successfulResults.length > 0) {
-        toast.warning(`${successfulResults.length} messages sent, ${failedResults.length} failed`);
+        toast(
+          `${successfulResults.length} messages sent, ${failedResults.length} failed`,
+          {
+            icon: '⚠️',
+            style: {
+              background: '#fff7e6',
+              color: '#805200',
+            },
+          }
+        );
       } else {
         toast.error("Failed to send WhatsApp messages.");
       }

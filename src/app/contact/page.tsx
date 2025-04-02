@@ -9,12 +9,12 @@ const Contact = () => {
   const router = useRouter();
 
   useEffect(() => {
-    setIsAuthenticated(isAuthenticated());
+    setIsAuthenticated(isAuthenticated);
 
     // Listen for storage events to detect auth changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'access_token') {
-        setIsAuthenticated(isAuthenticated());
+        setIsAuthenticated(isAuthenticated);
       }
     };
 

@@ -3,12 +3,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import Button from "../../../components/Button";
 import toast from "react-hot-toast";
 import { AiOutlineEdit } from "react-icons/ai";
+
 interface VendorMessage {
   vendor_name: string;
+  name: string;
   response_received: boolean;
   response_message: string;
   message_received_time: string | null;
 }
+
 interface DecodedMessage {
   query: string;
   rate: {
@@ -24,12 +27,17 @@ interface DecodedMessage {
     delivery_method: string;
   };
 }
+
 interface VendorDecodedMessage {
+  vendor_id: string;
   vendor_name: string;
-  decoded_message: Record<string, DecodedMessage>;
+  decoded_response: {
+    message: any; // Using any since the decoded message structure varies
+  };
   original_message: string;
-  response_received_time: string;
+  response_received_time: string | null;
 }
+
 interface StepVersion {
   time: string;
   vendors: Record<string, VendorMessage>;
@@ -62,7 +70,7 @@ const Step5: React.FC<Step5Props> = ({
   ticket,
   step,
 }) => {
-  const [messages, setMessages] = useState(
+  const [messages, setMessages] = useState<Record<string, VendorMessage>>(
     ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors || vendorMessages || {}
   );
   const [isDecoding, setIsDecoding] = useState(false);
@@ -70,9 +78,10 @@ const Step5: React.FC<Step5Props> = ({
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
-  const [editPopupVendor, setEditPopupVendor] = useState<
-    Record<string, string>
-  >({});
+  const [editPopupVendor, setEditPopupVendor] = useState<{
+    vendor_name: string;
+    vendor_id: string;
+  } | null>(null);
   const [editableVendors, setEditableVendors] = useState<
     Record<string, boolean>
   >({});
@@ -379,7 +388,7 @@ const Step5: React.FC<Step5Props> = ({
       return;
     }
 
-    setMessages((prevMessage: Record<string, { name: string; response_message: string }>) => {
+    setMessages((prevMessage) => {
       const updatedMessages = {
         ...prevMessage,
         [vendor]: {
@@ -474,7 +483,7 @@ const Step5: React.FC<Step5Props> = ({
           Remind all
         </Button>
       </div>
-      {Object?.entries(messages).map(([vendor_id, message]) => (
+      {Object.entries(messages).map(([vendor_id, message]) => (
         <div key={vendor_id} className="mb-4">
           <div className=" flex justify-between items-center">
             <label className="block text-gray-700 font-bold mb-2">
@@ -496,7 +505,7 @@ const Step5: React.FC<Step5Props> = ({
               {isCurrentStep && (
                 <AiOutlineEdit
                   onClick={() =>
-                    handleEditClick(vendor_id, message.vendor_name)
+                    handleEditClick(vendor_id, message.name)
                   }
                   className="text-gray-500 hover:text-green-800 cursor-pointer mt-3"
                   size={24}

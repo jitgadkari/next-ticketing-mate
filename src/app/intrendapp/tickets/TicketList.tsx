@@ -36,11 +36,13 @@ export interface FilterState {
   current_step: string;
   status: string;
   final_decision: string;
+  step_status: string;
+  decision_status: string;
   limit: number;
   offset: number;
   start_date?: string;
   end_date?: string;
-  sort_order?:boolean;
+  sort_order: boolean;
 }
 
 
@@ -57,6 +59,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
     current_step: "",
     step_status: "",
     decision_status: "",
+    status: "",
+    final_decision: "",
     limit: 10,
     offset: getOffset(),
     start_date: "",
@@ -67,9 +71,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(null);
   const [pageInfo, setPageInfo] = useState({
-    total_tickets: null,
-    current_page: null,
-    total_pages: null,
+    total_tickets: 0,
+    current_page: 1,
+    total_pages: 1,
     has_next: true,
   });
 
@@ -87,7 +91,16 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset }) => {
   useEffect(() => {
     const fetchTickets = async () => {
       // Build filter parameters to match backend implementation
-      const filterParams = {
+      const filterParams: {
+        limit: string;
+        offset: string;
+        customer_name?: string;
+        ticket_number?: string;
+        current_step?: string;
+        step_status?: string;
+        start_date?: string;
+        end_date?: string;
+      } = {
         limit: filterState.limit.toString(),
         offset: filterState.offset.toString(),
       };

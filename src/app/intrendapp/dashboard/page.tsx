@@ -67,7 +67,7 @@ const Dashboard = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen relative overflow-hidden">
       {/* Background SVG Pattern */}
-      <div className="absolute inset-0 z-0 opacity-5 animate-pulse">
+      {/* <div className="absolute inset-0 z-0 opacity-20 animate-pulse ">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
           <defs>
             <pattern id="dashboard-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -78,7 +78,7 @@ const Dashboard = () => {
           </defs>
           <rect width="100%" height="100%" fill="url(#dashboard-pattern)" />
         </svg>
-      </div>
+      </div> */}
 
       {/* Main content */}
       <div className="relative z-10">
