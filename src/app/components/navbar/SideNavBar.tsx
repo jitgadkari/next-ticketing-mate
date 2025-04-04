@@ -112,35 +112,41 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
           className={`bg-gray-800 text-white hidden md:block sticky top-16 h-[calc(100vh-4rem)] transition-all duration-500 ${isExpanded ? "w-64" : "w-16"}`}
         >
           <nav className="p-4">
-            <ul className="space-y-4">
-              {roleMap[userRole]?.map(({ name, href, icon, key }) => (
-                <li key={name} onClick={() => key && handleLinkClick(key)}>
-                  <Link
-                    href={href}
-                    className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"} text-lg hover:bg-gray-700 p-2 rounded block`}
-                  >
-                    {icon === 'inline'
-                      ? renderInlineSvg(name)
-                      : (
-                        <Image
-                          src={icon}
-                          alt={name}
-                          width={name === 'Customers' || name === 'People' ? 28 : 24}
-                          height={name === 'Customers' || name === 'People' ? 28 : 24}
-                          className={`${name === 'Customers' ? 'min-w-[1.75rem]' : 'min-w-[1.5rem]'} brightness-0 invert`}
-                        />
-                      )}
-                    <span
-                      className={`transition-opacity duration-500 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
+            <ul className="space-y-0">
+              {roleMap[userRole]?.map(({ name, href, icon, key }, index, array) => (
+                <React.Fragment key={name}>
+                  <li onClick={() => key && handleLinkClick(key)}>
+                    <Link
+                      href={href}
+                      className={`flex items-center ${isExpanded ? "justify-start space-x-2" : "justify-center"} text-lg hover:bg-gray-700 p-2 rounded block`}
                     >
-                      {name.includes('Dashboard') && name.split(' ').length > 1
-                        ? name.split(' ').map((w, i) => <span key={i} className="mr-1">{w}</span>)
-                        : name}
-                    </span>
-                  </Link>
-                </li>
+                      {icon === 'inline'
+                        ? renderInlineSvg(name)
+                        : (
+                          <Image
+                            src={icon}
+                            alt={name}
+                            width={name === 'Customers' || name === 'People' ? 28 : 24}
+                            height={name === 'Customers' || name === 'People' ? 28 : 24}
+                            className={`${name === 'Customers' ? 'min-w-[1.75rem]' : 'min-w-[1.5rem]'} brightness-0 invert`}
+                          />
+                        )}
+                      <span
+                        className={`transition-opacity duration-500 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
+                      >
+                        {name.includes('Dashboard') && name.split(' ').length > 1
+                          ? name.split(' ').map((w, i) => <span key={i} className="mr-1">{w}</span>)
+                          : name}
+                      </span>
+                    </Link>
+                  </li>
+                  {index < array.length - 1 && (
+                    <hr className="border-t border-gray-700 shadow-sm mx-2" />
+                  )}
+                </React.Fragment>
               ))}
             </ul>
+
           </nav>
         </aside>
       )}

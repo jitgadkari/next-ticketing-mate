@@ -19,6 +19,7 @@ interface Vendor {
   group: VendorGroup | string;
   email: string;
   phone?: string;
+  whatsapp_groups?: Array<{ id: string; name: string }>;
 }
 
 interface VendorData {
@@ -69,7 +70,7 @@ const Step4: React.FC<Step4Props> = ({
   const stepData = ticket.steps[ticket.current_step] || {};
   console.log(stepData)
   const versions = Array.isArray(stepData.versions) ? stepData.versions : [];
-console.log(versions)
+  console.log(versions)
   // Add latest version to the versions array for unified handling
   const allVersions = [
     {
@@ -111,8 +112,8 @@ console.log(versions)
 
   const handleVersionChange = (version: string) => {
     if (isCurrentStep) {
-    setSelectedVersion(version);
-    const selectedVersionData = allVersions.find(v => v.version === version);
+      setSelectedVersion(version);
+      const selectedVersionData = allVersions.find(v => v.version === version);
       if (selectedVersionData) {
         // Get vendor data from the selected version
         const vendors = selectedVersionData.vendors || {};
@@ -175,10 +176,13 @@ console.log(versions)
     useState(false);
   const [showResendEmail, setShowResendEmail] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [vendorGroupOptions, setVendorGroupOptions] = useState<{ id: string; name: string }[]>([]);
+
 
   const handleNext = async (updatedVendors: string[]) => {
     console.log("Handling next for Step 4");
-    
+
     // Check if any messages are unsent
     const currentVendors = ticket.steps[ticket.current_step]?.latest?.vendors || {};
     let hasUnsentEmail = false;
@@ -189,7 +193,7 @@ console.log(versions)
       if (!vendor) return;
       const vendorData = currentVendors[vendor.id];
       console.log('Checking vendor data for', vendor.name, vendorData);
-      
+
       // Check if message_sent is boolean (old format) or object (new format)
       if (typeof vendorData?.message_sent === 'object') {
         if (!vendorData?.message_sent?.email) hasUnsentEmail = true;
@@ -221,7 +225,7 @@ console.log(versions)
       const vendorsToUpdate = updatedVendors.map((vendorName) => {
         const vendor = vendorDetails.find((v: Vendor) => v.name === vendorName);
         const currentVendorData = currentVendors[vendor?.id || ""] || {};
-        
+
         return {
           vendor_id: vendor?.id,
           name: vendorName,
@@ -348,6 +352,22 @@ console.log(versions)
     }
   };
 
+  useEffect(() => {
+    const allGroups: { id: string; name: string }[] = [];
+    console.log("Selected options:", selectedOptions);
+    selectedOptions.forEach((option) => {
+      const vendor = vendorDetails.find((v) => v.name === option.value);
+      if (vendor?.whatsapp_groups?.length) {
+        vendor.whatsapp_groups.forEach((group) => {
+          if (!allGroups.find((g) => g.id === group.id)) {
+            allGroups.push(group);
+          }
+        });
+      }
+    });
+
+    setVendorGroupOptions(allGroups);
+  }, [selectedOptions, vendorDetails]);
 
   // Initialize version data and vendor messages when component mounts
   useEffect(() => {
@@ -370,7 +390,7 @@ console.log(versions)
             id: vendor.vendor_id || id,
           };
         }
-      );      
+      );
       console.log("Loading saved vendor data:", newSelectedOptions);
       setSelectedOptions(newSelectedOptions);
       setVendorMessages(newMessages);
@@ -427,19 +447,57 @@ console.log(versions)
     }
   }, [selectedOptions]);
 
-  // const fetchCustomer=async()=>{
-  //   try {
-  //     const response = await fetch(
-  //       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customer/${ticket.customer_id}`
-  //     );
-  //     const data = await response.json();
-  //     console.log(data);
-  //     return data;
-  //   } catch (error) {
-  //     console.error("Error fetching customer:", error);
-  //   }
-  // }
 
+  const sendVendorGroupMessage = async () => {
+    if (!selectedGroup) {
+      toast.error("Please select a group.");
+      return;
+    }
+
+    const groupId = selectedGroup.endsWith("@g.us")
+      ? selectedGroup
+      : `${selectedGroup}@g.us`;
+
+    try {
+      toast.loading("Sending message to group...");
+ const payload ={
+to:groupId,
+content:template
+ }
+ console.log("payload",payload)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: groupId,
+          content: template
+        }),
+      });
+
+      const result = await response.json();
+      console.log("Group Send result:", result);
+
+      if (!response.ok) {
+        toast.error(`HTTP Error: ${response.status}`);
+        console.error("Error body:", await response.text());
+        return;
+      }
+
+      if (result.success) {
+        toast.success("Message sent to WhatsApp group!");
+        console.log("✅ Group message success:", result.message);
+      } else {
+        toast.error("Message API returned failure");
+        console.error("❌ WhatsApp API failed:", result);
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error("Failed to send group message");
+      console.error("❌ Send error:", err.message || err);
+    }
+  };
 
 
 
@@ -490,7 +548,7 @@ console.log(versions)
 
         // Prepare filters dictionary
         const filters_dict: Record<string, string[]> = {};
-        
+
         // Add certifications if present
         if (cleanDecodedMessages.certifications) {
           filters_dict.certifications = cleanDecodedMessages.certifications.split(',').map((cert: string) => cert.trim());
@@ -540,7 +598,7 @@ console.log(versions)
           const vendorName = v.name || (ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]?.name) || 'Unnamed Vendor';
           // Get existing vendor data from ticket if available
           const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId];
-
+          console.log("Existing vendor data:", existingVendor);
           return {
             id: vendorId,
             name: vendorName,
@@ -558,6 +616,7 @@ console.log(versions)
         const vendorOptions = vendorsList.map((vendor: Vendor) => {
           // Check if we have existing data for this vendor in the ticket
           const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id];
+          console.log(existingVendor)
           const option = {
             label: existingVendor?.name || vendor.name,
             value: existingVendor?.name || vendor.name,
@@ -577,6 +636,19 @@ console.log(versions)
     } catch (error) {
       console.error("Error fetching vendors:", error);
       toast.error("Failed to fetch vendors. Please try again.");
+    }
+  };
+  const fetchVendorDetailsById = async (vendorId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`);
+      if (!response.ok) throw new Error("Failed to fetch vendor details");
+
+      const data = await response.json();
+      return data.vendor;
+    } catch (error) {
+      console.error("Error fetching vendor details:", error);
+      toast.error("Failed to fetch vendor info");
+      return null;
     }
   };
 
@@ -675,10 +747,44 @@ console.log(versions)
     setVendorMessages(messages);
   };
 
-  const handleVendorChange = (selected: MultiValue<MultiSelectOption>) => {
+  const handleVendorChange = async (selected: MultiValue<MultiSelectOption>) => {
     console.log("Selected vendors:.....", selected);
     setSelectedOptions(selected as MultiSelectOption[]);
+
+    // Handle group update for single vendor selection
+    if (selected.length === 1) {
+      const vendor = selected[0];
+      const fetchedVendor = await fetchVendorDetailsById(vendor.id as string);
+
+      if (fetchedVendor?.whatsapp_groups?.length) {
+        setVendorGroupOptions(fetchedVendor.whatsapp_groups);
+      } else {
+        setVendorGroupOptions([]);
+      }
+    } else {
+      // If multiple vendors are selected, you may decide to clear or aggregate groups
+      setVendorGroupOptions([]);
+    }
   };
+
+  useEffect(() => {
+    const loadGroupsFromSelectedVendors = async () => {
+      const groupSet = new Map<string, string>();
+
+      for (const option of selectedOptions) {
+        const vendor = await fetchVendorDetailsById(option.id as string);
+        vendor?.whatsapp_groups?.forEach((group: any) => {
+          groupSet.set(group.id, group.name);
+        });
+      }
+
+      setVendorGroupOptions(Array.from(groupSet.entries()).map(([id, name]) => ({ id, name })));
+    };
+
+    if (selectedOptions.length > 0) {
+      loadGroupsFromSelectedVendors();
+    }
+  }, [selectedOptions]);
 
   const handleVendorSearch = (inputValue: string) => {
     if (inputValue.length >= 3) { // Only search if at least 3 characters are entered
@@ -693,7 +799,7 @@ console.log(versions)
 
   const currentStepData = ticket.steps[ticket.current_step]?.latest;
   console.log('Current step data:', currentStepData ? JSON.stringify(currentStepData) : 'No data available');
- 
+
   const handleSendMessage = async () => {
     setIsWhatsAppSending(true);
     try {
@@ -704,28 +810,28 @@ console.log(versions)
           const vendor = vendorDetails.find(
             (v: Vendor) => v.id === option.id || v.name === option.value
           );
-  
+
           console.log("Vendor found:", vendor); // Ensure the vendor is correct
           if (!vendor) {
             throw new Error(`Could not find vendor details for ${option.value}`);
           }
-  
+
           if (!vendor.phone) {
             throw new Error(`Missing phone number for vendor ${vendor.name}`);
           }
-  
+
           // Format phone number: remove spaces, +, ensure it starts with country code and ends with @c.us
           let formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/^\+/, '');
           if (!formattedPhone.startsWith('91')) {
             formattedPhone = '91' + formattedPhone;
           }
           formattedPhone = formattedPhone + '@c.us';
-  
+
           const messageContent = (ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value);
-  
+
           console.log("Sending to:", formattedPhone);
           console.log("Message content:", messageContent);
-  
+
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
             {
@@ -737,19 +843,19 @@ console.log(versions)
               }),
             }
           );
-  
+
           const data = await response.json();
           console.log("WhatsApp response data:", data);
-  
+
           if (!response.ok || data.error || data.status === 'failed') {
             const errorMessage = data.error || data.message || 'Unknown error';
             console.error(`WhatsApp API error for ${option.value}:`, errorMessage);
             throw new Error(`Failed to send WhatsApp to ${option.value}: ${errorMessage}`);
           }
-  
+
           const messageSent = data.status === 'success' || data.success === true;
           console.log(`Message to ${option.value} sent status:`, messageSent);
-  
+
           // Ensure vendor name is correctly included
           return {
             vendor_id: vendor.id,
@@ -759,15 +865,15 @@ console.log(versions)
           };
         } catch (error) {
           console.error(`Error sending message to ${option.value}:`, error);
-  
+
           const vendor = vendorDetails.find((v: Vendor) =>
             v.id === option.id || v.name === option.value
           );
-  
+
           if (!vendor?.id) {
             throw new Error(`Vendor ID is missing for ${option.value}`);
           }
-  
+
           return {
             vendor_id: vendor?.id,  // Use vendor.id if found, fallback to option.id
             name: vendor?.name || option.value,  // Ensure name is included
@@ -780,11 +886,11 @@ console.log(versions)
       const results = await Promise.all(messagePromises);
       const successfulResults = results.filter(result => result.message_sent);
       const failedResults = results.filter(result => !result.message_sent);
-  
+
       await updateTicketWithSentStatus(results);
       console.log("All results:", results);
       console.log("Successful:", successfulResults.length, "Failed:", failedResults.length);
-  
+
       toast.dismiss();
       if (failedResults.length === 0) {
         toast.success("WhatsApp messages sent successfully!");
@@ -813,7 +919,7 @@ console.log(versions)
 
   interface VendorResult {
     vendor_id: string;
-    name: string; 
+    name: string;
     message_temp: string;
     message_sent: boolean | { email: boolean; whatsapp: boolean }; // Changed from object to boolean
   }
@@ -1056,7 +1162,6 @@ console.log(versions)
 
   console.log("Vendor Messages:", vendorMessages);
 
-  console.log("selected options....", selectedOptions);
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
       {!loading && (
@@ -1137,67 +1242,85 @@ console.log(versions)
               ))}
             </div>
           )}
-          <div className="flex justify-between mt-4">
-            <Button
-              onClick={handleSave}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              disabled={!isCurrentStep || selectedOptions.length === 0}
-            >
-              Save
-            </Button>
-            <Button
-              onClick={handleWhatsAppPopUp}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
-                selectedOptions.length === 0 ||
-                isWhatsAppSending) &&
-                "opacity-50 cursor-not-allowed"
-                }`}
-              disabled={
-                !isCurrentStep ||
-                selectedOptions.length === 0 ||
-                isWhatsAppSending
-              }
-            >
-              <span>
-                {isWhatsAppSending
-                  ? "Sending..."
-                  : showResendWhatsappMessage
-                    ? "Resend"
-                    : "Send"}
-              </span>
 
-              <FaWhatsapp />
-            </Button>
-            <Button
-              onClick={handleSendEmailPopUp}
-              className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 ${(!isCurrentStep ||
-                selectedOptions.length === 0 ||
-                isEmailSending) &&
-                "opacity-50 cursor-not-allowed "
-                }`}
-              disabled={
-                !isCurrentStep || selectedOptions.length === 0 || isEmailSending
-              }
-            >
-              <span>
-                {isEmailSending
-                  ? "Sending..."
-                  : showResendEmail
-                    ? "Resend"
-                    : "Send"}
-              </span>
-              <MdEmail />
-            </Button>
-            <Button
-              onClick={() => handleNext(selectedOptions.map(option => option.value))}
-              className={`font-bold py-2 px-4 rounded ${isCurrentStep
-                ? "bg-blue-500 hover:bg-blue-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              disabled={!isCurrentStep || selectedOptions.length === 0}
-            >
-              Next
-            </Button>
+          <div className="flex justify-between mt-4">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Button
+                onClick={handleSave}
+                className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                disabled={!isCurrentStep || selectedOptions.length === 0}
+              >
+                Save
+              </Button>
+
+              <Button
+                onClick={handleWhatsAppPopUp}
+                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending) &&
+                  "opacity-50 cursor-not-allowed"
+                  }`}
+                disabled={!isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending}
+              >
+                <span>
+                  {isWhatsAppSending ? "Sending..." : showResendWhatsappMessage ? "Resend" : "Send"}
+                </span>
+                <FaWhatsapp />
+              </Button>
+
+              {selectedOptions.length > 0 && vendorGroupOptions.length > 0 && (
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    WhatsApp Group
+                  </label>
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a group...</option>
+                    {vendorGroupOptions.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <Button
+                onClick={sendVendorGroupMessage}
+                className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedGroup === "") && "opacity-50 cursor-not-allowed"
+                  }`}
+                disabled={!isCurrentStep || selectedGroup === ""}
+              >
+                <FaWhatsapp />
+                Send Group
+              </Button>
+
+              <Button
+                onClick={handleSendEmailPopUp}
+                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedOptions.length === 0 || isEmailSending) &&
+                  "opacity-50 cursor-not-allowed"
+                  }`}
+                disabled={!isCurrentStep || selectedOptions.length === 0 || isEmailSending}
+              >
+                <span>
+                  {isEmailSending ? "Sending..." : showResendEmail ? "Resend" : "Send"}
+                </span>
+                <MdEmail />
+              </Button>
+
+              <Button
+                onClick={() => handleNext(selectedOptions.map((option) => option.value))}
+                className={`w-full font-bold py-2 px-4 rounded ${isCurrentStep
+                  ? "bg-blue-500 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                disabled={!isCurrentStep || selectedOptions.length === 0}
+              >
+                Next
+              </Button>
+            </div>
+
           </div>
         </>
       )}
@@ -1273,12 +1396,12 @@ console.log(versions)
                 const unsentTypes = [];
                 if (!isMessageSent.emailSent) unsentTypes.push("Email");
                 if (!isMessageSent.whatsappMessageSent) unsentTypes.push("WhatsApp");
-                
+
                 if (unsentTypes.length === 0) return null;
-                
+
                 const messageType = unsentTypes.length === 1 ? 'message' : 'messages';
                 const unsentMessage = unsentTypes.join(' and ');
-                
+
                 return `You haven't sent ${unsentMessage} ${messageType} to the selected vendors. Would you like to proceed without sending?`;
               })()}
             </p>

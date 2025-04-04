@@ -37,7 +37,7 @@ const Signup = () => {
           </div>
           <div className="text-center space-y-4">
             <h2 className="text-3xl font-bold text-gray-900">
-              Join Intrend Today
+              Join IntSync Today
             </h2>
             <p className="text-gray-600">
               Start managing your business better with our comprehensive tools
@@ -50,7 +50,7 @@ const Signup = () => {
         <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Intrend</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">IntSync</h1>
           <div className="text-xl sm:text-2xl font-semibold text-black">
             Create Account
           </div>

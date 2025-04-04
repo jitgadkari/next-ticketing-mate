@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
 import { MdOutlineFolderDelete } from "react-icons/md";
+import { getUserData, isAuthenticated } from "@/utils/auth";
 
 interface VendorListProps {
   vendors: Vendor[];
@@ -18,7 +19,6 @@ interface VendorListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
-  userRole?: 'superuser' | 'admin' | 'general_user';
 }
 
 interface FilterState {
@@ -34,7 +34,6 @@ const VendorList = ({
   onPrevious,
   onNext,
   onPageChange,
-  userRole,
 }: VendorListProps) => {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
@@ -43,7 +42,8 @@ const VendorList = ({
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null);
+  const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
 
   // Populate filter options for states
   useEffect(() => {
@@ -53,6 +53,14 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
     }
   }, [vendors]);
   
+  useEffect(() => {
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      console.log(userData);
+      setUserRole(userData?.role || 'general_user');
+    }
+  }, []);
   // Fetch all vendors once from the `/vendors_all` API
   useEffect(() => {
     const fetchAllVendors = async () => {
@@ -66,7 +74,7 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
         });
         if (response.ok) {
           const data = await response.json();
-          
+
           if (data.vendors && Array.isArray(data.vendors)) {
             setAllVendors(data.vendors);  // Store all vendors in state
             setVendors(data.vendors.slice(0, pageFilter.limit)); // Display first page of vendors
@@ -173,13 +181,13 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
               <FaEye />
             </span>
           </Link>
-          {userRole === 'superuser' && (
-          <FaTrash
-            onClick={() => setDeleteVendorId(vendor.id)}
-            className="text-red-500 cursor-pointer hover:text-red-700"
-          />
+          {userRole === 'admin' && (
+            <FaTrash
+              onClick={() => setDeleteVendorId(vendor.id)}
+              className="text-red-500 cursor-pointer hover:text-red-700"
+            />
           )}
-           <MdOutlineFolderDelete
+          <MdOutlineFolderDelete
             onClick={() => setSoftDeleteVendorId(vendor.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
             title="Soft Delete"
@@ -191,15 +199,15 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
 
   return (
     <div className="p-8 bg-white rounded-2xl shadow text-black">
-    <div className="flex justify-between items-center mb-4">
-      <h1 className="text-2xl font-bold">Vendor List</h1>
-      <button
-        onClick={() => setShowFilter(!showFilter)}
-        className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
-      >
-        {showFilter ? "Hide Filter" : "Show Filter"}
-      </button>
-    </div>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Vendor List</h1>
+        <button
+          onClick={() => setShowFilter(!showFilter)}
+          className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
+        >
+          {showFilter ? "Hide Filter" : "Show Filter"}
+        </button>
+      </div>
 
       {/* Filter UI (Only shown if showFilter is true) */}
       {showFilter && (
@@ -238,10 +246,10 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
       )}
 
       {/* Table */}
-      <Table 
-        columns={columns} 
-        data={vendors} 
-        renderRow={renderRow} 
+      <Table
+        columns={columns}
+        data={vendors}
+        renderRow={renderRow}
       />
 
       {deleteVendorId && (
@@ -264,7 +272,7 @@ const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null
           </div>
         </dialog>
       )}
-{/* Soft Delete Dialog */}
+      {/* Soft Delete Dialog */}
       {softDeleteVendorId && (
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>

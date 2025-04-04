@@ -20,7 +20,6 @@ export const getAccessToken = () => {
 };
 
 // Helper function to set authentication data
-// Helper function to set authentication data
 export const setAuthData = (token: string, userData: any) => {
   // Set in localStorage
   localStorage.setItem('auth-token', token);

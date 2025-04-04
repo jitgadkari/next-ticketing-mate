@@ -9,6 +9,8 @@ import { Customer } from "./AddTicketForm";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { BsCalendar2DateFill } from "react-icons/bs";
+import { getUserData, isAuthenticated } from "@/utils/auth";
+
 interface Ticket {
   id: string;
   ticket_number: string;
@@ -22,8 +24,7 @@ interface Ticket {
 
 interface TicketListProps {
   refreshList: () => void;
-  getOffset: () => number;      
-  userRole?: 'superuser' | 'admin' | 'general_user'; // Add user role prop
+  getOffset: () => number;
 }
 
 export interface FilterState {
@@ -47,7 +48,7 @@ export interface FilterState {
 }
 
 
-const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole }) => {
+const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
     showDropDown: false,
@@ -71,6 +72,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
   const [pageInfo, setPageInfo] = useState({
     total_tickets: 0,
     current_page: 1,
@@ -89,6 +91,16 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
     "Step 8 : Customer Response",
     "Step 9: Final Status",
   ];
+
+  useEffect(() => {
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      console.log(userData);
+      setUserRole(userData?.role || 'general_user');
+    }
+  }, []);
+
   useEffect(() => {
     const fetchTickets = async () => {
       // Build filter parameters to match backend implementation
@@ -123,12 +135,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
       if (filterState.end_date) filterParams.end_date = filterState.end_date;
 
       console.log('Applying filters:', filterParams);
-      
+
       const queryParams = new URLSearchParams(filterParams);
       try {
         const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_ENDPOINT_URL
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL
           }/api/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
@@ -256,11 +267,10 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
   const columns = [
     "Ticket Number",
     "Customer Name",
-    "Current Step",
-    "Status",
-    "Decision",
+    // "Current Step",
     "Created Date",
     "Customer Message",
+    "Status & Decision",
     "Actions",
   ];
   const handlePrevious = () => {
@@ -307,33 +317,32 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
     <>
       <td className="border rounded-lg p-2">{ticket.ticket_number}</td>
       <td className="border rounded-lg p-2">{ticket.customer_name}</td>
-      <td className="border rounded-lg p-2">{ticket.current_step}</td>
-      <td className="border rounded-lg p-2">
-        <span
-          className={`px-2 py-1 rounded-lg ${
-            ticket.status === "closed"
-              ? "bg-red-200 text-red-800"
-              : "bg-green-200 text-green-800"
-          }`}
-        >
-          {ticket.status}
-        </span>
-      </td>
-      <td className="border rounded-lg p-2">
-        <span
-          className={`px-2 py-1 rounded-lg ${
-            ticket.final_decision === "approved"
-              ? "bg-green-200 text-green-800"
-              : ticket.final_decision === "denied"
-              ? "bg-red-200 text-red-800"
-              : "bg-yellow-200 text-yellow-800"
-          }`}
-        >
-          {ticket.final_decision}
-        </span>
-      </td>
       <td className="border rounded-lg p-2">{formatDateTime(ticket.created_date)}</td>
       <td className="border rounded-lg p-2">{ticket.customer_message}</td>
+      <td className="border rounded-lg p-2 space-y-1">
+        <div className="flex justify-center">
+          <span
+            className={`px-2 py-1 rounded-lg ${ticket.status === "closed"
+              ? "bg-red-200 text-red-800"
+              : "bg-green-200 text-green-800"
+              }`}
+          >
+            {ticket.status}
+          </span>
+        </div>
+        <div className="flex justify-center">
+          <span
+            className={`px-2 py-1 rounded-lg ${ticket.final_decision === "approved"
+              ? "bg-green-200 text-green-800"
+              : ticket.final_decision === "denied"
+                ? "bg-red-200 text-red-800"
+                : "bg-yellow-200 text-yellow-800"
+              }`}
+          >
+            {ticket.final_decision}
+          </span>
+        </div>
+      </td>
       <td className="border rounded-lg p-2">
         <ul className="h-full flex justify-center space-x-2">
           <Link href={`tickets/${ticket.id}`} passHref>
@@ -341,7 +350,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
               <FaEye />
             </span>
           </Link>
-          {userRole === 'superuser' && (
+          {userRole === 'admin' && (
             <FaTrash
               onClick={() => setDeleteTicketId(ticket.id)}
               className="text-red-500 cursor-pointer hover:text-red-700"
@@ -532,11 +541,11 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
                             offset: 0 // Reset to first page
                           }))
                         }
-                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                        className="w-10 h-10 opacity-0  absolute inset-0"
                       />
 
-                      <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">    
-                      <BsCalendar2DateFill className="text-black"/>
+                      <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
+                        <BsCalendar2DateFill className="text-black" />
                       </div>
                     </div>
                     <h1>End </h1>
@@ -551,40 +560,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
                             offset: 0 // Reset to first page
                           }))
                         }
-                        className="w-10 h-10 opacity-0  absolute inset-0" 
+                        className="w-10 h-10 opacity-0  absolute inset-0"
                       />
                       <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
-                      <BsCalendar2DateFill className="text-black"/>
+                        <BsCalendar2DateFill className="text-black" />
                       </div>
                     </div>
                   </ul>
                 </>
-
-                {/* <li
-              onClick={() => handleSort("created_date")}
-              className="flex items-center border-b  cursor-pointer px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none"
-            >
-              <h1> Created</h1>
-              {filterState.sortBy === "created_date" && (
-                <>
-                  {filterState.sortOrder === "asc" ? (
-                    <IoMdArrowDropdown />
-                  ) : (
-                    <IoMdArrowDropup />
-                  )}
-                </>
-              )}
-            </li> */}
-                {/* <li className="flex gap-2 border-b py-2 px-4  bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none">
-              <h1>Enter Last Number of Days</h1>
-              <input
-                type="number"
-                className="w-10 border text-center rounded-md"
-                value={filterState.sortDays}
-                onChange={(e) => handleSortByLastNumberOfDays(e.target.value)}
-                min="0"
-              />
-            </li> */}
                 <li>
                   <input
                     type="text"
@@ -657,7 +640,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList,getOffset, userRole
         </div>
       )} */}
       {allTickets.length > 0 ? (
-        <Table columns={columns} data={allTickets} renderRow={renderRow} handleChangeSortOrder={handleChangeSortOrder}/>
+        <Table columns={columns} data={allTickets} renderRow={renderRow} handleChangeSortOrder={handleChangeSortOrder} />
       ) : (
         <div className="text-center py-20">
           <h2 className="text-xl text-gray-600">

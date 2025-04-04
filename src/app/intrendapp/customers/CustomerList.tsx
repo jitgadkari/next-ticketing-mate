@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "../people/page";
 import Pagination from "@/app/components/Pagination";
 import { MdOutlineFolderDelete } from "react-icons/md";
+import { getUserData, isAuthenticated } from "@/utils/auth";
+
 interface Customer {
   id: string;
   name: string;
@@ -26,7 +28,7 @@ interface CustomerListProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onPageChange: (page: number) => void;
-  userRole?: 'superuser' | 'admin' | 'general_user';
+
 }
 
 interface FilterState {
@@ -42,7 +44,6 @@ const CustomerList = ({
   onPrevious,
   onNext,
   onPageChange,
-  userRole,
 }: CustomerListProps) => {
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
@@ -52,12 +53,21 @@ const CustomerList = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [softDeleteCustomerId, setSoftDeleteCustomerId] = useState<string | null>(null);
-
+  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
   // Populate filter options for states
   useEffect(() => {
     const states = Array.from(new Set(customers.map((customer) => customer.state))).filter(Boolean);
     setAvailableStates(states);
   }, [customers]);
+
+  useEffect(() => {
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      console.log(userData);
+      setUserRole(userData?.role || 'general_user');
+    }
+  }, []);
 
   // Fetch all customers once from the `/customers_all` API
   useEffect(() => {
@@ -185,7 +195,7 @@ const CustomerList = ({
               <FaEye />
             </span>
           </Link>
-          {userRole === 'superuser' && (
+          {userRole === 'admin' && (
           <FaTrash
             onClick={() => {
               console.log("Delete button clicked for customer ID:", customer.id); // Debugging log

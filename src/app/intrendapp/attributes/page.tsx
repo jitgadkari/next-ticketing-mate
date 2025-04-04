@@ -39,27 +39,30 @@ const AttributesPage: React.FC = () => {
     fetchAttributes();
   }, []);
 
-  const fetchAttributes = async () => {
+  const fetchAttributes = async (forceUseLatest = false) => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`
       );
       const data = await response.json();
-      console.log(data)
+  
       if (data && data.attributes) {
-        setAttributeHistory(data.attributes.versions);
-        
-        // If there's a selected version, use that instead of latest
-        if (selectedVersion) {
-          setAttributes(selectedVersion.attributes);
-          setFormData(selectedVersion.attributes);
-          initializeInputValues(selectedVersion.attributes);
-        } else {
-          // Otherwise use the latest version
+        const sortedVersions = data.attributes.versions.sort(
+          (a: AttributeVersion, b: AttributeVersion) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setAttributeHistory(sortedVersions);
+  
+        // Always use latest if forced OR no saved version
+        if (forceUseLatest || !selectedVersion) {
           setAttributes(data.attributes.latest.attributes);
           setFormData(data.attributes.latest.attributes);
           initializeInputValues(data.attributes.latest.attributes);
           updateSelectedVersion(data.attributes.latest);
+        } else {
+          setAttributes(selectedVersion.attributes);
+          setFormData(selectedVersion.attributes);
+          initializeInputValues(selectedVersion.attributes);
         }
       }
     } catch (error) {
@@ -111,25 +114,35 @@ const AttributesPage: React.FC = () => {
     try {
       const versionNote = `Updated attributes on ${new Date().toLocaleString()}`;
       const method = attributes ? 'PUT' : 'POST';
-      
+  
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
         {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             attributes: formData,
-            version_note: versionNote
+            version_note: versionNote,
           }),
         }
       );
+  
       const data = await response.json();
-      console.log(data);
+  
       if (!response.ok) {
         throw new Error("Failed to update attributes");
       }
-
-      await fetchAttributes();
+  
+      // ✅ update immediately to latest version
+      if (data?.attributes?.latest) {
+        const latestVersion = data.attributes.latest;
+        updateSelectedVersion(latestVersion);
+        setAttributes(latestVersion.attributes);
+        setFormData(latestVersion.attributes);
+        initializeInputValues(latestVersion.attributes);
+      }
+  
+      await fetchAttributes(true); // ✅ force to use latest version in state
       setEditMode(false);
       setShowPopup(true);
     } catch (error) {
@@ -166,13 +179,11 @@ console.log(attributeHistory)
       console.error('Invalid version data:', version);
       return;
     }
-
+  
     try {
-      // Deep clone the attributes to avoid reference issues
       const clonedAttributes = JSON.parse(JSON.stringify(version.attributes));
-      
-      // Save this version as the latest version
       const versionNote = `Switched to version from ${new Date(version.timestamp).toLocaleString()}`;
+  
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
         {
@@ -184,31 +195,17 @@ console.log(attributeHistory)
           })
         }
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to update attributes');
-      }
-
-      // Update local state with the selected version's attributes
-      setAttributes(clonedAttributes);
-      setFormData(clonedAttributes);
-      initializeInputValues(clonedAttributes);
-      
-      // Store the selected version in state and localStorage
+  
+      if (!response.ok) throw new Error('Failed to update attributes');
+  
       updateSelectedVersion(version);
-      
-      // Reset form states
-      setNewAttributeKey('');
-      setNewAttributeValue('');
+  
+      // ✅ Fetch fresh attributes using the latest version
+      await fetchAttributes(true);
+  
+      setShowPopup(true);
       setShowHistory(false);
       setEditMode(false);
-
-      // Show success message
-      setShowPopup(true);
-      console.log('Switched and saved as latest version:', version.timestamp);
-
-      // Refresh attributes to get updated versions list
-      await fetchAttributes();
     } catch (error) {
       console.error('Error switching version:', error);
     }
