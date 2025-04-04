@@ -88,6 +88,7 @@ const Step7: React.FC<Step7Props> = ({
   interface CustomerData {
     customer_people_list: CustomerPerson[];
     whatsapp_groups?: Array<{ id: string; name: string }>;
+    email?: string;
   }
 
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
@@ -309,10 +310,13 @@ const Step7: React.FC<Step7Props> = ({
       console.log("Customer Data", data);
       if (data.customers && data.customers.length > 0) {
         const customer = data.customers[0];
+        const customerEmail = customer.email;
+        console.log("Customer email", customerEmail);
         // Initialize with default empty values following the pattern
         setCustomerData({
           customer_people_list: customer.customer_people_list || [],
-          whatsapp_groups: customer.whatsapp_groups || []
+          whatsapp_groups: customer.whatsapp_groups || [],
+          email: customerEmail
         });
         setPeopleOptions(customer.people || []);
         // No need for groupOptions since we'll use whatsapp_groups directly
@@ -321,7 +325,7 @@ const Step7: React.FC<Step7Props> = ({
         // Set default empty values if no data
         setCustomerData({
           customer_people_list: [],
-          whatsapp_groups: []
+          whatsapp_groups: [],
         });
         setPeopleOptions([]);
         setGroupOptions({});
@@ -578,28 +582,37 @@ const Step7: React.FC<Step7Props> = ({
           throw new Error(data.message || "Failed to send WhatsApp message");
         }
       } else if (type === "email") {
+        const customerEmail = customerData?.email;
+        console.log("Customer Email:", customerData);
+        if (!customerEmail) {
+          toast.error("No customer email found");
+          return;
+        }
+      
         const sendEmailResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/send_email/`,
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/email/send-email`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              to: ticket.customer_name,
-              subject: "Customer Message",
-              body: template,
+              to: customerEmail,
+              subject: "Customer Message Template",
+              html: `<p>${template.replace(/\n/g, "<br>")}</p>`,
             }),
           }
         );
-
+      
         if (!sendEmailResponse.ok) {
           throw new Error(`Failed to send email: ${sendEmailResponse.statusText}`);
         }
-
+      
         const sendEmailData = await sendEmailResponse.json();
         console.log("Email API Response:", sendEmailData);
+      
         setSendingStatus("Email sent successfully");
+        toast.success("Email sent successfully");
         setMessagesSent((prev) => ({
           ...prev,
           email: true,

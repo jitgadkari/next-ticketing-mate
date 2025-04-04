@@ -61,65 +61,73 @@ const Step4: React.FC<Step4Props> = ({
   setActiveStep,
   ticket,
 }) => {
-  console.log("Step 3 latest template:", ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp);
+  console.log(
+    "Step 3 latest template:",
+    ticket.steps["Step 3 : Message Template for vendors"]?.latest
+      ?.vendor_message_temp
+  );
   interface StepVersion {
     time: string;
     vendors: Record<string, VendorData>;
   }
 
   const stepData = ticket.steps[ticket.current_step] || {};
-  console.log(stepData)
+  console.log(stepData);
   const versions = Array.isArray(stepData.versions) ? stepData.versions : [];
-  console.log(versions)
+  console.log(versions);
   // Add latest version to the versions array for unified handling
   const allVersions = [
     {
-      version: 'latest',
-      time: stepData.latest?.time || 'No timestamp',
-      vendors: stepData.latest?.vendors || {}
+      version: "latest",
+      time: stepData.latest?.time || "No timestamp",
+      vendors: stepData.latest?.vendors || {},
     },
     ...versions.map((v: StepVersion, index: number) => ({
-      version: `${v.time || 'unknown'}_${index}`,  // Add index to ensure uniqueness
-      time: v.time || 'No timestamp',
-      vendors: v.vendors || {}
-    }))
-  ].filter(v => v.time && typeof v.time === 'string');
+      version: `${v.time || "unknown"}_${index}`, // Add index to ensure uniqueness
+      time: v.time || "No timestamp",
+      vendors: v.vendors || {},
+    })),
+  ].filter((v) => v.time && typeof v.time === "string");
 
   // Sort versions by time in descending order (newest first)
   allVersions.sort((a, b) => {
-    if (a.time === 'No timestamp') return -1;
-    if (b.time === 'No timestamp') return 1;
+    if (a.time === "No timestamp") return -1;
+    if (b.time === "No timestamp") return 1;
     return new Date(b.time).getTime() - new Date(a.time).getTime();
   });
 
-  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+  const [selectedVersion, setSelectedVersion] = useState<string>("latest");
 
   const formatTime = (timestamp: string) => {
-    if (timestamp === 'No timestamp') return timestamp;
+    if (timestamp === "No timestamp") return timestamp;
     try {
       const date = new Date(timestamp);
-      return date.toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
   const handleVersionChange = (version: string) => {
     if (isCurrentStep) {
       setSelectedVersion(version);
-      const selectedVersionData = allVersions.find(v => v.version === version);
+      const selectedVersionData = allVersions.find(
+        (v) => v.version === version
+      );
       if (selectedVersionData) {
         // Get vendor data from the selected version
         const vendors = selectedVersionData.vendors || {};
 
         // Update selected options
-        const selectedVendorOptions = (Object.entries(vendors) as Array<[string, VendorData]>).map(([id, vendorData]) => ({
+        const selectedVendorOptions = (
+          Object.entries(vendors) as Array<[string, VendorData]>
+        ).map(([id, vendorData]) => ({
           label: vendorData.name,
           value: vendorData.name,
           id: vendorData.vendor_id,
@@ -129,11 +137,13 @@ const Step4: React.FC<Step4Props> = ({
 
         // Update vendor messages
         const newMessages: Record<string, string> = {};
-        (Object.entries(vendors) as Array<[string, VendorData]>).forEach(([id, vendorData]) => {
-          if (vendorData.message_temp) {
-            newMessages[vendorData.name] = vendorData.message_temp;
+        (Object.entries(vendors) as Array<[string, VendorData]>).forEach(
+          ([id, vendorData]) => {
+            if (vendorData.message_temp) {
+              newMessages[vendorData.name] = vendorData.message_temp;
+            }
           }
-        });
+        );
         setVendorMessages(newMessages);
 
         // Trigger a re-fetch of vendors to ensure consistency
@@ -146,11 +156,13 @@ const Step4: React.FC<Step4Props> = ({
   console.log("selectedVendors:", selectedVendors);
   console.log("selectedVendors1:", selectedVendors1);
   const [selectedOptions, setSelectedOptions] = useState<MultiSelectOption[]>(
-    Object.entries(selectedVendors1.vendors || {}).map(([id, vendor]: [string, VendorData]) => ({
-      label: vendor.name,
-      value: vendor.name,
-      id: vendor.vendor_id,
-    }))
+    Object.entries(selectedVendors1.vendors || {}).map(
+      ([id, vendor]: [string, VendorData]) => ({
+        label: vendor.name,
+        value: vendor.name,
+        id: vendor.vendor_id,
+      })
+    )
   );
   console.log("selectedOptions:", selectedOptions);
   const [vendorMessages, setVendorMessages] = useState<Record<string, string>>(
@@ -177,25 +189,27 @@ const Step4: React.FC<Step4Props> = ({
   const [showResendEmail, setShowResendEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
-  const [vendorGroupOptions, setVendorGroupOptions] = useState<{ id: string; name: string }[]>([]);
-
+  const [vendorGroupOptions, setVendorGroupOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   const handleNext = async (updatedVendors: string[]) => {
     console.log("Handling next for Step 4");
 
     // Check if any messages are unsent
-    const currentVendors = ticket.steps[ticket.current_step]?.latest?.vendors || {};
+    const currentVendors =
+      ticket.steps[ticket.current_step]?.latest?.vendors || {};
     let hasUnsentEmail = false;
     let hasUnsentWhatsapp = false;
 
-    selectedOptions.forEach(option => {
+    selectedOptions.forEach((option) => {
       const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
       if (!vendor) return;
       const vendorData = currentVendors[vendor.id];
-      console.log('Checking vendor data for', vendor.name, vendorData);
+      console.log("Checking vendor data for", vendor.name, vendorData);
 
       // Check if message_sent is boolean (old format) or object (new format)
-      if (typeof vendorData?.message_sent === 'object') {
+      if (typeof vendorData?.message_sent === "object") {
         if (!vendorData?.message_sent?.email) hasUnsentEmail = true;
         if (!vendorData?.message_sent?.whatsapp) hasUnsentWhatsapp = true;
       } else {
@@ -210,7 +224,7 @@ const Step4: React.FC<Step4Props> = ({
     // Update message sent status
     setIsMessageSent({
       emailSent: !hasUnsentEmail,
-      whatsappMessageSent: !hasUnsentWhatsapp
+      whatsappMessageSent: !hasUnsentWhatsapp,
     });
 
     // If any messages are unsent, show the reminder popup
@@ -232,8 +246,8 @@ const Step4: React.FC<Step4Props> = ({
           message_temp: vendorMessages[vendorName] || "",
           message_sent: currentVendorData.message_sent || {
             whatsapp: false,
-            email: false
-          }
+            email: false,
+          },
         };
       });
 
@@ -248,7 +262,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: vendorsToUpdate },
-            step_number: ticket.current_step
+            step_number: ticket.current_step,
           }),
         }
       );
@@ -261,7 +275,7 @@ const Step4: React.FC<Step4Props> = ({
         acc[vendor.id] = {
           name: option.value,
           response_received: false,
-          response_message: ""
+          response_message: "",
         };
         return acc;
       }, {} as Record<string, any>);
@@ -277,7 +291,7 @@ const Step4: React.FC<Step4Props> = ({
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: step5VendorsObj },
-            step_number: ticket.current_step
+            step_number: ticket.current_step,
           }),
         }
       );
@@ -298,32 +312,28 @@ const Step4: React.FC<Step4Props> = ({
   };
 
   const handleUpdate = async (updatedVendors: string[]) => {
-    console.log("Updating Step 4 vendors:", updatedVendors);
-
-    // Convert vendors array to object with vendor_id as keys
-    const vendorsObject = updatedVendors.reduce((acc, vendorName) => {
+    const existingVendors =
+      ticket.steps[ticket.current_step]?.latest?.vendors || {};
+  
+    const vendorsObject: Record<string, any> = { ...existingVendors };
+  
+    updatedVendors.forEach((vendorName) => {
       const vendor = vendorDetails.find((v) => v.name === vendorName);
-      if (!vendor || !vendor.id) {
-        console.error(`Vendor ID not found for ${vendorName}`);
-        return acc;
-      }
-
-      // Get existing message sent status if available
-      const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
-
-      acc[vendor.id] = {
+      if (!vendor || !vendor.id) return;
+  
+      vendorsObject[vendor.id] = {
         vendor_id: vendor.id,
-        name: vendorName, // Make sure the name is correctly set
+        name: vendorName,
         message_temp: vendorMessages[vendorName] || "",
-        message_sent: existingVendorData.message_sent || false
+        message_sent: vendorsObject[vendor.id]?.message_sent || {
+          email: false,
+          whatsapp: false,
+        },
       };
-      return acc;
-    }, {} as Record<string, any>);
-
-    console.log("Mapped vendors for save:", vendorsObject);
-
+    });
+  
     try {
-      const response = await fetch(
+      await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
           method: "PUT",
@@ -332,18 +342,12 @@ const Step4: React.FC<Step4Props> = ({
           },
           body: JSON.stringify({
             ticket_id: ticket.id,
-            step_info: {
-              vendors: vendorsObject
-            },
-            step_number: ticket.current_step
+            step_info: { vendors: vendorsObject },
+            step_number: ticket.current_step,
           }),
         }
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to save: ${response.status}`);
-      }
-
+  
       await fetchTicket(ticket.id);
       toast.success("Changes saved successfully");
     } catch (error) {
@@ -351,6 +355,7 @@ const Step4: React.FC<Step4Props> = ({
       toast.error("Failed to save changes");
     }
   };
+  
 
   useEffect(() => {
     const allGroups: { id: string; name: string }[] = [];
@@ -379,31 +384,34 @@ const Step4: React.FC<Step4Props> = ({
       // Initialize with latest version's data
       const vendors = latestVersion.vendors;
       const newMessages: Record<string, string> = {};
-      const newSelectedOptions = Object.entries(vendors as Record<string, VendorData>).map(
-        ([id, vendor]) => {
-          if (vendor.message_temp) {
-            newMessages[vendor.name] = vendor.message_temp;
-          }
-          return {
-            label: vendor.name,
-            value: vendor.name,
-            id: vendor.vendor_id || id,
-          };
+      const newSelectedOptions = Object.entries(
+        vendors as Record<string, VendorData>
+      ).map(([id, vendor]) => {
+        if (vendor.message_temp) {
+          newMessages[vendor.name] = vendor.message_temp;
         }
-      );
+        return {
+          label: vendor.name,
+          value: vendor.name,
+          id: vendor.vendor_id || id,
+        };
+      });
       console.log("Loading saved vendor data:", newSelectedOptions);
       setSelectedOptions(newSelectedOptions);
       setVendorMessages(newMessages);
-      setSelectedVersion('latest');
+      setSelectedVersion("latest");
     }
   }, [ticket.steps, ticket.current_step]);
 
   // Update vendor messages when selected version changes
   useEffect(() => {
     const currentStepData = ticket.steps[ticket.current_step] || {};
-    const selectedVersionData = selectedVersion === 'latest'
-      ? currentStepData.latest
-      : (currentStepData.versions || []).find((v: StepVersion) => v.time === selectedVersion);
+    const selectedVersionData =
+      selectedVersion === "latest"
+        ? currentStepData.latest
+        : (currentStepData.versions || []).find(
+            (v: StepVersion) => v.time === selectedVersion
+          );
 
     if (selectedVersionData) {
       const vendors = selectedVersionData.vendors || {};
@@ -416,7 +424,7 @@ const Step4: React.FC<Step4Props> = ({
           newMessages[vendorData.name] = vendorData.message_temp;
         } else {
           // Keep existing message if available, otherwise empty string
-          newMessages[option.value] = vendorMessages[option.value] || '';
+          newMessages[option.value] = vendorMessages[option.value] || "";
         }
       });
 
@@ -427,11 +435,18 @@ const Step4: React.FC<Step4Props> = ({
         setVendorMessages(newMessages);
       }
     }
-  }, [selectedOptions, ticket.steps, ticket.current_step, vendorMessages, selectedVersion]);
+  }, [
+    selectedOptions,
+    ticket.steps,
+    ticket.current_step,
+    vendorMessages,
+    selectedVersion,
+  ]);
 
   useEffect(() => {
     // Call fetchVendors when decoded messages are available
-    const decodedMessages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages;
+    const decodedMessages =
+      ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages;
     if (decodedMessages) {
       console.log("Decoded messages available, fetching filtered vendors...");
       fetchVendors();
@@ -447,7 +462,6 @@ const Step4: React.FC<Step4Props> = ({
     }
   }, [selectedOptions]);
 
-
   const sendVendorGroupMessage = async () => {
     if (!selectedGroup) {
       toast.error("Please select a group.");
@@ -459,22 +473,24 @@ const Step4: React.FC<Step4Props> = ({
       : `${selectedGroup}@g.us`;
 
     try {
-      toast.loading("Sending message to group...");
- const payload ={
-to:groupId,
-content:template
- }
- console.log("payload",payload)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to: groupId,
-          content: template
-        }),
-      });
+      const payload = {
+        to: groupId,
+        content: template,
+      };
+      console.log("payload", payload);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: groupId,
+            content: template,
+          }),
+        }
+      );
 
       const result = await response.json();
       console.log("Group Send result:", result);
@@ -499,9 +515,6 @@ content:template
     }
   };
 
-
-
-
   const fetchVendors = async (searchName?: string) => {
     console.log("Fetching vendors...");
     try {
@@ -510,12 +523,14 @@ content:template
       if (searchName?.trim()) {
         // Use the search API when a search name is provided
         const searchResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/name?name=${encodeURIComponent(searchName.trim())}`,
+          `${
+            process.env.NEXT_PUBLIC_ENDPOINT_URL
+          }/api/vendors/name?name=${encodeURIComponent(searchName.trim())}`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json'
-            }
+              "Content-Type": "application/json",
+            },
           }
         );
 
@@ -524,10 +539,12 @@ content:template
         }
 
         const searchData = await searchResponse.json();
-        console.log('Search response:', searchData);
+        console.log("Search response:", searchData);
         // Handle nested vendors object structure
         const vendorsResult = searchData.vendors?.vendors || searchData.vendors;
-        vendorData = Array.isArray(vendorsResult) ? vendorsResult : [vendorsResult];
+        vendorData = Array.isArray(vendorsResult)
+          ? vendorsResult
+          : [vendorsResult];
       }
 
       // If no search data found, or no searchName is given, use the filtered API
@@ -535,23 +552,30 @@ content:template
         console.log("Fetching filtered vendors...");
 
         // Get decoded messages from Step 2
-        const decoded_messages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
+        const decoded_messages =
+          ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages ||
+          {};
         console.log("Decoded messages:", decoded_messages);
 
         // Clean and prepare the decoded messages
-        const cleanDecodedMessages = Object.entries(decoded_messages).reduce((acc, [key, value]) => {
-          if (value && value !== "Null" && value !== "null" && value !== "") {
-            acc[key] = value;
-          }
-          return acc;
-        }, {} as Record<string, any>);
+        const cleanDecodedMessages = Object.entries(decoded_messages).reduce(
+          (acc, [key, value]) => {
+            if (value && value !== "Null" && value !== "null" && value !== "") {
+              acc[key] = value;
+            }
+            return acc;
+          },
+          {} as Record<string, any>
+        );
 
         // Prepare filters dictionary
         const filters_dict: Record<string, string[]> = {};
 
         // Add certifications if present
         if (cleanDecodedMessages.certifications) {
-          filters_dict.certifications = cleanDecodedMessages.certifications.split(',').map((cert: string) => cert.trim());
+          filters_dict.certifications = cleanDecodedMessages.certifications
+            .split(",")
+            .map((cert: string) => cert.trim());
         }
 
         // Add fabric type if present
@@ -573,7 +597,7 @@ content:template
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ filters_dict })
+            body: JSON.stringify({ filters_dict }),
           }
         );
 
@@ -585,7 +609,9 @@ content:template
         console.log("Fetched vendors:", vendorsData);
 
         // Handle both array and object response formats
-        vendorData = Array.isArray(vendorsData.vendors) ? vendorsData.vendors : Object.values(vendorsData.vendors || {});
+        vendorData = Array.isArray(vendorsData.vendors)
+          ? vendorsData.vendors
+          : Object.values(vendorsData.vendors || {});
         console.log("Vendor data from API:", vendorData);
       }
 
@@ -595,16 +621,21 @@ content:template
         .map((v: any): Vendor => {
           // Get the correct ID and name fields
           const vendorId = v.vendor_id || v.id;
-          const vendorName = v.name || (ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]?.name) || 'Unnamed Vendor';
+          const vendorName =
+            v.name ||
+            ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId]
+              ?.name ||
+            "Unnamed Vendor";
           // Get existing vendor data from ticket if available
-          const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId];
+          const existingVendor =
+            ticket.steps[ticket.current_step]?.latest?.vendors?.[vendorId];
           console.log("Existing vendor data:", existingVendor);
           return {
             id: vendorId,
             name: vendorName,
-            group: v.attributes || v.group || "",  // Use attributes or fall back to group
+            group: v.attributes || v.group || "", // Use attributes or fall back to group
             email: v.email || existingVendor?.email || "",
-            phone: v.phone || existingVendor?.phone || ""
+            phone: v.phone || existingVendor?.phone || "",
           };
         });
 
@@ -615,8 +646,9 @@ content:template
         // Use existing vendor data from ticket if available
         const vendorOptions = vendorsList.map((vendor: Vendor) => {
           // Check if we have existing data for this vendor in the ticket
-          const existingVendor = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id];
-          console.log(existingVendor)
+          const existingVendor =
+            ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id];
+          console.log(existingVendor);
           const option = {
             label: existingVendor?.name || vendor.name,
             value: existingVendor?.name || vendor.name,
@@ -640,7 +672,9 @@ content:template
   };
   const fetchVendorDetailsById = async (vendorId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`
+      );
       if (!response.ok) throw new Error("Failed to fetch vendor details");
 
       const data = await response.json();
@@ -653,7 +687,7 @@ content:template
   };
 
   const handleVendorMessageChange = (vendorName: string, message: string) => {
-    setVendorMessages(prev => {
+    setVendorMessages((prev) => {
       const newMessages = { ...prev };
       newMessages[vendorName] = message;
       return newMessages;
@@ -662,8 +696,10 @@ content:template
 
   const generateVendorMessages = async () => {
     const messages: Record<string, string> = {};
-    const customerMessage = ticket.steps["Step 1 : Customer Message Received"]?.latest?.text;
-    const decodedMessages = ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
+    const customerMessage =
+      ticket.steps["Step 1 : Customer Message Received"]?.latest?.text;
+    const decodedMessages =
+      ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages || {};
 
     for (const option of selectedOptions) {
       try {
@@ -702,9 +738,10 @@ content:template
                 weft_content: decodedMessages.weft_content || "Null",
                 certifications: decodedMessages.certifications || "Null",
                 additional_info: decodedMessages.additional_info || "Null",
-                content_percentage: decodedMessages.content_percentage || "Null"
+                content_percentage:
+                  decodedMessages.content_percentage || "Null",
               },
-              asked_details_required: false
+              asked_details_required: false,
             }),
           }
         );
@@ -720,21 +757,24 @@ content:template
         if (data[option.value]?.message) {
           // New format with nested vendor object
           vendorMessage = data[option.value].message;
-        } else if (typeof data === 'string') {
+        } else if (typeof data === "string") {
           // Handle case where API returns direct string
           vendorMessage = data;
         } else if (data.message) {
           // Handle case where message is directly in response
           vendorMessage = data.message;
         } else {
-          throw new Error('Invalid response format: message not found');
+          throw new Error("Invalid response format: message not found");
         }
 
         // Store the message for this vendor
         messages[option.value] = vendorMessage;
 
         // Log success for debugging
-        console.log(`Successfully generated message for ${option.value}:`, vendorMessage);
+        console.log(
+          `Successfully generated message for ${option.value}:`,
+          vendorMessage
+        );
       } catch (error) {
         console.error(
           `Error generating message for vendor ${option.value}:`,
@@ -747,7 +787,9 @@ content:template
     setVendorMessages(messages);
   };
 
-  const handleVendorChange = async (selected: MultiValue<MultiSelectOption>) => {
+  const handleVendorChange = async (
+    selected: MultiValue<MultiSelectOption>
+  ) => {
     console.log("Selected vendors:.....", selected);
     setSelectedOptions(selected as MultiSelectOption[]);
 
@@ -778,7 +820,9 @@ content:template
         });
       }
 
-      setVendorGroupOptions(Array.from(groupSet.entries()).map(([id, name]) => ({ id, name })));
+      setVendorGroupOptions(
+        Array.from(groupSet.entries()).map(([id, name]) => ({ id, name }))
+      );
     };
 
     if (selectedOptions.length > 0) {
@@ -787,7 +831,8 @@ content:template
   }, [selectedOptions]);
 
   const handleVendorSearch = (inputValue: string) => {
-    if (inputValue.length >= 3) { // Only search if at least 3 characters are entered
+    if (inputValue.length >= 3) {
+      // Only search if at least 3 characters are entered
       fetchVendors(inputValue);
     }
   };
@@ -798,40 +843,54 @@ content:template
   };
 
   const currentStepData = ticket.steps[ticket.current_step]?.latest;
-  console.log('Current step data:', currentStepData ? JSON.stringify(currentStepData) : 'No data available');
+  console.log(
+    "Current step data:",
+    currentStepData ? JSON.stringify(currentStepData) : "No data available"
+  );
 
   const handleSendMessage = async () => {
+    const previousSelection = [...selectedOptions]; // Preserve selection
     setIsWhatsAppSending(true);
+    toast.loading("Sending WhatsApp messages...");
+  
+    const results: VendorResult[] = [];
+  
     try {
-      toast.loading("Sending WhatsApp messages...");
-      const messagePromises = selectedOptions.map(async (option) => {
+      for (const option of selectedOptions) {
         try {
-          // Find vendor by ID first, then by name as fallback
           const vendor = vendorDetails.find(
             (v: Vendor) => v.id === option.id || v.name === option.value
           );
-
-          console.log("Vendor found:", vendor); // Ensure the vendor is correct
+  
           if (!vendor) {
-            throw new Error(`Could not find vendor details for ${option.value}`);
+            console.error(`Vendor not found for ${option.value}`);
+            continue;
           }
-
+  
           if (!vendor.phone) {
-            throw new Error(`Missing phone number for vendor ${vendor.name}`);
+            console.warn(`Missing phone number for vendor ${vendor.name}`);
+            results.push({
+              vendor_id: vendor.id,
+              name: vendor.name,
+              message_temp: vendorMessages[option.value] || "",
+              message_sent: { email: false, whatsapp: false },
+            });
+            continue;
           }
-
-          // Format phone number: remove spaces, +, ensure it starts with country code and ends with @c.us
-          let formattedPhone = vendor.phone.replace(/\s+/g, '').replace(/^\+/, '');
-          if (!formattedPhone.startsWith('91')) {
-            formattedPhone = '91' + formattedPhone;
+  
+          let formattedPhone = vendor.phone
+            .replace(/\s+/g, "")
+            .replace(/^\+/, "");
+          if (!formattedPhone.startsWith("91")) {
+            formattedPhone = "91" + formattedPhone;
           }
-          formattedPhone = formattedPhone + '@c.us';
-
-          const messageContent = (ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value);
-
-          console.log("Sending to:", formattedPhone);
-          console.log("Message content:", messageContent);
-
+          formattedPhone = formattedPhone + "@c.us";
+  
+          const messageContent = (
+            ticket.steps["Step 3 : Message Template for vendors"]?.latest
+              ?.vendor_message_temp || ""
+          ).replace("{VENDOR}", option.value);
+  
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/send-message`,
             {
@@ -839,79 +898,67 @@ content:template
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 to: formattedPhone,
-                content: messageContent
+                content: messageContent,
               }),
             }
           );
-
+  
           const data = await response.json();
-          console.log("WhatsApp response data:", data);
-
-          if (!response.ok || data.error || data.status === 'failed') {
-            const errorMessage = data.error || data.message || 'Unknown error';
-            console.error(`WhatsApp API error for ${option.value}:`, errorMessage);
-            throw new Error(`Failed to send WhatsApp to ${option.value}: ${errorMessage}`);
+  
+          if (!response.ok || data.error || data.status === "failed") {
+            throw new Error(data.error || data.message || "Unknown error");
           }
-
-          const messageSent = data.status === 'success' || data.success === true;
-          console.log(`Message to ${option.value} sent status:`, messageSent);
-
-          // Ensure vendor name is correctly included
-          return {
+  
+          const success = data.status === "success" || data.success === true;
+  
+          results.push({
             vendor_id: vendor.id,
-            name: vendor.name || option.value, // Correctly include vendor name
+            name: vendor.name,
             message_temp: vendorMessages[option.value] || "",
-            message_sent: messageSent
-          };
-        } catch (error) {
-          console.error(`Error sending message to ${option.value}:`, error);
-
-          const vendor = vendorDetails.find((v: Vendor) =>
-            v.id === option.id || v.name === option.value
+            message_sent: success,
+          });
+        } catch (innerErr) {
+          console.error(`❌ Failed for ${option.value}:`, innerErr);
+          const fallbackVendor = vendorDetails.find(
+            (v) => v.id === option.id || v.name === option.value
           );
-
-          if (!vendor?.id) {
-            throw new Error(`Vendor ID is missing for ${option.value}`);
-          }
-
-          return {
-            vendor_id: vendor?.id,  // Use vendor.id if found, fallback to option.id
-            name: vendor?.name || option.value,  // Ensure name is included
+          results.push({
+            vendor_id: fallbackVendor?.id || "",
+            name: fallbackVendor?.name || option.value,
             message_temp: vendorMessages[option.value] || "",
-            message_sent: { email: false, whatsapp: false }
-          };
+            message_sent: { email: false, whatsapp: false },
+          });
         }
-      });
-
-      const results = await Promise.all(messagePromises);
-      const successfulResults = results.filter(result => result.message_sent);
-      const failedResults = results.filter(result => !result.message_sent);
-
+      }
+  
       await updateTicketWithSentStatus(results);
-      console.log("All results:", results);
-      console.log("Successful:", successfulResults.length, "Failed:", failedResults.length);
-
+      await fetchTicket(ticket.id);
+      setSelectedOptions(previousSelection); // Restore selection
+  
+      const successCount = results.filter(
+        (r) => r.message_sent === true
+      ).length;
+      const failedCount = results.length - successCount;
+  
       toast.dismiss();
-      if (failedResults.length === 0) {
-        toast.success("WhatsApp messages sent successfully!");
-      } else if (successfulResults.length > 0) {
-        toast(
-          `${successfulResults.length} messages sent, ${failedResults.length} failed`,
-          {
-            icon: '⚠️',
-            style: {
-              background: '#fff7e6',
-              color: '#805200',
-            },
-          }
-        );
+  
+      if (failedCount === 0) {
+        toast.success("✅ WhatsApp messages sent successfully!");
+      } else if (successCount > 0) {
+        toast(`⚠️ ${successCount} sent, ${failedCount} failed`, {
+          icon: "⚠️",
+          style: {
+            background: "#fff7e6",
+            color: "#805200",
+          },
+        });
       } else {
-        toast.error("Failed to send WhatsApp messages.");
+        toast.error("❌ Failed to send WhatsApp messages.");
       }
     } catch (error) {
-      console.error("Error sending WhatsApp messages:", error);
+      console.error("Unexpected error in sending WhatsApp:", error);
       toast.dismiss();
-      toast.error("Failed to send WhatsApp messages.");
+      toast.error("Unexpected error sending WhatsApp messages.");
     } finally {
       setIsWhatsAppSending(false);
     }
@@ -926,31 +973,28 @@ content:template
 
   const updateTicketWithSentStatus = async (results: VendorResult[]) => {
     try {
-      // Get current vendor data to preserve existing message sent status
-      const currentVendors = ticket.steps[ticket.current_step]?.latest?.vendors || {};
-
-      // Convert results array to object with vendor_id as keys
-      const vendorsObject = results.reduce((acc, vendor) => {
-        if (!vendor.vendor_id) {
-          console.error('Missing vendor_id for vendor:', vendor);
-          return acc;
-        }
-
-        const currentVendorData = currentVendors[vendor.vendor_id] || {};
-        const currentMessageSent = currentVendorData.message_sent || { email: false, whatsapp: false };
-
-        acc[vendor.vendor_id] = {
+      const vendorsObject: Record<string, any> = {};
+  
+      results.forEach((vendor) => {
+        if (!vendor.vendor_id) return;
+  
+        vendorsObject[vendor.vendor_id] = {
           name: vendor.name,
           vendor_id: vendor.vendor_id,
-          message_temp: vendor.message_temp || currentVendorData.message_temp || '',
+          message_temp: vendor.message_temp || "",
           message_sent: {
-            email: currentMessageSent.email || false,
-            whatsapp: vendor.message_sent // Use the result from message sending
-          }
+            email:
+              typeof vendor.message_sent === "object"
+                ? vendor.message_sent.email
+                : false,
+            whatsapp:
+              typeof vendor.message_sent === "object"
+                ? vendor.message_sent.whatsapp
+                : vendor.message_sent,
+          },
         };
-        return acc;
-      }, {} as Record<string, any>);
-
+      });
+  
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
@@ -965,62 +1009,128 @@ content:template
           }),
         }
       );
+  
       await fetchTicket(ticket.id);
     } catch (error) {
       console.error("Error updating ticket status:", error);
     }
   };
+  
+  
 
   const handleSendEmail = async () => {
+    const previousSelection = [...selectedOptions]; // Preserve selection
     setIsEmailSending(true);
+    toast.loading("Sending emails...");
+  
+    const results: VendorResult[] = [];
+  
     try {
-      toast.loading("Sending emails...");
-      // Assuming you send email for each selected vendor
-      const emailPromises = selectedOptions.map(async (option) => {
-        const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
-        if (!vendor) {
-          throw new Error(`Vendor not found for ${option.value}`);
-        }
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/send_email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: vendor.name,
-              message: vendorMessages[option.value],
-            }),
-          }
+      for (const option of selectedOptions) {
+        const vendor = vendorDetails.find(
+          (v: Vendor) => v.name === option.value
         );
-        if (!response.ok) {
-          throw new Error(`Failed to send email to ${vendor.name}`);
+  
+        if (!vendor || !vendor.email) {
+          console.warn(`⚠️ Skipping ${option.value}: Missing vendor or email`);
+          results.push({
+            vendor_id: vendor?.id || "",
+            name: vendor?.name || option.value,
+            message_temp: "",
+            message_sent: { whatsapp: false, email: false },
+          });
+          continue;
         }
-        // Return vendor info with updated email status
-        return {
-          vendor_id: vendor.id,
-          name: vendor.name,
-          message_temp: vendorMessages[option.value] || "",
-          message_sent: {
-            whatsapp: false, // unchanged here
-            email: true,
-          },
-        };
-      });
-
-      const results = await Promise.all(emailPromises);
+  
+        const messageContent = (
+          ticket.steps["Step 3 : Message Template for vendors"]?.latest
+            ?.vendor_message_temp || ""
+        ).replace("{VENDOR}", option.value);
+  
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/email/send-email`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                to: vendor.email,
+                subject: "Vendor Message Template",
+                html: `<p>${messageContent.replace(/\n/g, "<br>")}</p>`,
+              }),
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error(`Email failed to ${vendor.name}`);
+          }
+  
+          results.push({
+            vendor_id: vendor.id,
+            name: vendor.name,
+            message_temp: messageContent,
+            message_sent: {
+              whatsapp: false,
+              email: true,
+            },
+          });
+        } catch (emailError) {
+          console.error(`❌ Email failed for ${vendor.name}:`, emailError);
+          results.push({
+            vendor_id: vendor.id,
+            name: vendor.name,
+            message_temp: messageContent,
+            message_sent: {
+              whatsapp: false,
+              email: false,
+            },
+          });
+        }
+      }
+  
       await updateTicketWithSentStatusEmail(results);
+      await fetchTicket(ticket.id);
+      setSelectedOptions(previousSelection); // Restore selection
+  
+      const successCount = results.filter((r) => {
+        if (typeof r.message_sent === "object") {
+          return r.message_sent.email === true;
+        }
+        return false;
+      }).length;
+      
+      const failedCount = results.length - successCount;
+      
+  
       toast.dismiss();
-      toast.success("Emails sent successfully!");
+      if (failedCount === 0) {
+        toast.success("✅ All emails sent successfully!");
+      } else if (successCount > 0) {
+        toast(`⚠️ ${successCount} sent, ${failedCount} failed`, {
+          icon: "⚠️",
+          style: {
+            background: "#fff7e6",
+            color: "#805200",
+          },
+        });
+      } else {
+        toast.error("❌ Failed to send all emails.");
+      }
+  
       return results;
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Unexpected email error:", error);
       toast.dismiss();
-      toast.error("Failed to send email.");
+      toast.error("Something went wrong while sending emails.");
+    } finally {
+      setIsEmailSending(false);
     }
   };
+  
+  
+  
 
   const handleSendEmailPopUp = () => {
     setShowEmailPopup(true);
@@ -1033,8 +1143,32 @@ content:template
     setShowEmailPopup(false); // Close the confirmation dialog
     await handleSendEmail(); // Send emails and update the ticket status
   };
+
+
   const updateTicketWithSentStatusEmail = async (results: VendorResult[]) => {
     try {
+      const vendorsObject: Record<string, any> = {};
+  
+      results.forEach((vendor) => {
+        if (!vendor.vendor_id) return;
+  
+        vendorsObject[vendor.vendor_id] = {
+          name: vendor.name,
+          vendor_id: vendor.vendor_id,
+          message_temp: vendor.message_temp || "",
+          message_sent: {
+            whatsapp:
+              typeof vendor.message_sent === "object"
+                ? vendor.message_sent.whatsapp
+                : false,
+            email:
+              typeof vendor.message_sent === "object"
+                ? vendor.message_sent.email
+                : vendor.message_sent,
+          },
+        };
+      });
+  
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
@@ -1045,39 +1179,44 @@ content:template
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_number: ticket.current_step,
-            step_info: { vendors: results },
+            step_info: { vendors: vendorsObject },
           }),
         }
       );
+  
       await fetchTicket(ticket.id);
     } catch (error) {
       console.error("Error updating ticket status for email:", error);
     }
   };
-
+  
+  
 
   const handleNextStep = async () => {
     try {
       // First, update current step (Step 4)
       const step4VendorsObj = selectedOptions.reduce((acc, option) => {
-        const vendor = vendorDetails.find((v: Vendor) => v.name === option.value);
+        const vendor = vendorDetails.find(
+          (v: Vendor) => v.name === option.value
+        );
         if (!vendor) {
           console.error(`Vendor not found for ${option.value}`);
           return acc;
         }
-        const existingVendorData = ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
+        const existingVendorData =
+          ticket.steps[ticket.current_step]?.latest?.vendors?.[vendor.id] || {};
 
         acc[vendor.id] = {
           vendor_id: vendor.id,
           name: option.value,
           message_temp: vendorMessages[option.value] || "",
-          message_sent: existingVendorData.message_sent || false
+          message_sent: existingVendorData.message_sent || false,
         };
         return acc;
       }, {} as Record<string, any>);
 
       console.log("Step 4 vendors object:", step4VendorsObj);
-      console.log(ticket.current_step)
+      console.log(ticket.current_step);
       // Update Step 4 with object format
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
@@ -1087,25 +1226,27 @@ content:template
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: step4VendorsObj },
-            step_number: ticket.current_step
+            step_number: ticket.current_step,
           }),
         }
       );
 
       // Initialize Step 5 vendors with empty responses (as array for Step 5)
-      const step5VendorsArray = selectedOptions.map((option) => {
-        const vendor = vendorDetails.find((v) => v.name === option.value);
-        if (!vendor) {
-          console.error(`Vendor not found for ${option.value}`);
-          return null;
-        }
-        return {
-          vendor_id: vendor.id,
-          name: option.value,
-          response_received: false,
-          response_message: ""
-        };
-      }).filter((v): v is NonNullable<typeof v> => v !== null);
+      const step5VendorsArray = selectedOptions
+        .map((option) => {
+          const vendor = vendorDetails.find((v) => v.name === option.value);
+          if (!vendor) {
+            console.error(`Vendor not found for ${option.value}`);
+            return null;
+          }
+          return {
+            vendor_id: vendor.id,
+            name: option.value,
+            response_received: false,
+            response_message: "",
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
 
       console.log("Step 5 vendors array:", step5VendorsArray);
 
@@ -1118,7 +1259,7 @@ content:template
           body: JSON.stringify({
             ticket_id: ticket.id,
             step_info: { vendors: step5VendorsArray },
-            step_number: ticket.current_step
+            step_number: ticket.current_step,
           }),
         }
       );
@@ -1138,7 +1279,6 @@ content:template
     }
   };
 
-
   const handlePopupConfirm = async () => {
     setShowWhatsappPopup(false); // Close the confirmation dialog
     await handleSendMessage(); // Call the function to send messages
@@ -1146,8 +1286,7 @@ content:template
 
   useEffect(() => {
     // Get the saved vendor data from the ticket
-    const vendorsLatest =
-      ticket.steps[ticket.current_step]?.latest || {};
+    const vendorsLatest = ticket.steps[ticket.current_step]?.latest || {};
     // Check if any selected vendor has whatsapp set to true
     const anyWhatsappSent = selectedOptions.some((option) => {
       const vendorData = vendorsLatest[option.id as string];
@@ -1169,7 +1308,8 @@ content:template
           <div className="py-1 mb-4">
             <h1 className="text-xl font-bold ">Customer Message</h1>
             <div>
-              {ticket.steps["Step 1 : Customer Message Received"]?.latest?.text || 'No customer message available'}
+              {ticket.steps["Step 1 : Customer Message Received"]?.latest
+                ?.text || "No customer message available"}
             </div>
           </div>
           <div className="flex justify-between items-center mb-4">
@@ -1182,7 +1322,7 @@ content:template
               >
                 {allVersions.map(({ version, time }) => (
                   <option key={version} value={version}>
-                    {version === 'latest' ? 'Latest Version' : formatTime(time)}
+                    {version === "latest" ? "Latest Version" : formatTime(time)}
                   </option>
                 ))}
               </select>
@@ -1203,8 +1343,13 @@ content:template
                     {option.value}
                   </label>
                   <textarea
-                    value={(ticket.steps["Step 3 : Message Template for vendors"]?.latest?.vendor_message_temp || '').replace('{VENDOR}', option.value)}
-                    onChange={(e) => handleVendorMessageChange(option.value, e.target.value)}
+                    value={(
+                      ticket.steps["Step 3 : Message Template for vendors"]
+                        ?.latest?.vendor_message_temp || ""
+                    ).replace("{VENDOR}", option.value)}
+                    onChange={(e) =>
+                      handleVendorMessageChange(option.value, e.target.value)
+                    }
                     className="w-full h-32 p-2 border rounded mt-2"
                     placeholder="Enter message for vendor"
                   />
@@ -1219,21 +1364,23 @@ content:template
                   /> */}
                   {emailSendingStatus[option.value] && (
                     <p
-                      className={`mt-1 ${emailSendingStatus[option.value] === "Email Sent"
-                        ? "text-green-600"
-                        : "text-red-600"
-                        }`}
+                      className={`mt-1 ${
+                        emailSendingStatus[option.value] === "Email Sent"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
                     >
                       Status: {emailSendingStatus[option.value]}
                     </p>
                   )}
                   {whatsappSendingStatus[option.value] && (
                     <p
-                      className={`mt-1 ${whatsappSendingStatus[option.value] ===
+                      className={`mt-1 ${
+                        whatsappSendingStatus[option.value] ===
                         "Whatsapp Message Sent"
-                        ? "text-green-600"
-                        : "text-red-600"
-                        }`}
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
                     >
                       Status: {whatsappSendingStatus[option.value]}
                     </p>
@@ -1255,13 +1402,24 @@ content:template
 
               <Button
                 onClick={handleWhatsAppPopUp}
-                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending) &&
+                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${
+                  (!isCurrentStep ||
+                    selectedOptions.length === 0 ||
+                    isWhatsAppSending) &&
                   "opacity-50 cursor-not-allowed"
-                  }`}
-                disabled={!isCurrentStep || selectedOptions.length === 0 || isWhatsAppSending}
+                }`}
+                disabled={
+                  !isCurrentStep ||
+                  selectedOptions.length === 0 ||
+                  isWhatsAppSending
+                }
               >
                 <span>
-                  {isWhatsAppSending ? "Sending..." : showResendWhatsappMessage ? "Resend" : "Send"}
+                  {isWhatsAppSending
+                    ? "Sending..."
+                    : showResendWhatsappMessage
+                    ? "Resend"
+                    : "Send"}
                 </span>
                 <FaWhatsapp />
               </Button>
@@ -1288,8 +1446,10 @@ content:template
 
               <Button
                 onClick={sendVendorGroupMessage}
-                className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedGroup === "") && "opacity-50 cursor-not-allowed"
-                  }`}
+                className={`w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${
+                  (!isCurrentStep || selectedGroup === "") &&
+                  "opacity-50 cursor-not-allowed"
+                }`}
                 disabled={!isCurrentStep || selectedGroup === ""}
               >
                 <FaWhatsapp />
@@ -1298,29 +1458,42 @@ content:template
 
               <Button
                 onClick={handleSendEmailPopUp}
-                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${(!isCurrentStep || selectedOptions.length === 0 || isEmailSending) &&
+                className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 ${
+                  (!isCurrentStep ||
+                    selectedOptions.length === 0 ||
+                    isEmailSending) &&
                   "opacity-50 cursor-not-allowed"
-                  }`}
-                disabled={!isCurrentStep || selectedOptions.length === 0 || isEmailSending}
+                }`}
+                disabled={
+                  !isCurrentStep ||
+                  selectedOptions.length === 0 ||
+                  isEmailSending
+                }
               >
                 <span>
-                  {isEmailSending ? "Sending..." : showResendEmail ? "Resend" : "Send"}
+                  {isEmailSending
+                    ? "Sending..."
+                    : showResendEmail
+                    ? "Resend"
+                    : "Send"}
                 </span>
                 <MdEmail />
               </Button>
 
               <Button
-                onClick={() => handleNext(selectedOptions.map((option) => option.value))}
-                className={`w-full font-bold py-2 px-4 rounded ${isCurrentStep
-                  ? "bg-blue-500 hover:bg-blue-700 text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
+                onClick={() =>
+                  handleNext(selectedOptions.map((option) => option.value))
+                }
+                className={`w-full font-bold py-2 px-4 rounded ${
+                  isCurrentStep
+                    ? "bg-blue-500 hover:bg-blue-700 text-white"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
                 disabled={!isCurrentStep || selectedOptions.length === 0}
               >
                 Next
               </Button>
             </div>
-
           </div>
         </>
       )}
@@ -1395,12 +1568,14 @@ content:template
               {(() => {
                 const unsentTypes = [];
                 if (!isMessageSent.emailSent) unsentTypes.push("Email");
-                if (!isMessageSent.whatsappMessageSent) unsentTypes.push("WhatsApp");
+                if (!isMessageSent.whatsappMessageSent)
+                  unsentTypes.push("WhatsApp");
 
                 if (unsentTypes.length === 0) return null;
 
-                const messageType = unsentTypes.length === 1 ? 'message' : 'messages';
-                const unsentMessage = unsentTypes.join(' and ');
+                const messageType =
+                  unsentTypes.length === 1 ? "message" : "messages";
+                const unsentMessage = unsentTypes.join(" and ");
 
                 return `You haven't sent ${unsentMessage} ${messageType} to the selected vendors. Would you like to proceed without sending?`;
               })()}

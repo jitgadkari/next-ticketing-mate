@@ -66,7 +66,7 @@ const VendorList = ({
     const fetchAllVendors = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors?status=Active&limit=${pageFilter.limit}&offset=${pageFilter.offset}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ const VendorList = ({
         });
         if (response.ok) {
           const data = await response.json();
-
+          console.log("Vendors data",data)
           if (data.vendors && Array.isArray(data.vendors)) {
             setAllVendors(data.vendors);  // Store all vendors in state
             setVendors(data.vendors.slice(0, pageFilter.limit)); // Display first page of vendors

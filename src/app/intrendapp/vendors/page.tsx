@@ -42,8 +42,9 @@ const VendorsPage = () => {
         limit: pageFilter.limit.toString(),
       });
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors?${queryParams.toString()}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors?${queryParams.toString()}&status=Active`);
       const data = await response.json();
+      console.log("Vendors data",data)
       setPageInfo((prev) => ({
         ...prev,
        total_pages:data.total_pages,
