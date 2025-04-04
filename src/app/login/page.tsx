@@ -2,16 +2,18 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from 'next/link';
-import Image from 'next/image';
-import { isAuthenticated, setAuthData } from '@/utils/auth';
-
+import Link from "next/link";
+import Image from "next/image";
+import { isAuthenticated, setAuthData } from "@/utils/auth";
+import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 const Login = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -21,37 +23,35 @@ const Login = () => {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const data = await response.json();
-      console.log('Login response:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Authentication failed');
+        throw new Error(data.message || data.error || "Authentication failed");
       }
 
       if (data.access_token) {
         setAuthData(data.access_token, data.user_metadata);
-        router.push('/intrendapp/dashboard');
+        router.push("/intrendapp/dashboard");
       } else {
-        throw new Error('No access token received');
+        throw new Error("No access token received");
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Invalid email or password');
+      setError(err.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -59,56 +59,72 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen bg-white">
-        {/* Left section with images and branding */}
-        <div className="hidden lg:flex w-1/2 bg-gray-50 flex-col items-center justify-center p-12">
+      {/* Left Branding Section */}
+      <motion.div
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="hidden lg:flex w-1/2 bg-gray-50 flex-col items-center justify-center p-12"
+      >
         <div className="max-w-xl w-full space-y-8">
           <div className="flex justify-center space-x-6">
-          <Image
-            src="/svg/dashboard-4-svgrepo-com.svg"
-            alt="Dashboard"
-            width={64}
-            height={64}
-            className="opacity-75"
-          />
-          <Image
-            src="/svg/people-svgrepo-com.svg"
-            alt="People"
-            width={64}
-            height={64}
-            className="opacity-75"
-          />
-          <Image
-            src="/svg/tickets-ticket-svgrepo-com.svg"
-            alt="Tickets"
-            width={64}
-            height={64}
-            className="opacity-75"
-          />
+            <Image
+              src="/svg/dashboard-4-svgrepo-com.svg"
+              alt="Dashboard"
+              width={64}
+              height={64}
+              className="opacity-75"
+            />
+            <Image
+              src="/svg/people-svgrepo-com.svg"
+              alt="People"
+              width={64}
+              height={64}
+              className="opacity-75"
+            />
+            <Image
+              src="/svg/tickets-ticket-svgrepo-com.svg"
+              alt="Tickets"
+              width={64}
+              height={64}
+              className="opacity-75"
+            />
           </div>
           <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Manage Your Business Better
-          </h2>
-          <p className="text-gray-600">
-            Track customers, manage tickets, and analyze trends all in one place
-          </p>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Manage Your Business Better
+            </h2>
+            <p className="text-gray-600">
+              Track customers, manage tickets, and analyze trends all in one
+              place
+            </p>
           </div>
         </div>
-        </div>
+      </motion.div>
 
-        {/* Right section with form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
+      {/* Right Login Form Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8"
+      >
         <div className="w-full max-w-md">
-          <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">IntSync</h1>
-          <div className="text-xl sm:text-2xl font-semibold text-black">
-            Welcome Back
+          <div className="text-center mb-10">
+            <Link href="/">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors cursor-pointer">
+                IntSync
+              </h1>
+            </Link>
+            <div className="text-2xl font-semibold text-black">
+              Welcome Back
+            </div>
+            <div className="text-base text-gray-600 mt-1">
+              Sign in to continue to your account
+            </div>
           </div>
-          <div className="text-sm sm:text-base text-gray-600 mt-1">
-            Sign in to continue to your account
-          </div>
-          </div>
-          <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleLogin}>
+
+          <form className="space-y-6" onSubmit={handleLogin}>
             <div className="space-y-4">
               <div>
                 <span className="px-1 text-sm text-gray-600">Email</span>
@@ -118,47 +134,76 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:border-gray-600 focus:outline-none"
                 />
               </div>
-              <div>
+              <div className="relative">
                 <span className="px-1 text-sm text-gray-600">Password</span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="text-md block px-3 py-2 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:placeholder-gray-500 focus:bg-white focus:border-gray-600 focus:outline-none"
+                  className="text-md block px-3 py-2 pr-10 rounded-lg w-full text-black bg-white border-2 border-gray-300 placeholder-gray-600 shadow-md focus:border-gray-600 focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 bottom-2 text-gray-600 hover:text-gray-800"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+
               {error && (
-                <div className="text-red-500 text-sm text-center">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm text-center"
+                >
                   {error}
-                </div>
+                </motion.div>
               )}
-              <button
+
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isLoading}
-                className="mt-3 text-lg font-semibold bg-gray-800 w-full text-white rounded-lg px-6 py-3 block shadow-xl hover:text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-3 text-lg font-semibold bg-gray-800 w-full text-white rounded-lg px-6 py-3 shadow-xl hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
-              </button>
-              <div className="text-sm font-semibold py-4 flex justify-center">
+                {isLoading ? "Signing in..." : "Sign In"}
+              </motion.button>
+
+              <div className="text-sm font-semibold py-4 text-center">
                 <Link
                   href="/signup"
-                  className="text-black font-normal border-b-2 border-gray-200 hover:border-gray-500"
+                  className="text-black border-b-2 border-gray-200 hover:border-gray-500"
                 >
-                  New to Intrend?{' '}
-                  <span className="text-black font-semibold">
-                    Create an account
-                  </span>
+                  New to Intrend?{" "}
+                  <span className="font-semibold">Create an account</span>
+                </Link>
+              </div>
+
+              <div className="text-sm font-semibold text-center space-x-4">
+                <Link
+                  href="/"
+                  className="text-black border-b-2 border-gray-200 hover:border-gray-500"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/about"
+                  className="text-black border-b-2 border-gray-200 hover:border-gray-500"
+                >
+                  About
                 </Link>
               </div>
             </div>
           </form>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

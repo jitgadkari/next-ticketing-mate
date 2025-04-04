@@ -10,13 +10,14 @@ import { usePathname } from 'next/navigation';
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const hideNavbar = isAuthPage || pathname === '/' || pathname === '/about';
 
   return (
     <html lang="en">
       <body className="flex flex-col min-h-screen">
         <SignupProvider>
-          {!isAuthPage && <TopNavBar />}
-          {!isAuthPage ? (
+          {!hideNavbar && <TopNavBar />}
+          {!hideNavbar ? (
             <SideNav>
               <Toaster position="bottom-center" />
               {children}
