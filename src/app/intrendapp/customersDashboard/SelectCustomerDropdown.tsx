@@ -15,12 +15,21 @@ const SelectCustomerDropdown = ({ onSelect }: SelectCustomerDropdownProps) => {
   const [showDropDown, setShowDropDown] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
-
+  const [filterState, setFilterState] = useState({
+    showDropDown: false,
+    ticket_num: "",
+    limit: 10,
+    offset: 0,
+    sort_order: false,
+    start_date: "",
+    end_date: "",
+  });
+  const { limit, offset } = filterState;
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/customers_all`
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/dashboard?limit=${limit}&offset=${offset}`
         );
         const data = await response.json();
         setCustomers(data.customers);

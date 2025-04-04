@@ -20,6 +20,7 @@ interface Ticket {
   status: string;
   final_decision: string;
   customer_message: string;
+  vendor_responses: { name: string; response: string }[];
 }
 
 interface TicketListProps {
@@ -47,7 +48,6 @@ export interface FilterState {
   sort_order: boolean;
 }
 
-
 const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [filterState, setFilterState] = useState<FilterState>({
@@ -67,12 +67,16 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     offset: getOffset(),
     start_date: "",
     end_date: "",
-    sort_order: true  // true = descending order, newest first
+    sort_order: true, // true = descending order, newest first
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
-  const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
+  const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(
+    null
+  );
+  const [userRole, setUserRole] = useState<
+    "admin" | "superuser" | "general_user"
+  >("general_user");
   const [pageInfo, setPageInfo] = useState({
     total_tickets: 0,
     current_page: 1,
@@ -97,7 +101,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     if (isAuth) {
       const userData = getUserData();
       console.log(userData);
-      setUserRole(userData?.role || 'general_user');
+      setUserRole(userData?.role || "general_user");
     }
   }, []);
 
@@ -131,30 +135,58 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
       if (filterState.step_status?.trim()) {
         filterParams.step_status = filterState.step_status.trim(); // Match backend status filter
       }
-      if (filterState.start_date) filterParams.start_date = filterState.start_date;
+      if (filterState.start_date)
+        filterParams.start_date = filterState.start_date;
       if (filterState.end_date) filterParams.end_date = filterState.end_date;
 
-      console.log('Applying filters:', filterParams);
+      console.log("Applying filters:", filterParams);
 
       const queryParams = new URLSearchParams(filterParams);
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL
+          `${
+            process.env.NEXT_PUBLIC_ENDPOINT_URL
           }/api/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
-        console.log(data)
-        const parsedTickets = data.tickets.map((ticket: any) => ({
-          id: ticket.id,
-          ticket_number: ticket.ticket_number,
-          customer_name: ticket.customer_name,
-          current_step: ticket.current_step,
-          created_date: ticket.created_date,
-          customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
-          status: ticket.steps["Step 9 : Final Status"]?.latest?.status || "open",
-          final_decision:
-            ticket.steps["Step 9 : Final Status"]?.latest?.final_decision || "pending",
-        }));
+        console.log(data);
+
+        const parsedTickets = data.tickets.map((ticket: any) => {
+          // Check if ticket has reached Step 5
+          const hasReachedStep5 = 
+            ticket.current_step === "Step 5 : Messages from Vendors" ||
+            ticket.current_step === "Step 6 : Vendor Message Decoded" ||
+            ticket.current_step === "Step 7 : Customer Message Template" ||
+            ticket.current_step === "Step 8 : Customer Response" ||
+            ticket.current_step === "Step 9 : Final Status";
+        
+          const vendorResponses = hasReachedStep5 && 
+            ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors
+              ? Object.entries(ticket.steps["Step 5 : Messages from Vendors"].latest.vendors)
+                  .map(([_, vendor]: [string, any]) => ({
+                    name: vendor.name,
+                    response: vendor.response_message?.trim() || "Yet to reply"
+                  }))
+              : [];
+        
+          return {
+            id: ticket.id,
+            ticket_number: ticket.ticket_number,
+            customer_name: ticket.customer_name,
+            current_step: ticket.current_step,
+            created_date: ticket.created_date,
+            customer_message:
+              ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+            vendor_responses: vendorResponses, // Changed from vendor_reply to vendor_responses
+            status:
+              ticket.steps["Step 9 : Final Status"]?.latest?.status || "open",
+            final_decision:
+              ticket.steps["Step 9 : Final Status"]?.latest?.final_decision ||
+              "pending",
+          };
+        });
+        
+
         setAllTickets(parsedTickets);
         setPageInfo({
           total_tickets: data.total_tickets,
@@ -189,14 +221,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/delete`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ticketId: ticketId,
-            userId: 'a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea',
-            userAgent: 'user-test'
+            userId: "a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea",
+            userAgent: "user-test",
           }),
         }
       );
@@ -204,15 +236,15 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
       if (response.ok) {
         setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
-        toast.success('Ticket deleted successfully');
+        toast.success("Ticket deleted successfully");
       } else {
         const errorData = await response.json();
-        console.error('Failed to delete ticket:', errorData);
-        toast.error('Failed to delete ticket');
+        console.error("Failed to delete ticket:", errorData);
+        toast.error("Failed to delete ticket");
       }
     } catch (error) {
-      console.error('Error deleting ticket:', error);
-      toast.error('Error deleting ticket');
+      console.error("Error deleting ticket:", error);
+      toast.error("Error deleting ticket");
     }
   };
 
@@ -221,33 +253,33 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/soft_delete`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ticketId: ticketId,
-            changed_status: 'Closed',
-            userId: 'a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea',
-            userAgent: 'user-test'
+            changed_status: "Closed",
+            userId: "a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea",
+            userAgent: "user-test",
           }),
         }
       );
 
       const data = await response.json();
-      console.log('Soft delete response:', data);
+      console.log("Soft delete response:", data);
 
       if (response.ok) {
         setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
-        toast.success('Ticket soft deleted successfully');
+        toast.success("Ticket soft deleted successfully");
       } else {
-        console.error('Failed to soft delete ticket:', data);
-        toast.error('Failed to soft delete ticket');
+        console.error("Failed to soft delete ticket:", data);
+        toast.error("Failed to soft delete ticket");
       }
     } catch (error) {
-      console.error('Error soft deleting ticket:', error);
-      toast.error('Error soft deleting ticket');
+      console.error("Error soft deleting ticket:", error);
+      toast.error("Error soft deleting ticket");
     }
   };
 
@@ -270,6 +302,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     // "Current Step",
     "Created Date",
     "Customer Message",
+    "Vendor Reply",
     "Status & Decision",
     "Actions",
   ];
@@ -278,7 +311,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     console.log(`Moving to previous page, new offset: ${newOffset}`);
     setFilterState((prev) => ({
       ...prev,
-      offset: newOffset
+      offset: newOffset,
     }));
   };
 
@@ -288,7 +321,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
       console.log(`Moving to next page, new offset: ${newOffset}`);
       setFilterState((prev) => ({
         ...prev,
-        offset: newOffset
+        offset: newOffset,
       }));
     }
   };
@@ -302,14 +335,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     console.log(`Changing to page ${page}, new offset: ${newOffset}`);
     setFilterState((prev) => ({
       ...prev,
-      offset: newOffset
+      offset: newOffset,
     }));
   };
   const handleChangeSortOrder = () => {
     setFilterState((prev) => ({
       ...prev,
       sort_order: !prev.sort_order,
-      offset: 0 // Reset to first page when changing sort order
+      offset: 0, // Reset to first page when changing sort order
     }));
   };
 
@@ -317,27 +350,46 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
     <>
       <td className="border rounded-lg p-2">{ticket.ticket_number}</td>
       <td className="border rounded-lg p-2">{ticket.customer_name}</td>
-      <td className="border rounded-lg p-2">{formatDateTime(ticket.created_date)}</td>
+      <td className="border rounded-lg p-2">
+        {formatDateTime(ticket.created_date)}
+      </td>
       <td className="border rounded-lg p-2">{ticket.customer_message}</td>
+      <td className="border rounded-lg p-2">
+  {ticket.vendor_responses.length > 0 ? (
+    <div className="space-y-1">
+      {ticket.vendor_responses.map((vendor, index) => (
+        <div key={index} className="text-sm">
+          <span className="font-medium">{vendor.name}:</span> {vendor.response}
+        </div>
+      ))}
+    </div>
+  ) : ticket.current_step === "Step 5 : Messages from Vendors" ? (
+    "No vendors selected"
+  ) : (
+    " "
+  )}
+</td>
       <td className="border rounded-lg p-2 space-y-1">
         <div className="flex justify-center">
           <span
-            className={`px-2 py-1 rounded-lg ${ticket.status === "closed"
-              ? "bg-red-200 text-red-800"
-              : "bg-green-200 text-green-800"
-              }`}
+            className={`px-2 py-1 rounded-lg ${
+              ticket.status === "closed"
+                ? "bg-red-200 text-red-800"
+                : "bg-green-200 text-green-800"
+            }`}
           >
             {ticket.status}
           </span>
         </div>
         <div className="flex justify-center">
           <span
-            className={`px-2 py-1 rounded-lg ${ticket.final_decision === "approved"
-              ? "bg-green-200 text-green-800"
-              : ticket.final_decision === "denied"
+            className={`px-2 py-1 rounded-lg ${
+              ticket.final_decision === "approved"
+                ? "bg-green-200 text-green-800"
+                : ticket.final_decision === "denied"
                 ? "bg-red-200 text-red-800"
                 : "bg-yellow-200 text-yellow-800"
-              }`}
+            }`}
           >
             {ticket.final_decision}
           </span>
@@ -350,7 +402,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
               <FaEye />
             </span>
           </Link>
-          {userRole === 'admin' && (
+          {userRole === "admin" && (
             <FaTrash
               onClick={() => setDeleteTicketId(ticket.id)}
               className="text-red-500 cursor-pointer hover:text-red-700"
@@ -397,7 +449,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                                 ...prev,
                                 customer_name: customer.name,
                                 showCustomerDropDown: false,
-                                offset: 0 // Reset to first page
+                                offset: 0, // Reset to first page
                               }))
                             }
                             className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -428,7 +480,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                               ...prev,
                               step_status: "open",
                               showStatusDropDown: false,
-                              offset: 0
+                              offset: 0,
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -441,7 +493,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                               ...prev,
                               step_status: "closed",
                               showStatusDropDown: false,
-                              offset: 0
+                              offset: 0,
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -471,7 +523,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                               ...prev,
                               final_decision: "pending",
                               showDecisionDropDown: false,
-                              offset: 0
+                              offset: 0,
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -484,7 +536,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                               ...prev,
                               final_decision: "approved",
                               showDecisionDropDown: false,
-                              offset: 0
+                              offset: 0,
                             }))
                           }
                           className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -510,13 +562,14 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                       <ul className="absolute left-0 w-48 mt-2 bg-white border border-gray-300 shadow-lg rounded-lg text-gray-700 text-sm group-hover:flex flex-col gap-2 p-2">
                         {stepsOrder.map((step, index) => {
                           return (
-                            <li key={index}
+                            <li
+                              key={index}
                               onClick={() =>
                                 setFilterState((prev) => ({
                                   ...prev,
                                   current_step: step,
                                   showStepDropDown: false,
-                                  offset: 0 // Reset to first page
+                                  offset: 0, // Reset to first page
                                 }))
                               }
                               className="border-b py-2 px-4 hover:bg-gray-100 cursor-pointer"
@@ -528,8 +581,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                       </ul>
                     )}
                   </li>
-                  <ul className="flex gap-2 items-center flex-wrap    px-4 py-2 bg-gray-100 text-gray-800 font-semibold rounded-lg  border-gray-300 hover:bg-gray-200 focus:outline-none">
-                    <h1>Start</h1>
+                  <ul className="flex gap-2 items-center flex-wrap py-2 bg-white text-gray-800 font-semibold rounded-lg border-gray-100 hover:bg-gray-100 focus:outline-none">
+                    <h1>Start Date</h1>
                     <div className="relative">
                       <input
                         type="date"
@@ -538,17 +591,15 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                           setFilterState((prevState) => ({
                             ...prevState,
                             start_date: e.target.value,
-                            offset: 0 // Reset to first page
                           }))
                         }
-                        className="w-10 h-10 opacity-0  absolute inset-0"
+                        className="w-10 h-10 opacity-0 absolute inset-0"
                       />
-
                       <div className="flex justify-center items-center w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
                         <BsCalendar2DateFill className="text-black" />
                       </div>
                     </div>
-                    <h1>End </h1>
+                    <h1>End Date</h1>
                     <div className="relative">
                       <input
                         type="date"
@@ -557,10 +608,9 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                           setFilterState((prevState) => ({
                             ...prevState,
                             end_date: e.target.value,
-                            offset: 0 // Reset to first page
                           }))
                         }
-                        className="w-10 h-10 opacity-0  absolute inset-0"
+                        className="w-10 h-10 opacity-0 absolute inset-0"
                       />
                       <div className="flex justify-center items-center cursor-pointer w-8 h-8 bg-gray-100 text-gray-800 font-semibold rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none">
                         <BsCalendar2DateFill className="text-black" />
@@ -576,7 +626,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                       setFilterState((prevState) => ({
                         ...prevState,
                         ticket_num: e.target.value,
-                        offset: 0 // Reset to first page
+                        offset: 0, // Reset to first page
                       }))
                     }
                     placeholder="Search Ticket Number"
@@ -588,15 +638,20 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
             <div className="flex gap-2">
               <button
                 className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                onClick={() => setFilterState(prev => ({ ...prev, showDropDown: !prev.showDropDown }))}
+                onClick={() =>
+                  setFilterState((prev) => ({
+                    ...prev,
+                    showDropDown: !prev.showDropDown,
+                  }))
+                }
               >
-                {filterState.showDropDown ? 'Hide Filters' : 'Show Filters'}
+                {filterState.showDropDown ? "Hide Filters" : "Show Filters"}
               </button>
               {filterState.showDropDown && (
                 <button
                   className="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   onClick={() => {
-                    setFilterState(prev => ({
+                    setFilterState((prev) => ({
                       ...prev,
                       showCustomerDropDown: false,
                       showDecisionDropDown: false,
@@ -609,7 +664,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
                       final_decision: "",
                       start_date: "",
                       end_date: "",
-                      offset: 0
+                      offset: 0,
                     }));
                   }}
                 >
@@ -640,7 +695,12 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
         </div>
       )} */}
       {allTickets.length > 0 ? (
-        <Table columns={columns} data={allTickets} renderRow={renderRow} handleChangeSortOrder={handleChangeSortOrder} />
+        <Table
+          columns={columns}
+          data={allTickets}
+          renderRow={renderRow}
+          handleChangeSortOrder={handleChangeSortOrder}
+        />
       ) : (
         <div className="text-center py-20">
           <h2 className="text-xl text-gray-600">

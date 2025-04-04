@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated, clearAuthData } from '@/utils/auth';
+import { isAuthenticated, clearAuthData, getUserData } from '@/utils/auth';
 
 export default function TopNavBar() {
 
@@ -10,16 +10,28 @@ export default function TopNavBar() {
     const [isMounted, setIsMounted] = useState(false);
     const [authStatus, setAuthStatus] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
     const router = useRouter();
 
     useEffect(() => {
         setIsMounted(true);
-        setAuthStatus(isAuthenticated());
+        const isAuth = isAuthenticated();
+        setAuthStatus(isAuth);
+
+        if (isAuth) {
+            const userData = getUserData();
+            setUserRole(userData?.role || 'general_user');
+        }
 
         // Listen for storage events to detect auth changes
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'access_token') {
-                setAuthStatus(isAuthenticated());
+                const isAuth = isAuthenticated();
+                setAuthStatus(isAuth);
+                if (isAuth) {
+                    const userData = getUserData();
+                    setUserRole(userData?.role || 'general_user');
+                }
             }
         };
 
@@ -28,6 +40,28 @@ export default function TopNavBar() {
             window.removeEventListener('storage', handleStorageChange);
         };
     }, []);
+
+    const roleMap = {
+        admin: [
+            { name: 'Dashboard', href: '/intrendapp/dashboard', key: 'dashboard' },
+            { name: 'Tickets', href: '/intrendapp/tickets', key: 'ticket' },
+            { name: 'Customers', href: '/intrendapp/customers', key: 'customer' },
+            { name: 'Vendors', href: '/intrendapp/vendors', key: 'vendor' },
+            { name: 'Attributes', href: '/intrendapp/attributes' },
+            { name: 'People', href: '/intrendapp/people', key: 'people' },
+        ],
+        superuser: [
+            { name: 'Dashboard', href: '/intrendapp/dashboard', key: 'dashboard' },
+            { name: 'Tickets', href: '/intrendapp/tickets', key: 'ticket' },
+            { name: 'Customers', href: '/intrendapp/customers', key: 'customer' },
+            { name: 'Vendors', href: '/intrendapp/vendors', key: 'vendor' },
+            { name: 'People', href: '/intrendapp/people', key: 'people' },
+            { name: 'Attributes', href: '/intrendapp/attributes' },
+        ],
+        general_user: [
+            { name: 'People Dashboard', href: '/intrendapp/customersDashboard', key: 'customer-dashboard' },
+        ],
+    };
 
     const handleLogout = () => {
         clearAuthData();
@@ -128,41 +162,17 @@ export default function TopNavBar() {
                     <ul className="flex flex-col p-4 space-y-2">
                         {authStatus ? (
                             <>
-                                <li>
-                                    <Link href="/intrendapp/dashboard" className="text-lg hover:text-gray-300" onClick={toggleMobileMenu}>
-                                        Dashboard
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/tickets" className="text-lg hover:text-gray-300">
-                                        Tickets
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/customers" className="text-lg hover:text-gray-300">
-                                        Customers
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/vendors" className="text-lg hover:text-gray-300">
-                                        Vendors
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/attributes" className="text-lg hover:text-gray-300">
-                                        Attributes
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/people" className="text-lg hover:text-gray-300">
-                                        People
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/intrendapp/customersDashboard" className="text-lg hover:text-gray-300">
-                                        Customer Dashboard
-                                    </Link>
-                                </li>
+                                {roleMap[userRole]?.map(({ name, href, key }) => (
+                                    <li key={name}>
+                                        <Link 
+                                            href={href} 
+                                            className="text-lg hover:text-gray-300"
+                                            onClick={toggleMobileMenu}
+                                        >
+                                            {name}
+                                        </Link>
+                                    </li>
+                                ))}
                                 <li>
                                     <button
                                         onClick={() => {
@@ -174,7 +184,6 @@ export default function TopNavBar() {
                                         Logout
                                     </button>
                                 </li>
-
                             </>
                         ) : (
                             <>

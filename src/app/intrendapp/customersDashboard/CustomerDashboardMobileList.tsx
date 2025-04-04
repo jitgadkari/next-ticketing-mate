@@ -22,12 +22,24 @@ interface Ticket {
 	steps: any;
 }
 
-interface CustomerDashboardMobileListProps {
-	selectedCustomer: string;
-	onCustomerSelect: (customerName: string) => void;
+interface DashboardData {
+  dashboardType: string;
+  person?: {
+    linked_to_id?: {
+      id: string;
+      name: string;
+    };
+    name: string;
+  };
 }
 
-export default function CustomerDashboardMobileList({ selectedCustomer, onCustomerSelect }: CustomerDashboardMobileListProps) {
+interface CustomerDashboardMobileListProps {
+	selectedCustomer: string;
+	onCustomerSelect: (accessToken: string, limit?: number, offset?: number) => void;
+	dashboardData: DashboardData | null;
+}
+
+export default function CustomerDashboardMobileList({ selectedCustomer, onCustomerSelect, dashboardData }: CustomerDashboardMobileListProps) {
 	const [tickets, setTickets] = useState<Ticket[]>([]);
 	const [filterState, setFilterState] = useState({
 		showDropDown: false,
@@ -45,6 +57,49 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 		has_next: true,
 	});
 	const [showForm, setShowForm] = useState(false);
+	const [replyTicket, setReplyTicket] = useState<string | null>(null);
+	const [replyMessage, setReplyMessage] = useState("");
+
+	const handleSendReply = async (ticket: Ticket) => {
+		try {
+			const response = await fetch(
+				`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						ticket_id: ticket._id,
+						step_number: "Step 5 : Messages from Vendors",
+						step_info: {
+							vendors: [
+								{
+									vendor_id: dashboardData?.person?.linked_to_id?.id ?? '',
+									name: dashboardData?.person?.linked_to_id?.name ?? '',
+									response_received: true,
+									response_message: replyMessage,
+								},
+							],
+						},
+					}),
+				}
+			);
+
+			if (response.ok) {
+				const accessToken = localStorage.getItem("auth-token");
+				if (accessToken) await onCustomerSelect(accessToken, filterState.limit, filterState.offset);
+				setReplyTicket(null);
+				setReplyMessage("");
+				toast.success("Reply sent successfully");
+			} else {
+				toast.error("Failed to send reply");
+			}
+		} catch (error) {
+			console.error("Error sending reply:", error);
+			toast.error("Unexpected error while sending reply");
+		}
+	};
 
 	useEffect(() => {
 		const fetchTickets = async () => {
@@ -61,7 +116,7 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 				});
 
 				const response = await fetch(
-					`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/tickets/?${queryParams.toString()}`
+					`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/?${queryParams.toString()}`
 				);
 				const data = await response.json();
 				
@@ -126,6 +181,8 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 
 	const handleAdd = () => {
 		setShowForm(false);
+		const accessToken = localStorage.getItem("auth-token");
+		if (accessToken) onCustomerSelect(accessToken, filterState.limit, filterState.offset);
 	};
 
 	return (
@@ -310,6 +367,52 @@ export default function CustomerDashboardMobileList({ selectedCustomer, onCustom
 										{ticket.steps?.["Step 7 : Customer Message Template"]?.text || "No reply yet"}
 									</span>
 								</div>
+
+								{dashboardData?.dashboardType === "vendor" && (
+									!ticket.steps?.["Step 5 : Messages from Vendors"]?.vendors[0]?.response_message && replyTicket === ticket.ticket_number ? (
+										<div className="space-y-2">
+											<textarea
+												value={replyMessage}
+												onChange={(e) => setReplyMessage(e.target.value)}
+												className="w-full p-2 border rounded"
+												rows={3}
+												placeholder="Type your reply here..."
+											/>
+											<div className="flex space-x-2">
+												<button
+													onClick={() => handleSendReply(ticket)}
+													className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+												>
+													Send
+												</button>
+												<button
+													onClick={() => {
+														setReplyTicket(null);
+														setReplyMessage("");
+													}}
+													className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+												>
+													Cancel
+												</button>
+											</div>
+										</div>
+									) : (
+										<div>
+											{!ticket.steps?.["Step 5 : Messages from Vendors"]?.vendors[0]?.response_message ? (
+												<button
+													onClick={() => setReplyTicket(ticket.ticket_number)}
+													className="text-blue-600 hover:text-blue-800 underline"
+												>
+													Click to Reply
+												</button>
+											) : (
+												<span className="whitespace-pre-wrap">
+													{ticket.steps?.["Step 5 : Messages from Vendors"]?.vendors[0]?.response_message}
+												</span>
+											)}
+										</div>
+									)
+								)}
 							</div>
 						</div>
 					))}
