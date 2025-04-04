@@ -164,11 +164,6 @@ export default function TopNavBar() {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href="/intrendapp/vendorsDashboard" className="text-lg hover:text-gray-300">
-                                        Vendor Dashboard
-                                    </Link>
-                                </li>
-                                <li>
                                     <button
                                         onClick={() => {
                                             handleLogout();

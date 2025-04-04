@@ -7,7 +7,10 @@ const rolePermissions = {
     '/intrendapp/tickets',
     '/intrendapp/customers',
     '/intrendapp/vendors',
-    '/intrendapp/people'
+    '/intrendapp/people',
+    '/intrendapp/attributes',
+    '/intrendapp/whatsapp',
+    '/intrendapp/integrations'
   ],
   general_user: [
     '/intrendapp/customersDashboard'

@@ -30,7 +30,8 @@ interface Vendor {
       };
     };
   };
-  vendor_people_list: { id: string; name: string }[];
+vendor_people_list: { id: string; name: string }[]
+
   state: string;
   country: string;
   delivery_destination: string;
@@ -353,7 +354,7 @@ const VendorDetailsPage: React.FC = () => {
             <ul className="list-disc pl-4">
               {vendor.vendor_people_list.map((person, index) => (
                 <li key={index}>
-                  <strong>Name:</strong> {person.name} (<strong>ID:</strong> {person.id})
+                  <strong>Name:</strong> {person.name} 
                 </li>
               ))}
             </ul>

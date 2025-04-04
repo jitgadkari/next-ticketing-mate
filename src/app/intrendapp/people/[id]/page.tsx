@@ -143,9 +143,9 @@ const PersonDetailsPage: React.FC = () => {
       setPerson((prevPerson) =>
         prevPerson
           ? {
-              ...prevPerson,
-              linked_to_id: { id: selectedEntity.id, name: selectedEntity.name },
-            }
+            ...prevPerson,
+            linked_to_id: { id: selectedEntity.id, name: selectedEntity.name },
+          }
           : null
       );
     }
@@ -157,21 +157,25 @@ const PersonDetailsPage: React.FC = () => {
 
     try {
       // Construct the update payload
-      const updatePayload = {
+      const updatePayload: any = {
         name: person.name || "",
         email: person.email || "",
         phone: person.phone || "",
-        type_employee: person.type_employee || "External",
+        type_employee: person.type_employee,
         status: person.status || "Active",
-        linked: Boolean(person.linked)
       };
 
-      // Only include these fields if they are relevant
-      if (person.linked && person.type_employee === "External") {
-        Object.assign(updatePayload, {
-          linked_to: person.linked_to || null,
-          linked_to_id: person.linked_to_id?.id ? { id: person.linked_to_id.id } : null
-        });
+      // Only include relevant fields based on employee type
+      if (person.type_employee === "Internal") {
+        // Set Internal-specific defaults
+        updatePayload.linked = false;
+      } else {
+        // External type handling
+        updatePayload.linked = Boolean(person.linked);
+        if (person.linked) {
+          updatePayload.linked_to = person.linked_to || null;
+          updatePayload.linked_to_id = person.linked_to_id?.id ? { id: person.linked_to_id.id } : null;
+        }
       }
 
       // Only include additional_info if it has content
@@ -187,26 +191,30 @@ const PersonDetailsPage: React.FC = () => {
       const getCurrentPerson = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${person.id}`
       );
-      
+
       if (!getCurrentPerson.ok) {
         throw new Error('Failed to get current person data');
       }
-      
+
       const currentData = await getCurrentPerson.json();
-      
+
       // Merge the current data with our updates
       const finalPayload = {
         ...currentData.person,
         ...updatePayload
       };
-      
+
+      if (person.type_employee === "Internal") {
+        delete finalPayload.linked_to;
+        delete finalPayload.linked_to_id;
+      }
       console.log('Final update payload:', finalPayload);
-      
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/${person.id}?userId=1&userAgent=user-test`,
         {
           method: "PUT",
-          headers: { 
+          headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify(finalPayload),
@@ -250,14 +258,19 @@ const PersonDetailsPage: React.FC = () => {
                   {person.status}
                 </span>
               </p>
-              <p><strong>Linked:</strong> {person.linked ? "Yes" : "No"}</p>
-              {person.linked_to && (
-                <p><strong>Linked To:</strong> {person.linked_to}</p>
+              {person.type_employee === "External" && (
+                <>
+                  <p><strong>Linked:</strong> {person.linked ? "Yes" : "No"}</p>
+                  {person.linked_to && (
+                    <p><strong>Linked To:</strong> {person.linked_to}</p>
+                  )}
+                  {person.linked_to_id && (
+                    <p><strong>Linked Entity:</strong> {person.linked_to_id.name} (ID: {person.linked_to_id.id})</p>
+                  )}
+                </>
               )}
-              {person.linked_to_id && (
-                <p><strong>Linked Entity:</strong> {person.linked_to_id.name} (ID: {person.linked_to_id.id})</p>
-              )}
-              
+
+
               {/* Additional Info Section */}
               {person.additional_info && Object.keys(person.additional_info).length > 0 && (
                 <div className="col-span-2">
@@ -271,7 +284,7 @@ const PersonDetailsPage: React.FC = () => {
                   </ul>
                 </div>
               )}
-              
+
               {/* Dates Section */}
               <p><strong>Created Date:</strong> {new Date(person.created_date).toLocaleString()}</p>
               <p><strong>Updated Date:</strong> {new Date(person.updated_date).toLocaleString()}</p>
@@ -285,10 +298,10 @@ const PersonDetailsPage: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-gray-700">Type of Employee</label>
-            <select 
-              name="type_employee" 
-              value={person.type_employee} 
-              onChange={handleChange} 
+            <select
+              name="type_employee"
+              value={person.type_employee}
+              onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="Internal">Internal</option>
@@ -299,9 +312,9 @@ const PersonDetailsPage: React.FC = () => {
           {person.type_employee === "External" && (
             <div className="space-y-2">
               <label className="block text-gray-700">Linked</label>
-              <select 
-                name="linked" 
-                value={person.linked.toString()} 
+              <select
+                name="linked"
+                value={person.linked.toString()}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               >
@@ -313,9 +326,9 @@ const PersonDetailsPage: React.FC = () => {
                 <>
                   <div className="space-y-2">
                     <label className="block text-gray-700">Link To</label>
-                    <select 
-                      name="linked_to" 
-                      value={person.linked_to || ""} 
+                    <select
+                      name="linked_to"
+                      value={person.linked_to || ""}
                       onChange={handleChange}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     >
@@ -338,15 +351,15 @@ const PersonDetailsPage: React.FC = () => {
                         <option value="">Select...</option>
                         {person.linked_to === "customer"
                           ? customers.map((customer) => (
-                              <option key={customer.id} value={customer.id}>
-                                {customer.name}
-                              </option>
-                            ))
+                            <option key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </option>
+                          ))
                           : vendors.map((vendor) => (
-                              <option key={vendor.id} value={vendor.id}>
-                                {vendor.name}
-                              </option>
-                            ))}
+                            <option key={vendor.id} value={vendor.id}>
+                              {vendor.name}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   )}

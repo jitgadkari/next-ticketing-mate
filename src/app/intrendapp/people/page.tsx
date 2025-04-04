@@ -80,7 +80,7 @@ const fetchPeople = async (name = ""): Promise<void> => {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?${queryParams.toString()}`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?${queryParams.toString()}&status=Active`
       );
       const data = await response.json();
       setPageInfo((prev) => ({

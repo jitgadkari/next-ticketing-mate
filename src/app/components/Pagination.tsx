@@ -124,7 +124,7 @@ function Pagination({
             <span className="font-medium">
             {Math.min(offset + limit, typeof total_items === "string" ? parseInt(total_items, 10) : total_items || 0)}
             </span>{" "}
-            of <span className="font-medium">{total_items}</span> results
+            of <span className="font-medium">{total_items || 0}</span> results
           </p>
         </div>
         <div>

@@ -340,14 +340,14 @@ const CustomerDetailsPage: React.FC = () => {
     const defaultOpts =
       (defaultAttributes?.[attribute as keyof Attributes] as string[]) || [];
     const customerValues = selectedAttributes[attribute];
-  
+
     const allOptions = Array.from(new Set([...defaultOpts, ...customerValues]));
-  
+
     return allOptions.map((value) => {
       if (typeof value === "string") {
         return { label: value, value };
       }
-  
+
       // Handle object values like { id, name }
       if (typeof value === "object" && value !== null && "id" in value && "name" in value) {
         return {
@@ -355,7 +355,7 @@ const CustomerDetailsPage: React.FC = () => {
           value: JSON.stringify(value),
         };
       }
-  
+
       // Fallback, just in case
       return {
         label: String(value),
@@ -363,8 +363,18 @@ const CustomerDetailsPage: React.FC = () => {
       };
     });
   };
-  
-  
+
+  const allCustomerPeopleOptions = Array.from(
+    new Map(
+      [...unlinkedPeople, ...selectedAttributes.customer_people_list].map((person: any) => [
+        person.id,
+        {
+          label: `${person.name}`,
+          value: JSON.stringify({ id: person.id, name: person.name })
+        }
+      ])
+    ).values()
+  );
 
   const renderForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -482,13 +492,10 @@ const CustomerDetailsPage: React.FC = () => {
       <div>
         <label className="block text-gray-700">Select Customer People</label>
         <MultiSelect
-          options={unlinkedPeople.map((person) => ({
-            label: `${person.name} (${person.email})`,
-            value: JSON.stringify({ id: person.id, name: person.name }),
-          }))}
+          options={allCustomerPeopleOptions}
           value={selectedAttributes.customer_people_list.map((person) => ({
             label: person.name,
-            value: JSON.stringify(person),
+            value: JSON.stringify({ id: person.id, name: person.name }),
           }))}
           onChange={(selected: Option[]) => {
             const people = selected.map((option) => JSON.parse(option.value));
@@ -499,6 +506,7 @@ const CustomerDetailsPage: React.FC = () => {
           }}
           labelledBy="Select Customer People"
         />
+
       </div>
       <div>
         <label className="block text-gray-700">WhatsApp Groups</label>

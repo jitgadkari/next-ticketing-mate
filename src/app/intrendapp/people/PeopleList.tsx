@@ -4,11 +4,11 @@ import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
 import Table from "../../components/Table";
 import { useState, useEffect } from "react";
-import { getUserData } from '@/utils/auth';
 import toast from "react-hot-toast";
 import { pageFilter, pageInfo } from "./page";
 import Pagination from "@/app/components/Pagination";
 import { MdOutlineFolderDelete } from "react-icons/md";
+import { getUserData, isAuthenticated } from "@/utils/auth";
 
 interface PeopleListProps {
   people: any[];
@@ -35,11 +35,17 @@ const PeopleList = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>('');
+  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
+
+
 
   useEffect(() => {
-    const userData = getUserData();
-    setUserRole(userData?.role || '');
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      console.log(userData);
+      setUserRole(userData?.role || 'general_user');
+    }
   }, []);
 
   useEffect(() => {
@@ -52,7 +58,7 @@ const PeopleList = ({
         });
         if (response.ok) {
           const data = await response.json();
-          console.log(data)
+          console.log("People data",data)
           if (data.people && Array.isArray(data.people)) {
             setAllPeople(data.people); // Store all people in state
             setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
@@ -125,7 +131,7 @@ const PeopleList = ({
 
   const handleRegisterLogin = async (person: any) => {
     try {
-      if(person.type_employee !== "External"){
+      if (person.type_employee !== "External") {
         throw new Error("user is internal")
       }
       console.log(`🚀 Registering user: ${person.email}`);
@@ -147,9 +153,9 @@ const PeopleList = ({
         },
         body: JSON.stringify(userPayload),
       });
-      console.log("response",response)
+      console.log("response", response)
       const data = await response.json();
-      console.log("data...",data)
+      console.log("data...", data)
       if (!response.ok) {
         throw new Error(data.error || "Registration failed");
       }
@@ -180,17 +186,19 @@ const PeopleList = ({
               <FaEye />
             </span>
           </Link>
-          <FaTrash
-            onClick={() => setDeletePeopleId(person.id)}
-            className="text-red-500 cursor-pointer hover:text-red-700"
-          />
+          {(userRole === 'admin') && (
+            <FaTrash
+              onClick={() => setDeletePeopleId(person.id)}
+              className="text-red-500 cursor-pointer hover:text-red-700"
+            />
+          )}
           <MdOutlineFolderDelete
             onClick={() => setSoftDeletePeopleId(person.id)}
             className="text-yellow-500 cursor-pointer hover:text-yellow-700 ml-2"
             title="Soft Delete"
           />
-          {(userRole === 'admin' || userRole === 'superuser') && (
-            <button 
+          {person.type_employee !== "Internal" && (
+            <button
               onClick={() => handleRegisterLogin(person)}
               className="ml-2 px-3 py-1 bg-blue-600  text-white rounded hover:bg-blue-700"
             >

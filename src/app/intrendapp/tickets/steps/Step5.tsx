@@ -265,7 +265,11 @@ const Step5: React.FC<Step5Props> = ({
     updatedMessages: Record<string, VendorMessage>
   ) => {
     console.log("Updating Step 5 messages:", updatedMessages);
-
+    
+    if (!Object.values(messages).some(msg => msg.response_message?.trim())) {
+      toast.error("No messages to decode. Please enter messages for vendors.");
+      return;
+    }
     const formattedVendors = Object.entries(updatedMessages).map(
       ([vendorId, message]) => ({
         vendor_id: vendorId,

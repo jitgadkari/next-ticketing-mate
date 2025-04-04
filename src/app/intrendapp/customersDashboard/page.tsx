@@ -29,6 +29,8 @@ interface DashboardData {
   person: Person;
   tickets: Ticket[];
   dashboardType: 'customer' | 'vendor';
+  total_pages: number;
+  current_page: number;
 }
 
 interface VendorMessage {
@@ -93,33 +95,29 @@ export default function CustomerDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [replyTicket, setReplyTicket] = useState<string | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
-  
-  const handleCustomerSelect = async (access_token: string) => {
+
+  const handleCustomerSelect = async (access_token: string, limit = 10, offset = 0) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/dashboard`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/customers/dashboard?limit=${limit}&offset=${offset}`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${access_token}`,
           "Content-Type": "application/json",
         },
       });
-  console.log(access_token || 'NOT FOUND');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard data. Status: ${response.status}`);
-      }
-  
-      const data: DashboardData = await response.json();
-      console.log("Customer Dashboard Data:", data);
-      
-      if (data && data.person) {
-        setDashboardData(data);
-        setTickets(data.tickets || []);
-      } else {
-        throw new Error("Invalid data received from server");
-      }
+
+      if (!response.ok) throw new Error(`Failed to fetch dashboard data. Status: ${response.status}`);
+
+      const data: DashboardData & {
+        total_pages: number;
+        current_page: number;
+      } = await response.json();
+
+      setDashboardData(data);
+      setTickets(data.tickets || []);
     } catch (error) {
       console.error("Error fetching customer dashboard:", error);
       setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -127,16 +125,17 @@ export default function CustomerDashboard() {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     const accessToken = localStorage.getItem("auth-token");
-    if(!accessToken){
+    if (!accessToken) {
       setError("Authentication token not available");
       setIsLoading(false);
       return;
     }
-    handleCustomerSelect(accessToken);
-  }, [refreshKey]);
+    handleCustomerSelect(accessToken, filterState.limit, filterState.offset);
+  }, [refreshKey, filterState.offset]);
+
 
   const handleAdd = () => {
     setShowForm(false);
@@ -164,23 +163,22 @@ export default function CustomerDashboard() {
     const vendorId = dashboardData?.person?.linked_to_id?.id ?? '';
     const vendorMessages = ticket.steps?.['Step 5 : Messages from Vendors']?.latest?.vendors || {};
     const vendorResponse = vendorMessages[vendorId];
-    
+
     return (
-    <>
-      <td className="border p-2">{ticket.ticket_number}</td>
-      <td className="border p-2">{ticket.ticket_type}</td>
-      <td className="border p-2">
-        <span
-          className={`px-2 py-1 rounded ${
-            ticket.steps?.['Step 9 : Final Status']?.latest?.status === "closed"
+      <>
+        <td className="border p-2">{ticket.ticket_number}</td>
+        <td className="border p-2">{ticket.ticket_type}</td>
+        <td className="border p-2">
+          <span
+            className={`px-2 py-1 rounded ${ticket.steps?.['Step 9 : Final Status']?.latest?.status === "closed"
               ? "bg-red-200 text-red-800"
               : "bg-green-200 text-green-800"
-          }`}
-        >
-          {ticket.steps?.['Step 9 : Final Status']?.latest?.status ?? "open"}
-        </span>
-      </td>
-      {/* {isVendorView ? (
+              }`}
+          >
+            {ticket.steps?.['Step 9 : Final Status']?.latest?.status ?? "open"}
+          </span>
+        </td>
+        {/* {isVendorView ? (
         <td className="border p-2">{ticket.customer_name}</td>
       ) : (
         <td className="border p-2">
@@ -197,11 +195,11 @@ export default function CustomerDashboard() {
           </span>
         </td>
       )} */}
-      <td className="border p-2">{ticket.steps?.['Step 1 : Customer Message Received']?.latest?.text ?? ticket.customer_message ?? "N/A"}</td>
-      <td className="border p-2">
-        <div className="w-full whitespace-pre-wrap text-sm max-h-40 overflow-y-auto">
-          {isVendorView 
-            ? (
+        <td className="border p-2">{ticket.steps?.['Step 1 : Customer Message Received']?.latest?.text ?? ticket.customer_message ?? "N/A"}</td>
+        <td className="border p-2">
+          <div className="w-full whitespace-pre-wrap text-sm max-h-40 overflow-y-auto">
+            {isVendorView
+              ? (
                 !vendorResponse?.response_message && replyTicket === ticket.ticket_number ? (
                   <div className="space-y-2">
                     <textarea
@@ -284,13 +282,13 @@ export default function CustomerDashboard() {
                   </div>
                 )
               )
-            : (ticket.steps?.['Step 7 : Customer Message Template']?.latest?.text ?? "No reply yet")}
-        </div>
-      </td>
-    </>
+              : (ticket.steps?.['Step 7 : Customer Message Template']?.latest?.text ?? "No reply yet")}
+          </div>
+        </td>
+      </>
     );
   };
-  
+
 
   if (isLoading) {
     return (
@@ -305,7 +303,7 @@ export default function CustomerDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-2xl">
           <p className="text-red-800">{error}</p>
-          <button 
+          <button
             onClick={() => setRefreshKey(prev => prev + 1)}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
@@ -318,7 +316,7 @@ export default function CustomerDashboard() {
 
   return (
     <>
-      <CustomerDashboardMobileList 
+      <CustomerDashboardMobileList
         selectedCustomer={dashboardData?.person?.name ?? ""}
         onCustomerSelect={handleCustomerSelect}
       />
@@ -326,25 +324,23 @@ export default function CustomerDashboard() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">{dashboardData?.dashboardType === 'vendor' ? 'Vendor Dashboard' : 'Customer Dashboard'}</h1>
           <div>
-            {!showForm ? (
-              <Button onClick={() => setShowForm(true)}>
-                {dashboardData?.dashboardType === 'vendor' ? 'Add Response' : 'Add Ticket'}
-              </Button>
-            ) : (
-              <Button onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
+            {dashboardData?.dashboardType === 'customer' && !showForm && (
+              <Button onClick={() => setShowForm(true)}>Add Ticket</Button>
+            )}
+            {dashboardData?.dashboardType === 'customer' && showForm && (
+              <Button onClick={() => setShowForm(false)}>Cancel</Button>
             )}
           </div>
         </div>
 
+
         {showForm && dashboardData?.person && (
           <div className="mb-4">
-            <AddTicketForm 
-              key={dashboardData.person.id} 
-              onAdd={handleAdd} 
-              initialCustomer={dashboardData.person.name} 
-              disableCustomerSelect={true} 
+            <AddTicketForm
+              key={dashboardData.person.id}
+              onAdd={handleAdd}
+              initialCustomer={dashboardData.person.name}
+              disableCustomerSelect={true}
             />
           </div>
         )}
@@ -396,7 +392,20 @@ export default function CustomerDashboard() {
         ) : (
           <p className="text-center py-20 text-gray-500">No tickets found for this customer.</p>
         )}
+        {dashboardData?.total_pages && dashboardData.total_pages > 1 && (
+          <Pagination
+            limit={filterState.limit}
+            offset={filterState.offset}
+            current_page={dashboardData.current_page}
+            total_pages={dashboardData.total_pages}
+            onPageChange={(page) => {
+              const newOffset = (page - 1) * filterState.limit;
+              setFilterState(prev => ({ ...prev, offset: newOffset }));
+            }}
+          />
+        )}
       </div>
+
     </>
   );
 }
