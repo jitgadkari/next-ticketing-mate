@@ -319,6 +319,7 @@ export default function CustomerDashboard() {
       <CustomerDashboardMobileList
         selectedCustomer={dashboardData?.person?.name ?? ""}
         onCustomerSelect={handleCustomerSelect}
+        dashboardData={dashboardData}
       />
       <div className="p-8 bg-grey-100 rounded shadow text-black hidden md:block">
         <div className="flex justify-between items-center mb-6">

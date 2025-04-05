@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaEye, FaTrash } from "react-icons/fa";
+import { MdOutlineFolderDelete } from "react-icons/md";
 import { Vendor } from "./page";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { pageFilter, pageInfo } from "../people/page";
+import { getUserData, isAuthenticated } from "@/utils/auth";
 
 interface VendorMobileListProps {
   vendors: Vendor[];
@@ -33,13 +35,22 @@ export default function VendorMobileList({
   onPageChange,
 }: VendorMobileListProps) {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
+  const [softDeleteVendorId, setSoftDeleteVendorId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({ name: "", state: "" });
   const [allVendors, setAllVendors] = useState<Vendor[]>([]);  // State for all vendors
   const [tempFilters, setTempFilters] = useState<FilterState>({ name: "", state: "" });
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showFilter, setShowFilter] = useState<boolean>(false); // State to toggle filter visibility
+  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
 
+  useEffect(() => {
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      setUserRole(userData?.role || 'general_user');
+    }
+  }, []);
   useEffect(() => {
     if (!vendors || !Array.isArray(vendors)) {
       console.warn("Vendors data is not an array or is undefined:", vendors);
@@ -108,9 +119,13 @@ export default function VendorMobileList({
   };
 
   const handleDelete = async (vendorId: string) => {
+    if (userRole !== 'admin') {
+      toast.error("You do not have permission to delete vendors");
+      return;
+    }
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/vendor/${vendorId}`,
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`,
         {
           method: "DELETE",
         }
@@ -126,6 +141,27 @@ export default function VendorMobileList({
     } catch (error) {
       console.error("Error deleting vendor:", error);
       toast.error("An error occurred while deleting the vendor");
+    }
+  };
+
+  const handleSoftDelete = async (vendorId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/soft_delete/${vendorId}?userId=1&userAgent=user-test`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setVendors(vendors.filter((vendor) => vendor.id !== vendorId));
+        setSoftDeleteVendorId(null);
+        toast.success("Vendor soft deleted successfully");
+      } else {
+        toast.error("Failed to soft delete vendor");
+      }
+    } catch (error) {
+      console.error("Error soft deleting vendor:", error);
+      toast.error("An error occurred while soft deleting the vendor");
     }
   };
 
@@ -178,57 +214,64 @@ export default function VendorMobileList({
 
       {/* Display vendor details */}
       {Array.isArray(vendors) && vendors.length > 0 ? (
-  vendors.map((vendor) => (
-    <div key={vendor.id} className="bg-white text-black p-4 rounded-lg shadow-lg">
-      <div className="flex flex-col space-y-4 text-sm w-full">
-        <div className="flex justify-between items-center">
-          <div className="flex">
-            <span className="font-semibold mr-2">Name:</span>
-            <span>{vendor.name}</span>
+        vendors.map((vendor) => (
+          <div key={vendor.id} className="bg-white text-black p-4 rounded-lg shadow-lg">
+            <div className="flex flex-col space-y-4 text-sm w-full">
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Name:</span>
+                  <span>{vendor.name}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Email:</span>
+                  <span>{vendor.email}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Phone:</span>
+                  <span>{vendor.phone}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">State:</span>
+                  <span>{vendor.state}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <span className="font-semibold mr-2">Code:</span>
+                  <span>{vendor.code}</span>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-4">
+                <Link href={`vendors/${vendor.id}`} passHref>
+                  <span className="text-blue-500 hover:text-blue-700">
+                    <FaEye />
+                  </span>
+                </Link>
+               {userRole === 'admin' && (
+                    <FaTrash
+                      onClick={() => setDeleteVendorId(vendor.id)}
+                      className="text-red-500 cursor-pointer hover:text-red-700"
+                    />
+                      
+                )}
+                    <MdOutlineFolderDelete
+                      onClick={() => setSoftDeleteVendorId(vendor.id)}
+                      className="text-yellow-500 cursor-pointer hover:text-yellow-700"
+                      title="Soft Delete"
+                    />
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex">
-            <span className="font-semibold mr-2">Email:</span>
-            <span>{vendor.email}</span>
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex">
-            <span className="font-semibold mr-2">Phone:</span>
-            <span>{vendor.phone}</span>
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex">
-            <span className="font-semibold mr-2">State:</span>
-            <span>{vendor.state}</span>
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex">
-            <span className="font-semibold mr-2">Code:</span>
-            <span>{vendor.code}</span>
-          </div>
-        </div>
-        <div className="flex justify-end space-x-4">
-          <Link href={`vendors/${vendor.id}`} passHref>
-            <span className="text-blue-500 hover:text-blue-700">
-              <FaEye />
-            </span>
-          </Link>
-          <FaTrash
-            onClick={() => setDeleteVendorId(vendor.id)}
-            className="text-red-500 cursor-pointer hover:text-red-700"
-          />
-        </div>
-      </div>
-    </div>
-  ))
-) : (
-  <p className="text-gray-500 text-center">No vendors available</p>
-)}
-
+        ))
+      ) : (
+        <p className="text-gray-500 text-center">No vendors available</p>
+      )}
 
       {/* Delete Confirmation */}
       {deleteVendorId && (
@@ -244,6 +287,28 @@ export default function VendorMobileList({
             </button>
             <button
               onClick={() => handleDelete(deleteVendorId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
+
+      {/* Soft Delete Dialog */}
+      {softDeleteVendorId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
+          <h2 className="text-xl font-bold mb-4">Confirm Soft Delete</h2>
+          <p>Are you sure you want to soft delete this vendor?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setSoftDeleteVendorId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSoftDelete(softDeleteVendorId)}
               className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
             >
               Delete

@@ -54,7 +54,7 @@ const TicketDetailsPage = () => {
   const fetchTicket = async (ticketId: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/${ticketId}`
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/${ticketId}?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`
       );
       const data = await response.json();
       setTicket(data.ticket);

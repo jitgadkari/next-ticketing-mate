@@ -59,6 +59,9 @@ const config: Config = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+			  animation: {
+				'bounce-slow': 'bounce 2s infinite',
+			  },		  
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

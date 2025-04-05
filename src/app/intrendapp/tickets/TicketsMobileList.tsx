@@ -7,9 +7,11 @@ import { Customer } from "./AddTicketForm";
 import toast from "react-hot-toast";
 import Pagination from "@/app/components/Pagination";
 import { BsCalendar2DateFill } from "react-icons/bs";
+import { MdOutlineFolderDelete } from "react-icons/md";
+import { getUserData, isAuthenticated } from "@/utils/auth";
 
 interface Ticket {
-  _id: string;
+  id: string;
   ticket_number: string;
   customer_name: string;
   current_step: string;
@@ -18,6 +20,10 @@ interface Ticket {
   customer_message: string;
   status: string;
   final_decision: string;
+  vendor_responses?: {
+    name: string;
+    response: string;
+  }[];
 }
 
 interface TicketListProps {
@@ -69,6 +75,13 @@ export default function TicketsMobileList({
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
+  const [softDeleteTicketId, setSoftDeleteTicketId] = useState<string | null>(
+    null
+  );
+  const [userRole, setUserRole] = useState<
+    "admin" | "superuser" | "general_user"
+  >("general_user");
+  
   const [pageInfo, setPageInfo] = useState({
     total_tickets: null,
     current_page: null,
@@ -112,10 +125,25 @@ export default function TicketsMobileList({
         const data = await response.json();
         // console.log("Raw ticket data:", data.tickets);
         const parsedTickets = data.tickets.map((ticket: any) => {
-          // console.log("Ticket steps:", ticket.steps);
-          // console.log("Step 1 text:", ticket.steps["Step 1 : Customer Message Received"]?.latest.text);
+          // Check if ticket has reached Step 5
+          const hasReachedStep5 = 
+            ticket.current_step === "Step 5 : Messages from Vendors" ||
+            ticket.current_step === "Step 6 : Vendor Message Decoded" ||
+            ticket.current_step === "Step 7 : Customer Message Template" ||
+            ticket.current_step === "Step 8 : Customer Response" ||
+            ticket.current_step === "Step 9: Final Status";
+          
+          const vendorResponses = hasReachedStep5 && 
+            ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors
+              ? Object.entries(ticket.steps["Step 5 : Messages from Vendors"].latest.vendors)
+                  .map(([_, vendor]: [string, any]) => ({
+                    name: vendor.name,
+                    response: vendor.response_message?.trim() || "Yet to reply"
+                  }))
+              : [];
+
           return {
-            _id: ticket._id,
+            id: ticket._id || ticket.id, // Handle both cases
             ticket_number: ticket.ticket_number,
             customer_name: ticket.customer_name,
             current_step: ticket.current_step,
@@ -123,8 +151,8 @@ export default function TicketsMobileList({
             updated_date: ticket.updated_date,
             customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
             status: ticket.steps["Step 9: Final Status"]?.status || "open",
-            final_decision:
-              ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+            final_decision: ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+            vendor_responses: vendorResponses
           }
         });
         setAllTickets(parsedTickets);
@@ -156,6 +184,14 @@ export default function TicketsMobileList({
     fetchCustomers();
   }, []);
 
+  useEffect(() => {
+    const isAuth = isAuthenticated();
+    if (isAuth) {
+      const userData = getUserData();
+      setUserRole(userData?.role || "general_user");
+    }
+  }, []);
+
   const handleDelete = async (ticketId: string) => {
     try {
       const response = await fetch(
@@ -165,7 +201,7 @@ export default function TicketsMobileList({
         }
       );
       if (response.ok) {
-        setAllTickets(allTickets.filter((ticket) => ticket._id !== ticketId));
+        setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
         setDeleteTicketId(null);
         toast.success("Ticket deleted successfully");
       } else {
@@ -173,6 +209,26 @@ export default function TicketsMobileList({
       }
     } catch (error) {
       console.error("Error deleting ticket:", error);
+    }
+  };
+
+  const handleSoftDelete = async (ticketId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/soft_delete/${ticketId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setAllTickets(allTickets.filter((ticket) => ticket.id !== ticketId));
+        setSoftDeleteTicketId(null);
+        toast.success("Ticket soft deleted successfully");
+      } else {
+        console.error("Failed to soft delete ticket");
+      }
+    } catch (error) {
+      console.error("Error soft deleting ticket:", error);
     }
   };
 
@@ -637,7 +693,7 @@ export default function TicketsMobileList({
       )} */}
       {allTickets.map((ticket) => (
         <div
-          key={ticket._id}
+          key={ticket.id}
           className="bg-white text-black p-4 rounded-lg shadow-lg"
         >
           <div className="flex flex-col space-y-4 text-sm w-full">
@@ -676,7 +732,7 @@ export default function TicketsMobileList({
               </div>
             </div>
             
-            <div className="flex justify-between items-center">
+            {/*<div className="flex justify-between items-center">
               <div className="flex">
                 <span className="font-semibold mr-2">Updated Date:</span>
                 <span>{formatDateTime(ticket.updated_date)}</span>
@@ -690,17 +746,36 @@ export default function TicketsMobileList({
                   {formatDateTime(ticket.created_date)}
                 </span>
               </div>
-            </div>
+            </div> */}
 
+            {ticket.vendor_responses && ticket.vendor_responses.length > 0 && (
+              <div className="space-y-2">
+                <span className="font-semibold">Vendor Replies:</span>
+                {ticket.vendor_responses.map((response, index) => (
+                  <div key={index} className="pl-4 border-l-2 border-gray-200">
+                    <div className="font-medium">{response.name}:</div>
+                    <div className="text-sm text-gray-600">{response.response}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex justify-end space-x-4">
-              <Link href={`tickets/${ticket._id}`} passHref>
-                <span className="text-blue-500 mr-7 hover:text-blue-700">
+              <Link href={`tickets/${ticket.id}`} passHref>
+                <span className="text-blue-500 hover:text-blue-700">
                   <FaEye />
                 </span>
               </Link>
-              <FaTrash
-                onClick={() => setDeleteTicketId(ticket._id)}
-                className="text-red-500 cursor-pointer hover:text-red-700"
+              {userRole === 'admin' && (
+                <FaTrash
+                  onClick={() => setDeleteTicketId(ticket.id)}
+                  className="text-red-500 cursor-pointer hover:text-red-700"
+                />
+              )}
+              <MdOutlineFolderDelete
+                onClick={() => setSoftDeleteTicketId(ticket.id)}
+                className="text-yellow-500 cursor-pointer hover:text-yellow-700"
+                title="Soft Delete"
               />
             </div>
 
@@ -720,6 +795,26 @@ export default function TicketsMobileList({
             </button>
             <button
               onClick={() => handleDelete(deleteTicketId)}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </dialog>
+      )}
+      {softDeleteTicketId && (
+        <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
+          <h2 className="text-xl font-bold mb-4">Confirm Soft Delete</h2>
+          <p>Are you sure you want to soft delete this ticket?</p>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setSoftDeleteTicketId(null)}
+              className="mr-2 bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSoftDelete(softDeleteTicketId)}
               className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
             >
               Delete
