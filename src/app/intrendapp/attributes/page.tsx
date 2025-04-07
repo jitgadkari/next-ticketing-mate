@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, ChangeEvent, KeyboardEvent, FormEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  KeyboardEvent,
+  FormEvent,
+} from "react";
 import TagInput from "../../components/TagInput";
 import Button from "../../components/Button";
 import { FaEdit } from "react-icons/fa";
@@ -27,13 +33,16 @@ const AttributesPage: React.FC = () => {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [showPopup, setShowPopup] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [attributeHistory, setAttributeHistory] = useState<AttributeVersion[]>([]);
+  const [attributeHistory, setAttributeHistory] = useState<AttributeVersion[]>(
+    []
+  );
   const [newAttributeKey, setNewAttributeKey] = useState("");
   const [newAttributeValue, setNewAttributeValue] = useState("");
-  const [selectedVersion, setSelectedVersion] = useState<AttributeVersion | null>(() => {
-    const saved = localStorage.getItem('selectedAttributeVersion');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [selectedVersion, setSelectedVersion] =
+    useState<AttributeVersion | null>(() => {
+      const saved = localStorage.getItem("selectedAttributeVersion");
+      return saved ? JSON.parse(saved) : null;
+    });
 
   useEffect(() => {
     fetchAttributes();
@@ -45,14 +54,14 @@ const AttributesPage: React.FC = () => {
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`
       );
       const data = await response.json();
-  
+
       if (data && data.attributes) {
         const sortedVersions = data.attributes.versions.sort(
           (a: AttributeVersion, b: AttributeVersion) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         setAttributeHistory(sortedVersions);
-  
+
         // Always use latest if forced OR no saved version
         if (forceUseLatest || !selectedVersion) {
           setAttributes(data.attributes.latest.attributes);
@@ -110,11 +119,24 @@ const AttributesPage: React.FC = () => {
     }
   };
 
+  const handleDeleteCategory = (category: string) => {
+    setFormData((prev) => {
+      const updated = { ...prev };
+      delete updated[category];
+      return updated;
+    });
+  
+    setInputValues((prev) => {
+      const updated = { ...prev };
+      delete updated[category];
+      return updated;
+    });
+  };
   const handleUpdate = async () => {
     try {
       const versionNote = `Updated attributes on ${new Date().toLocaleString()}`;
-      const method = attributes ? 'PUT' : 'POST';
-  
+      const method = attributes ? "PUT" : "POST";
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
         {
@@ -126,13 +148,13 @@ const AttributesPage: React.FC = () => {
           }),
         }
       );
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error("Failed to update attributes");
       }
-  
+
       // ✅ update immediately to latest version
       if (data?.attributes?.latest) {
         const latestVersion = data.attributes.latest;
@@ -141,7 +163,7 @@ const AttributesPage: React.FC = () => {
         setFormData(latestVersion.attributes);
         initializeInputValues(latestVersion.attributes);
       }
-  
+
       await fetchAttributes(true); // ✅ force to use latest version in state
       setEditMode(false);
       setShowPopup(true);
@@ -164,50 +186,52 @@ const AttributesPage: React.FC = () => {
   //     console.error("Error fetching attribute history:", error);
   //   }
   // };
-console.log(attributeHistory)
+  console.log(attributeHistory);
   const updateSelectedVersion = (version: AttributeVersion | null) => {
     setSelectedVersion(version);
     if (version) {
-      localStorage.setItem('selectedAttributeVersion', JSON.stringify(version));
+      localStorage.setItem("selectedAttributeVersion", JSON.stringify(version));
     } else {
-      localStorage.removeItem('selectedAttributeVersion');
+      localStorage.removeItem("selectedAttributeVersion");
     }
   };
 
   const switchToVersion = async (version: AttributeVersion) => {
     if (!version || !version.attributes) {
-      console.error('Invalid version data:', version);
+      console.error("Invalid version data:", version);
       return;
     }
-  
+
     try {
       const clonedAttributes = JSON.parse(JSON.stringify(version.attributes));
-      const versionNote = `Switched to version from ${new Date(version.timestamp).toLocaleString()}`;
-  
+      const versionNote = `Switched to version from ${new Date(
+        version.timestamp
+      ).toLocaleString()}`;
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes?userId=50d2ce0a-263f-40d6-a354-922101b00320&userAgent=user-test`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             attributes: clonedAttributes,
-            version_note: versionNote
-          })
+            version_note: versionNote,
+          }),
         }
       );
-  
-      if (!response.ok) throw new Error('Failed to update attributes');
-  
+
+      if (!response.ok) throw new Error("Failed to update attributes");
+
       updateSelectedVersion(version);
-  
+
       // ✅ Fetch fresh attributes using the latest version
       await fetchAttributes(true);
-  
+
       setShowPopup(true);
       setShowHistory(false);
       setEditMode(false);
     } catch (error) {
-      console.error('Error switching version:', error);
+      console.error("Error switching version:", error);
     }
   };
 
@@ -218,12 +242,14 @@ console.log(attributeHistory)
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Attributes Management</h1>
-          <Button onClick={() => {
-            setShowHistory(!showHistory);
-            if (!showHistory) {
-              fetchAttributes();
-            }
-          }}>
+          <Button
+            onClick={() => {
+              setShowHistory(!showHistory);
+              if (!showHistory) {
+                fetchAttributes();
+              }
+            }}
+          >
             {showHistory ? "Hide History" : "Show Version History"}
           </Button>
         </div>
@@ -254,21 +280,26 @@ console.log(attributeHistory)
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(version.attributes).map(([category, values]) => (
-                  <div key={category} className="p-3 bg-white rounded shadow-sm">
-                    <h4 className="font-medium mb-2">{category}</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {values.map((value, i) => (
-                        <span
-                          key={i}
-                          className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs"
-                        >
-                          {value}
-                        </span>
-                      ))}
+                {Object.entries(version.attributes).map(
+                  ([category, values]) => (
+                    <div
+                      key={category}
+                      className="p-3 bg-white rounded shadow-sm"
+                    >
+                      <h4 className="font-medium mb-2">{category}</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {values.map((value, i) => (
+                          <span
+                            key={i}
+                            className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs"
+                          >
+                            {value}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           ))}
@@ -280,7 +311,12 @@ console.log(attributeHistory)
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(formData).map(([category, values]) => (
                   <div key={category} className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold mb-2">{category}</h3>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-semibold">{category}</h3>
+                      {editMode && (!values || values.length === 0) && (
+                        <button onClick={() => handleDeleteCategory(category)} className="text-red-500 hover:text-red-700 text-xs">Delete Category</button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {values.map((value, index) => (
                         <span
@@ -304,7 +340,7 @@ console.log(attributeHistory)
                         value={inputValues[category]}
                         onChange={handleInputChange}
                         onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             handleChange(category, inputValues[category]);
                           }
                         }}
@@ -312,7 +348,9 @@ console.log(attributeHistory)
                         className="flex-1 p-2 border rounded"
                       />
                       <Button
-                        onClick={() => handleChange(category, inputValues[category])}
+                        onClick={() =>
+                          handleChange(category, inputValues[category])
+                        }
                         className="px-4"
                       >
                         Add
@@ -323,7 +361,9 @@ console.log(attributeHistory)
               </div>
 
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold mb-4">Add New Attribute Category</h3>
+                <h3 className="font-semibold mb-4">
+                  Add New Attribute Category
+                </h3>
                 <div className="flex gap-4">
                   <input
                     type="text"
@@ -355,14 +395,16 @@ console.log(attributeHistory)
                 <div key={category} className="p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-semibold mb-2">{category}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {(Array.isArray(values) ? values : []).map((value, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
-                      >
-                        {value}
-                      </span>
-                    ))}
+                    {(Array.isArray(values) ? values : []).map(
+                      (value, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+                        >
+                          {value}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               ))}

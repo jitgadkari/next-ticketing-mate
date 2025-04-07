@@ -19,7 +19,7 @@ interface Step7Props {
     customer_name: string;
     current_step: string;
     steps: Record<string, any>;
-    created_data: string;
+    created_date: string;
     updated_date: string;
     from_number: string;
   };
@@ -161,6 +161,7 @@ const Step7: React.FC<Step7Props> = ({
           includeVendorName,
           ticket.customer_name,
           ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+          ticket.created_date
         );
         setTemplate(generatedTemplate);
       })();
@@ -174,14 +175,16 @@ const Step7: React.FC<Step7Props> = ({
     includeCustomerMessage: boolean,
     includeVendorName: boolean,
     customerName: string,
-    originalMessage: string
+    originalMessage: string,
+    created_date: string
   ) => {
     console.log('Generating template with:', {
       decoded_messages,
       includeCustomerMessage,
       includeVendorName,
       customerName,
-      originalMessage
+      originalMessage,
+      created_date
     });
 
     const formattedVendorInfo = Object.entries(decoded_messages).reduce(
@@ -215,7 +218,8 @@ const Step7: React.FC<Step7Props> = ({
       vendor_delivery_info: formattedVendorInfo,
       ticket_number: ticket.ticket_number,
       send_vendor_name: includeVendorName,
-      customer_message_required: includeCustomerMessage
+      customer_message_required: includeCustomerMessage,
+      created_date: created_date
     };
 
     console.log('Request payload:', requestPayload);
@@ -261,7 +265,8 @@ const Step7: React.FC<Step7Props> = ({
         includeCustomerMessage,
         newIncludeVendorName,
         ticket.customer_name,
-        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+        ticket.created_date
       );
       
       setTemplate(newTemplate);
@@ -282,7 +287,8 @@ const Step7: React.FC<Step7Props> = ({
         newIncludeCustomerMessage,
         includeVendorName,
         ticket.customer_name,
-        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || ""
+        ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+        ticket.created_date
       );
       
       setTemplate(newTemplate);
@@ -710,13 +716,13 @@ const Step7: React.FC<Step7Props> = ({
             Save 
           </Button>
           <div className="flex gap-3">
-            <Button
+            {/* <Button
             disabled={!isCurrentStep}
               onClick={toggleIncludeCustomerMessage}
               className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >
               {includeCustomerMessage ? "Hide Customer Message" : "Show Customer Message"}
-            </Button>
+            </Button> */}
             <Button
             disabled={!isCurrentStep}
               onClick={toggleIncludeVendorName}

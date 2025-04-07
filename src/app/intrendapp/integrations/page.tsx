@@ -154,7 +154,7 @@ export default function IntegrationsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
-        <p className="text-gray-600">Loading WhatsApp groups...</p>
+        <p className="text-gray-600">Syncing WhatsApp groups, it will take 2-3 mintues.</p>
       </div>
     );
   }
@@ -178,7 +178,7 @@ export default function IntegrationsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
-        <p className="text-gray-600">Loading WhatsApp groups...</p>
+        <p className="text-gray-600">Syncing WhatsApp groups, it will take 2-3 mintues.</p>
       </div>
     );
   }

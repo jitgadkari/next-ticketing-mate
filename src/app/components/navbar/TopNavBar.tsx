@@ -43,25 +43,29 @@ export default function TopNavBar() {
 
     const roleMap = {
         admin: [
-            { name: 'Dashboard', href: '/intrendapp/dashboard', key: 'dashboard' },
-            { name: 'Tickets', href: '/intrendapp/tickets', key: 'ticket' },
-            { name: 'Customers', href: '/intrendapp/customers', key: 'customer' },
-            { name: 'Vendors', href: '/intrendapp/vendors', key: 'vendor' },
-            { name: 'Attributes', href: '/intrendapp/attributes' },
-            { name: 'People', href: '/intrendapp/people', key: 'people' },
+          { name: 'Dashboard', href: '/intrendapp/dashboard', icon: '/svg/dashboard-4-svgrepo-com.svg', key: 'dashboard' },
+          { name: 'Tickets', href: '/intrendapp/tickets', icon: '/svg/tickets-ticket-svgrepo-com.svg', key: 'ticket' },
+          { name: 'Customers', href: '/intrendapp/customers', icon: '/svg/icons8-customer-100.png', key: 'customer' },
+          { name: 'Vendors', href: '/intrendapp/vendors', icon: '/svg/people-svgrepo-com.svg', key: 'vendor' },
+          { name: 'Attributes', href: '/intrendapp/attributes', icon: '/svg/edit-attributes-svgrepo-com.svg' },
+          { name: 'People', href: '/intrendapp/people', icon: '/svg/users-svgrepo-com.svg', key: 'people' },
+          { name: 'Whatsapp', href: '/intrendapp/whatsapp', icon: 'inline', key: 'whatsapp' },
+          { name: 'Integrations', href: '/intrendapp/integrations', icon: 'inline', key: 'integrations' },
         ],
         superuser: [
-            { name: 'Dashboard', href: '/intrendapp/dashboard', key: 'dashboard' },
-            { name: 'Tickets', href: '/intrendapp/tickets', key: 'ticket' },
-            { name: 'Customers', href: '/intrendapp/customers', key: 'customer' },
-            { name: 'Vendors', href: '/intrendapp/vendors', key: 'vendor' },
-            { name: 'People', href: '/intrendapp/people', key: 'people' },
-            { name: 'Attributes', href: '/intrendapp/attributes' },
+          { name: 'Dashboard', href: '/intrendapp/dashboard', icon: '/svg/dashboard-4-svgrepo-com.svg', key: 'dashboard' },
+          { name: 'Tickets', href: '/intrendapp/tickets', icon: '/svg/tickets-ticket-svgrepo-com.svg', key: 'ticket' },
+          { name: 'Customers', href: '/intrendapp/customers', icon: '/svg/icons8-customer-100.png', key: 'customer' },
+          { name: 'Vendors', href: '/intrendapp/vendors', icon: '/svg/people-svgrepo-com.svg', key: 'vendor' },
+          { name: 'People', href: '/intrendapp/people', icon: '/svg/users-svgrepo-com.svg', key: 'people' },
+          { name: 'Attributes', href: '/intrendapp/attributes', icon: '/svg/edit-attributes-svgrepo-com.svg' },
+          { name: 'Whatsapp', href: '/intrendapp/whatsapp', icon: 'inline', key: 'whatsapp' },
+          { name: 'Integrations', href: '/intrendapp/integrations', icon: 'inline', key: 'integrations' },
         ],
         general_user: [
-            { name: 'People Dashboard', href: '/intrendapp/customersDashboard', key: 'customer-dashboard' },
+          { name: 'Dashboard', href: '/intrendapp/customersDashboard', icon: '/svg/dashboard-4-svgrepo-com.svg', key: 'customer-dashboard' },
         ],
-    };
+      };
 
     const handleLogout = () => {
         clearAuthData();

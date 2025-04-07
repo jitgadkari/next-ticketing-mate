@@ -52,6 +52,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
     } catch (error) {
       console.error('Error fetching default attributes:', error);
       setError('Failed to load default attributes. Please try again later.');
+      toast.error('Failed to load default attributes');
     }
   };
 
@@ -66,6 +67,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
 
     if (!formData.name || !formData.email || !formData.phone || !formData.code || !formData.country || !formData.state) {
       setError('Please fill in all required fields.');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -94,6 +96,7 @@ const AddcustomerForm: React.FC<AddcustomerFormProps> = ({ onAdd }) => {
         const errorData = await response.json();
         console.error('Failed to add customer', errorData);
         setError('Failed to add customer. Please try again.');
+        toast.error(errorData.details.message);
       }
     } catch (error) {
       console.error('Error adding customer:', error);
