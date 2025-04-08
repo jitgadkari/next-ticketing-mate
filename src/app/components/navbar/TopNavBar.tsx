@@ -99,7 +99,7 @@ export default function TopNavBar() {
                         </svg>
                     </div>
                     <Link href="/" className="text-3xl font-bold hover:text-gray-300 transition-colors flex items-center space-x-2">
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400">Intrend</span>
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400">IntSync</span>
                     </Link>
                 </div>
 

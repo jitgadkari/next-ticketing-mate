@@ -466,18 +466,6 @@ const Step3: React.FC<Step3Props> = ({
             </Button>
 
             <Button
-              onClick={toggleSampleQuery}
-              className={`font-bold py-2 px-4 rounded ${
-                isCurrentStep
-                  ? "bg-blue-500 hover:bg-blue-700 text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              disabled={!isCurrentStep}
-            >
-              {includeSampleQuery ? "Remove Sample Query" : "Add Sample Query"}
-            </Button>
-
-            <Button
               onClick={toggleCustomerName}
               className={`font-bold py-2 px-4 rounded ${
                 isCurrentStep
@@ -490,11 +478,23 @@ const Step3: React.FC<Step3Props> = ({
                 ? "Remove Customer Name"
                 : "Add Customer Name"}
             </Button>
-
+            <Button
+              onClick={handleIncludeDecodedMessage}
+              className={`font-bold py-2 px-4 rounded ${
+                isCurrentStep
+                  ? "bg-blue-500 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isCurrentStep}
+            >
+              {includeDecodedMessage
+                ? "Remove Decoded Message from Template"
+                : "Include Decoded Message in Template"}
+            </Button>
             {/* 🚀 Push this one to the right */}
             <div className="ml-auto">
               <Button
-                onClick={handleIncludeDecodedMessage}
+                onClick={toggleSampleQuery}
                 className={`font-bold py-2 px-4 rounded ${
                   isCurrentStep
                     ? "bg-blue-500 hover:bg-blue-700 text-white"
@@ -502,9 +502,9 @@ const Step3: React.FC<Step3Props> = ({
                 }`}
                 disabled={!isCurrentStep}
               >
-                {includeDecodedMessage
-                  ? "Remove Decoded Message from Template"
-                  : "Include Decoded Message in Template"}
+                {includeSampleQuery
+                  ? "Remove Sample Query"
+                  : "Add Sample Query"}
               </Button>
             </div>
           </div>
