@@ -30,7 +30,7 @@ interface Vendor {
       };
     };
   };
-vendor_people_list: { id: string; name: string }[]
+  vendor_people_list: { id: string; name: string }[];
 
   state: string;
   country: string;
@@ -100,10 +100,15 @@ const VendorDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = useParams();
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [defaultAttributes, setDefaultAttributes] = useState<Record<string, string[]> | null>(null);
+  const [defaultAttributes, setDefaultAttributes] = useState<Record<
+    string,
+    string[]
+  > | null>(null);
   const [unlinkedPeople, setUnlinkedPeople] = useState<Person[]>([]);
   // For vendor people, we store an array of JSON-stringified objects in "vendor_people_list".
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({
+  const [selectedAttributes, setSelectedAttributes] = useState<
+    Record<string, string[]>
+  >({
     fabric_type: [],
     width: [],
     content: [],
@@ -114,10 +119,12 @@ const VendorDetailsPage: React.FC = () => {
     weave_type: [],
     designs: [],
     delivery_terms: [],
-    vendor_people_list: []
+    vendor_people_list: [],
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [whatsappGroups, setWhatsappGroups] = useState<{ id: string; name: string }[]>([]);
+  const [whatsappGroups, setWhatsappGroups] = useState<
+    { id: string; name: string }[]
+  >([]);
   const routerHook = useRouter();
 
   useEffect(() => {
@@ -131,15 +138,21 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchVendor = async (vendorId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${vendorId}`
+      );
       const data = await response.json();
-      console.log("fetchVendor", data)
+      console.log("fetchVendor", data);
       const fetchedVendor: Vendor = data.vendor;
       setVendor(fetchedVendor);
       // Initialize selectedAttributes from vendor.attributes
-      const latestAttributes = fetchedVendor.attributes?.latest?.attributes || {};
-      console.log('[VendorDetails] Vendor latest attributes:', latestAttributes);
-      
+      const latestAttributes =
+        fetchedVendor.attributes?.latest?.attributes || {};
+      console.log(
+        "[VendorDetails] Vendor latest attributes:",
+        latestAttributes
+      );
+
       setSelectedAttributes({
         fabric_type: latestAttributes.fabric_type || [],
         width: latestAttributes.width || [],
@@ -153,9 +166,9 @@ const VendorDetailsPage: React.FC = () => {
         delivery_terms: latestAttributes.delivery_terms || [],
         vendor_people_list: fetchedVendor.vendor_people_list
           ? fetchedVendor.vendor_people_list.map((person) =>
-            JSON.stringify({ id: person.id, name: person.name })
-          )
-          : []
+              JSON.stringify({ id: person.id, name: person.name })
+            )
+          : [],
       });
     } catch (error) {
       console.error("Error fetching vendor:", error);
@@ -164,7 +177,9 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchDefaultAttributes = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/attributes`
+      );
       const data = await response.json();
       console.log("[VendorDetails] Full attributes response:", data);
       const latestAttributes = data.attributes.latest.attributes;
@@ -177,16 +192,20 @@ const VendorDetailsPage: React.FC = () => {
 
   const fetchUnlinkedPeople = async () => {
     try {
-      const response = await fetch( `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/unlinked`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/unlinked`
+      );
       const data = await response.json();
-      console.log("[VendorDetails] Fetching unlinked people",data);
+      console.log("[VendorDetails] Fetching unlinked people", data);
       setUnlinkedPeople(data.unlinked_people);
     } catch (error) {
       console.error("Error fetching unlinked people:", error);
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     if (vendor) {
       setVendor({ ...vendor, [name]: value });
@@ -202,23 +221,25 @@ const VendorDetailsPage: React.FC = () => {
 
   const handleWhatsappGroupsChange = (selected: Option[]) => {
     if (vendor) {
-      const selectedGroups = selected.map(option => JSON.parse(option.value));
+      const selectedGroups = selected.map((option) => JSON.parse(option.value));
       setVendor({
         ...vendor,
-        whatsapp_groups: selectedGroups
+        whatsapp_groups: selectedGroups,
       });
     }
   };
 
   const fetchWhatsappGroups = async () => {
     try {
-      const response = await fetch("http://localhost:5001/api/integrations/latest");
+      const response = await fetch(
+        "http://localhost:5001/api/integrations/latest"
+      );
       if (response.ok) {
         const data: IntegrationResponse = await response.json();
         const groups = data.latest?.integrations?.whatsapp?.groups || [];
-        const formattedGroups = groups.map(group => ({
-          id: group.id || group.group_id || '',
-          name: group.name || group.group_name || 'Unnamed Group'
+        const formattedGroups = groups.map((group) => ({
+          id: group.id || group.group_id || "",
+          name: group.name || group.group_name || "Unnamed Group",
         }));
         setWhatsappGroups(formattedGroups);
       }
@@ -239,12 +260,18 @@ const VendorDetailsPage: React.FC = () => {
     if (vendor) {
       try {
         // If no vendor people selected, fallback to original vendor_people_list.
-        const vendorPeople = selectedAttributes.vendor_people_list.length > 0
-          ? selectedAttributes.vendor_people_list.map((personStr) => JSON.parse(personStr))
-          : vendor.vendor_people_list.map((person) => ({ id: person.id, name: person.name }));
+        const vendorPeople =
+          selectedAttributes.vendor_people_list.length > 0
+            ? selectedAttributes.vendor_people_list.map((personStr) =>
+                JSON.parse(personStr)
+              )
+            : vendor.vendor_people_list.map((person) => ({
+                id: person.id,
+                name: person.name,
+              }));
 
         // Remove any people keys from attributes.
-        // const { vendor_people_list: _ignored, ...otherAttributes } = vendor.attributes;       
+        // const { vendor_people_list: _ignored, ...otherAttributes } = vendor.attributes;
         const update_dict = {
           ...vendor,
           attributes: {
@@ -260,15 +287,18 @@ const VendorDetailsPage: React.FC = () => {
                 weave_type: selectedAttributes.weave_type,
                 designs: selectedAttributes.designs,
                 delivery_terms: selectedAttributes.delivery_terms,
-              }
-            }
+              },
+            },
           },
           vendor_people_list: vendorPeople, // Top-level vendor_people_list
         };
         console.log("Final update_dict:", update_dict);
         console.log(
           "Payload:",
-          JSON.stringify({ ...update_dict, delivery_destination: vendor.delivery_destination })
+          JSON.stringify({
+            ...update_dict,
+            delivery_destination: vendor.delivery_destination,
+          })
         );
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/vendors/${id}?userId=1&userAgent=user-test`,
@@ -277,7 +307,10 @@ const VendorDetailsPage: React.FC = () => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ ...update_dict, delivery_destination: vendor.delivery_destination }),
+            body: JSON.stringify({
+              ...update_dict,
+              delivery_destination: vendor.delivery_destination,
+            }),
           }
         );
         if (response.ok) {
@@ -301,7 +334,10 @@ const VendorDetailsPage: React.FC = () => {
     if (attribute === "vendor_people_list") {
       return unlinkedPeople.map((person) => ({
         label: `${person.name} (${person.email})`,
-        value: JSON.stringify({ id: person._id || person._id, name: person.name }),
+        value: JSON.stringify({
+          id: person._id || person._id,
+          name: person.name,
+        }),
       }));
     }
 
@@ -322,27 +358,53 @@ const VendorDetailsPage: React.FC = () => {
   const renderDetails = () => (
     <div className="space-y-4 text-black">
       <div className="grid grid-cols-2 gap-4">
-        <p><strong>Name:</strong> {vendor.name}</p>
-        <p><strong>Email:</strong> {vendor.email}</p>
-        <p><strong>Phone:</strong> {vendor.phone}</p>
-        <p><strong>Code:</strong> {vendor.code}</p>
-        <p><strong>Status:</strong> {vendor.status}</p>
-        <p><strong>State:</strong> {vendor.state || 'N/A'}</p>
-        <p><strong>Country:</strong> {vendor.country || 'N/A'}</p>
-        <p><strong>Factory Location:</strong> {vendor.factory_location || 'N/A'}</p>
-        <p><strong>Delivery Destination:</strong> {vendor.delivery_destination || 'N/A'}</p>
-        <p><strong>Address:</strong> {vendor.address || 'N/A'}</p>
-        <p><strong>Remarks:</strong> {vendor.remarks || 'N/A'}</p>
+        <p>
+          <strong>Name:</strong> {vendor.name}
+        </p>
+        <p>
+          <strong>Email:</strong> {vendor.email}
+        </p>
+        <p>
+          <strong>Phone:</strong> {vendor.phone}
+        </p>
+        <p>
+          <strong>Code:</strong> {vendor.code}
+        </p>
+        <p>
+          <strong>Status:</strong> {vendor.status}
+        </p>
+        <p>
+          <strong>State:</strong> {vendor.state || "N/A"}
+        </p>
+        <p>
+          <strong>Country:</strong> {vendor.country || "N/A"}
+        </p>
+        <p>
+          <strong>Factory Location:</strong> {vendor.factory_location || "N/A"}
+        </p>
+        <p>
+          <strong>Delivery Destination:</strong>{" "}
+          {vendor.delivery_destination || "N/A"}
+        </p>
+        <p>
+          <strong>Address:</strong> {vendor.address || "N/A"}
+        </p>
+        <p>
+          <strong>Remarks:</strong> {vendor.remarks || "N/A"}
+        </p>
         <p>
           <strong>Attributes:</strong>{" "}
-          {vendor.attributes?.latest?.attributes && Object.keys(vendor.attributes?.latest?.attributes).length > 0 ? (
+          {vendor.attributes?.latest?.attributes &&
+          Object.keys(vendor.attributes?.latest?.attributes).length > 0 ? (
             <ul className="list-disc pl-4">
-              {Object.entries(vendor.attributes?.latest?.attributes).map(([key, value]) => (
-                <li key={key}>
-                  <strong>{key}:</strong>{" "}
-                  {Array.isArray(value) ? value.join(", ") : String(value)}
-                </li>
-              ))}
+              {Object.entries(vendor.attributes?.latest?.attributes).map(
+                ([key, value]) => (
+                  <li key={key}>
+                    <strong>{key}:</strong>{" "}
+                    {Array.isArray(value) ? value.join(", ") : String(value)}
+                  </li>
+                )
+              )}
             </ul>
           ) : (
             "None"
@@ -354,7 +416,7 @@ const VendorDetailsPage: React.FC = () => {
             <ul className="list-disc pl-4">
               {vendor.vendor_people_list.map((person, index) => (
                 <li key={index}>
-                  <strong>Name:</strong> {person.name} 
+                  <strong>Name:</strong> {person.name}
                 </li>
               ))}
             </ul>
@@ -362,8 +424,14 @@ const VendorDetailsPage: React.FC = () => {
             "None"
           )}
         </p>
-        <p><strong>Created Date:</strong> {new Date(vendor.created_date).toLocaleString()}</p>
-        <p><strong>Updated Date:</strong> {new Date(vendor.updated_date).toLocaleString()}</p>
+        <p>
+          <strong>Created Date:</strong>{" "}
+          {new Date(vendor.created_date).toLocaleString()}
+        </p>
+        <p>
+          <strong>Updated Date:</strong>{" "}
+          {new Date(vendor.updated_date).toLocaleString()}
+        </p>
         <p>
           <strong>WhatsApp Groups:</strong>{" "}
           {vendor.whatsapp_groups && vendor.whatsapp_groups.length > 0 ? (
@@ -425,10 +493,25 @@ const VendorDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <Input
+        label="PAN Number"
+        type="text"
+        name="pan_number"
+        value={vendor.pan_number || ""}
+        onChange={handleInputChange}
+      />
+
+      <Input
         label="Mark Up"
         type="text"
         name="mark_up"
         value={vendor.mark_up}
+        onChange={handleInputChange}
+      />
+      <Input
+        label="Factory Location"
+        type="text"
+        name="factory_location"
+        value={vendor.factory_location || ""}
         onChange={handleInputChange}
       />
       <Input
@@ -459,6 +542,7 @@ const VendorDetailsPage: React.FC = () => {
         value={vendor.code}
         onChange={handleInputChange}
       />
+
       <div className="flex justify-start items-center gap-2">
         <label className="text-gray-700">Status</label>
         <h1 className="font-bold text-lg">{vendor.status}</h1>
@@ -470,44 +554,114 @@ const VendorDetailsPage: React.FC = () => {
         if (key !== "vendor_people_list") {
           return (
             <div key={key}>
-              <label className="block text-gray-700">
-                {key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}
+              <label className="block text-gray-700 capitalize mb-1">
+                {key.replaceAll("_", " ")}
               </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <MultiSelect
-                  options={attributeOptions(key)}
-                  value={(values as string[]).map((value: string) => ({
-                    label: value,
-                    value,
-                  }))}
-                  onChange={(selected: Option[]) =>
-                    handleMultiSelectChange(key, selected)
-                  }
-                  labelledBy={`Select ${key.replace("_", " ")}`}
-                />
-              </div>
+
+              {/* Selected Value Chips */}
+              {(values as string[]).length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(values as string[]).map((val, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-sm text-blue-800"
+                    >
+                      {val}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedList = (values as string[]).filter(
+                            (item) => item !== val
+                          );
+                          setSelectedAttributes((prev) => ({
+                            ...prev,
+                            [key]: updatedList,
+                          }));
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* MultiSelect Dropdown */}
+              <MultiSelect
+                options={attributeOptions(key)}
+                value={(values as string[]).map((value: string) => ({
+                  label: value,
+                  value,
+                }))}
+                onChange={(selected: Option[]) =>
+                  handleMultiSelectChange(key, selected)
+                }
+                labelledBy={`Select ${key.replace("_", " ")}`}
+              />
             </div>
           );
         }
         return null;
       })}
+
       {/*
         Render dedicated MultiSelect for Vendor People
       */}
       <div>
         <label className="block text-gray-700">Select Vendor People</label>
+        {/* Selected Vendor People Display */}
+        {selectedAttributes.vendor_people_list.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {selectedAttributes.vendor_people_list.map((personStr, idx) => {
+              const person = JSON.parse(personStr);
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-sm text-blue-800"
+                >
+                  {person.name}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updatedList =
+                        selectedAttributes.vendor_people_list.filter(
+                          (p) => p !== personStr
+                        );
+                      setSelectedAttributes((prev) => ({
+                        ...prev,
+                        vendor_people_list: updatedList,
+                      }));
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    ❌
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <MultiSelect
-          options={unlinkedPeople?.map((person) => ({
-            label: `${person.name} (${person.email})`,
-            value: JSON.stringify({ id: person._id || person._id, name: person.name }),
-          })) || []}
-          value={(selectedAttributes.vendor_people_list as string[]).map((personStr) => {
-            const personObj = JSON.parse(personStr);
-            return {
-              label: personObj.name,
-              value: personStr,
-            };
-          })}
+          options={
+            unlinkedPeople?.map((person) => ({
+              label: `${person.name} (${person.email})`,
+              value: JSON.stringify({
+                id: person._id || person._id,
+                name: person.name,
+              }),
+            })) || []
+          }
+          value={(selectedAttributes.vendor_people_list as string[]).map(
+            (personStr) => {
+              const personObj = JSON.parse(personStr);
+              return {
+                label: personObj.name,
+                value: personStr,
+              };
+            }
+          )}
           onChange={(selected: Option[]) => {
             const people = selected.map((option) => option.value);
             setSelectedAttributes((prev) => ({
@@ -520,14 +674,42 @@ const VendorDetailsPage: React.FC = () => {
       </div>
       <div>
         <label className="block text-gray-700">WhatsApp Groups</label>
+        {/* Selected WhatsApp Groups Display */}
+        {vendor.whatsapp_groups && vendor.whatsapp_groups.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {vendor.whatsapp_groups.map((group, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-sm text-green-800"
+              >
+                {group.name}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updatedGroups = vendor.whatsapp_groups!.filter(
+                      (g) => g.id !== group.id
+                    );
+                    setVendor((prev) =>
+                      prev ? { ...prev, whatsapp_groups: updatedGroups } : null
+                    );
+                  }}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  ❌
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <MultiSelect
-          options={whatsappGroups.map(group => ({
+          options={whatsappGroups.map((group) => ({
             label: group.name,
-            value: JSON.stringify(group)
+            value: JSON.stringify(group),
           }))}
-          value={(vendor.whatsapp_groups || []).map(group => ({
+          value={(vendor.whatsapp_groups || []).map((group) => ({
             label: group.name,
-            value: JSON.stringify(group)
+            value: JSON.stringify(group),
           }))}
           onChange={handleWhatsappGroupsChange}
           labelledBy="Select WhatsApp Groups"

@@ -15,7 +15,7 @@ interface Step9Props {
     customer_name: string;
     current_step: string;
     steps: Record<string, any>;
-    created_data: string;
+    created_date: string;
     updated_date: string;
   };
 }

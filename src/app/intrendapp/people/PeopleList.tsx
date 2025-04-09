@@ -34,17 +34,19 @@ const PeopleList = ({
   const [allPeople, setAllPeople] = useState<any[]>([]); // New state for all people
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'superuser' | 'general_user'>('general_user');
-
-
+  const [softDeletePeopleId, setSoftDeletePeopleId] = useState<string | null>(
+    null
+  );
+  const [userRole, setUserRole] = useState<
+    "admin" | "superuser" | "general_user"
+  >("general_user");
 
   useEffect(() => {
     const isAuth = isAuthenticated();
     if (isAuth) {
       const userData = getUserData();
       console.log(userData);
-      setUserRole(userData?.role || 'general_user');
+      setUserRole(userData?.role || "general_user");
     }
   }, []);
 
@@ -52,13 +54,16 @@ const PeopleList = ({
     const fetchAllPeople = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?status=Active&limit=${pageFilter.limit}&offset=${pageFilter.offset}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons?status=Active&limit=${pageFilter.limit}&offset=${pageFilter.offset}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
         if (response.ok) {
           const data = await response.json();
-          console.log("People data",data)
+          console.log("People data", data);
           if (data.people && Array.isArray(data.people)) {
             setAllPeople(data.people); // Store all people in state
             setPeople(data.people.slice(0, pageFilter.limit)); // Display first page
@@ -105,9 +110,8 @@ const PeopleList = ({
     }
   };
 
-
   const handleSoftDelete = async (persons_id: string) => {
-    console.log(persons_id)
+    console.log(persons_id);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/persons/soft_delete/${persons_id}`,
@@ -132,7 +136,7 @@ const PeopleList = ({
   const handleRegisterLogin = async (person: any) => {
     try {
       if (person.type_employee !== "External") {
-        throw new Error("user is internal")
+        throw new Error("user is internal");
       }
       console.log(`🚀 Registering user: ${person.email}`);
 
@@ -142,27 +146,29 @@ const PeopleList = ({
         password: "Str0ngPass!", // ⚠️ Change this as needed
         role: "general_user", // Default role if not provided
         status: "Active",
-        person_id: person.id
+        person_id: person.id,
       };
 
       // Make the API call
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userPayload),
-      });
-      console.log("response", response)
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(userPayload),
+        }
+      );
+      console.log("response", response);
       const data = await response.json();
-      console.log("data...", data)
+      console.log("data...", data);
       if (!response.ok) {
         throw new Error(data.error || "Registration failed");
       }
 
       console.log("✅ User registered successfully:", data);
       alert("User registered successfully!");
-
     } catch (error) {
       console.error("❌ Error registering user:", error);
       alert("Error registering user: " + error);
@@ -178,7 +184,16 @@ const PeopleList = ({
         {person.phone ? person.phone : "N/A"}
       </td>
       <td className="border p-2">{person.email}</td>
-      <td className="border p-2 hidden md:table-cell">{person.type_employee}</td>
+      <td className="border p-2 hidden md:table-cell">
+        {person.type_employee === "External"
+          ? person.linked && person.linked_to === "customer"
+            ? "External - C"
+            : person.linked && person.linked_to === "vendor"
+            ? "External - V"
+            : "External - N/A"
+          : person.type_employee}
+      </td>
+
       <td className="border p-2">
         <div className="flex justify-center space-x-2">
           <Link href={`people/${person.id}`} passHref>
@@ -186,7 +201,7 @@ const PeopleList = ({
               <FaEye />
             </span>
           </Link>
-          {(userRole === 'admin') && (
+          {userRole === "admin" && (
             <FaTrash
               onClick={() => setDeletePeopleId(person.id)}
               className="text-red-500 cursor-pointer hover:text-red-700"
@@ -266,7 +281,10 @@ const PeopleList = ({
         <dialog open className="p-5 bg-white rounded shadow-lg fixed inset-0">
           <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
           <p>Are you sure you want to Soft delete this people?</p>
-          <p className="text-gray-500 text-sm">People ID: {softDeletePeopleId}</p> {/* Debugging */}
+          <p className="text-gray-500 text-sm">
+            People ID: {softDeletePeopleId}
+          </p>{" "}
+          {/* Debugging */}
           <div className="flex justify-end mt-4">
             <button
               onClick={() => setSoftDeletePeopleId(null)}

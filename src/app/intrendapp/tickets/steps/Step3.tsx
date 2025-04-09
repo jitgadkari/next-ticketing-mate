@@ -19,7 +19,7 @@ interface Step3Props {
     customer_name: string;
     current_step: string;
     steps: Record<string, any>;
-    created_data: string;
+    created_date: string;
     updated_date: string;
   };
   step: string;
@@ -47,74 +47,101 @@ const Step3: React.FC<Step3Props> = ({
 
   const stepData = ticket.steps[step] || {};
   const versions = stepData.versions || [];
-  
+
   // Add latest version to the versions array for unified handling
   const allVersions = [
     {
-      version: 'latest',
-      time: stepData.latest?.time || 'No timestamp',
-      vendor_message_temp: stepData.latest?.vendor_message_temp || ''
+      version: "latest",
+      time: stepData.latest?.time || "No timestamp",
+      vendor_message_temp: stepData.latest?.vendor_message_temp || "",
     },
     ...versions.map((v: StepVersion) => ({
       version: v.time,
       time: v.time,
-      vendor_message_temp: v.vendor_message_temp
-    }))
+      vendor_message_temp: v.vendor_message_temp,
+    })),
   ];
 
   // Sort versions by time in descending order (newest first)
-  allVersions.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  allVersions.sort(
+    (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+  );
 
-  const [selectedVersion, setSelectedVersion] = useState<string>('latest');
+  const [selectedVersion, setSelectedVersion] = useState<string>("latest");
 
   const formatTime = (timestamp: string) => {
-    if (timestamp === 'No timestamp') return timestamp;
+    if (timestamp === "No timestamp") return timestamp;
     try {
       const date = new Date(timestamp);
-      return date.toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
       });
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
 
-  const handleVersionChange = (version: string) => {
-    if (isCurrentStep) {
-      setSelectedVersion(version);
-      const selectedVersion = allVersions.find(v => v.version === version);
-      console.log("Selected version:", selectedVersion);
-      if (selectedVersion) {
-        setMessage(selectedVersion.vendor_message_temp);
+  const handleVersionChange = async (version: string) => {
+    if (!isCurrentStep) return;
+
+    setSelectedVersion(version);
+
+    const selected = allVersions.find((v) => v.version === version);
+    if (!selected) return;
+
+    const newMsg = selected.vendor_message_temp;
+    setMessage(newMsg);
+
+    // ✅ Update toggles for Customer Name & Sample Query
+    setIncludeCustomerName(newMsg.includes(`Customer Name: ${customerName}`));
+    setIncludeSampleQuery(newMsg.includes("This is a Sample Query"));
+
+    // ✅ Decode and match to enable/disable the decoded toggle
+    try {
+      const decodedTemplate = await message_decoder(
+        originalMessage,
+        ticket,
+        true
+      );
+
+      if (newMsg.trim() === decodedTemplate.trim()) {
+        setIncludeDecodedMessage(true);
+      } else {
+        setIncludeDecodedMessage(false);
       }
+    } catch (err) {
+      console.error("Error decoding version message:", err);
+      setIncludeDecodedMessage(false); // fallback just in case
     }
   };
+
   console.log("template", template);
   const [message, setMessage] = useState(() => {
     // Initialize from latest version if available, otherwise use template
     if (stepData.latest?.vendor_message_temp) {
       return stepData.latest.vendor_message_temp;
     }
-    return template?.message ?? '';
+    return template?.message ?? "";
   });
-  console.log("message",message)
+  console.log("message", message);
   // Initialize includeCustomerName based on whether the template includes customer name
   const [includeCustomerName, setIncludeCustomerName] = useState(() => {
     // Support both active and inactive customers per SelectCustomerDropdown requirements
-    const templateMessage = template?.message ?? '';
+    const templateMessage = template?.message ?? "";
     return templateMessage.includes(`Customer Name: ${customerName}`);
   });
   const [includeSampleQuery, setIncludeSampleQuery] = useState(() => {
-    const templateMessage = template?.message ?? '';
-    return templateMessage.includes('This is a Sample Query');
+    const templateMessage = template?.message ?? "";
+    return templateMessage.includes("This is a Sample Query");
   });
   const [includeDecodedMessage, setIncludeDecodedMessage] = useState(() => {
     // Initialize based on whether the template includes decoded messages
-    return template && ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages
+    return template &&
+      ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages
       ? message === template.message // If template exists, check if current message matches it
       : false;
   });
@@ -122,7 +149,7 @@ const Step3: React.FC<Step3Props> = ({
 
   useEffect(() => {
     let mounted = true;
-  
+
     const initializeState = async () => {
       try {
         // Check for existing step data
@@ -130,15 +157,23 @@ const Step3: React.FC<Step3Props> = ({
           if (mounted) setMessage(stepData.latest.vendor_message_temp);
           return;
         }
-  
+
         // Fallback to the template message
         if (template?.message) {
           if (mounted) setMessage(template.message);
           try {
-            const decodedTemplate = await message_decoder(originalMessage, ticket, true);
-            if (mounted) setIncludeDecodedMessage(template.message === decodedTemplate);
+            const decodedTemplate = await message_decoder(
+              originalMessage,
+              ticket,
+              true
+            );
+            if (mounted)
+              setIncludeDecodedMessage(template.message === decodedTemplate);
           } catch (error) {
-            console.error('Error checking initial decoded message state:', error);
+            console.error(
+              "Error checking initial decoded message state:",
+              error
+            );
           }
         } else {
           // Attempt to fetch the ticket data if no message or template
@@ -149,14 +184,13 @@ const Step3: React.FC<Step3Props> = ({
         if (mounted) toast.error("Failed to initialize message template");
       }
     };
-  
+
     initializeState();
-  
+
     return () => {
       mounted = false;
     };
   }, [template, stepData, ticket.id]);
-  
 
   const handleUpdate = async (updatedTemplate: string) => {
     console.log(updatedTemplate);
@@ -185,7 +219,7 @@ const Step3: React.FC<Step3Props> = ({
     try {
       setLoading(true);
       await handleUpdate(message);
-      
+
       const nextStepResponse = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
@@ -203,18 +237,24 @@ const Step3: React.FC<Step3Props> = ({
 
       if (!nextStepResponse.ok) {
         const errorData = await nextStepResponse.json();
-        throw new Error(`Failed to update next step: ${errorData.message || nextStepResponse.statusText}`);
+        throw new Error(
+          `Failed to update next step: ${
+            errorData.message || nextStepResponse.statusText
+          }`
+        );
       }
 
       const nextStepData = await nextStepResponse.json();
-      console.log('Next step update successful:', nextStepData);
+      console.log("Next step update successful:", nextStepData);
 
       setActiveStep("Step 4 : Vendor Selection");
       toast.success("Step 3 completed");
       await fetchTicket(ticket.id);
     } catch (error) {
       console.error("Error updating ticket:", error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update ticket');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update ticket"
+      );
     } finally {
       setLoading(false);
     }
@@ -223,15 +263,25 @@ const Step3: React.FC<Step3Props> = ({
   const handleSave = async () => {
     await handleUpdate(message);
     // Update states based on current message content
+    toast.success("Message template saved successfully");
     setIncludeCustomerName(message.includes(`Customer Name: ${customerName}`));
-    setIncludeSampleQuery(message.includes('This is a Sample Query'));
+    setIncludeSampleQuery(message.includes("This is a Sample Query"));
 
     // Check if the saved message matches what would be returned with decoded messages
     try {
-      const decodedTemplate = await message_decoder(originalMessage, ticket, true);
-      setIncludeDecodedMessage(message === decodedTemplate);
+      const decodedTemplate = await message_decoder(
+        originalMessage,
+        ticket,
+        true
+      );
+
+      // Only update includeDecodedMessage if message *matches* the decoded template
+      // (don’t forcibly reset it if message was custom-edited)
+      if (message === decodedTemplate) {
+        setIncludeDecodedMessage(true);
+      }
     } catch (error) {
-      console.error('Error checking decoded message state:', error);
+      console.error("Error checking decoded message state:", error);
     }
   };
 
@@ -239,7 +289,8 @@ const Step3: React.FC<Step3Props> = ({
     setIncludeCustomerName(!includeCustomerName);
     if (!includeCustomerName) {
       setMessage(
-        (prevMessage: string) => `${prevMessage}\n\nCustomer Name: ${customerName}`
+        (prevMessage: string) =>
+          `${prevMessage}\n\nCustomer Name: ${customerName}`
       );
     } else {
       setMessage((prevMessage: string) =>
@@ -251,7 +302,9 @@ const Step3: React.FC<Step3Props> = ({
   const toggleSampleQuery = () => {
     setIncludeSampleQuery(!includeSampleQuery);
     if (!includeSampleQuery) {
-      setMessage((prevMessage: string) => `${prevMessage}\n\nThis is a Sample Query`);
+      setMessage(
+        (prevMessage: string) => `${prevMessage}\n\nThis is a Sample Query`
+      );
     } else {
       setMessage((prevMessage: string) =>
         prevMessage.replace(`\n\nThis is a Sample Query`, "")
@@ -261,30 +314,43 @@ const Step3: React.FC<Step3Props> = ({
   const handleIncludeDecodedMessage = async () => {
     setIncludeDecodedMessage((prevState) => !prevState); // Toggle state first
     const newState = !includeDecodedMessage; // Get new state
-  
+
     try {
-      const vendorMessageTemplate = await message_decoder(originalMessage, ticket, newState);
+      const vendorMessageTemplate = await message_decoder(
+        originalMessage,
+        ticket,
+        newState
+      );
       let updatedMessage = vendorMessageTemplate;
-  
+
       // ✅ Append customer name if needed
-      if (includeCustomerName && !updatedMessage.includes(`\n\nCustomer Name: ${customerName}`)) {
+      if (
+        includeCustomerName &&
+        !updatedMessage.includes(`\n\nCustomer Name: ${customerName}`)
+      ) {
         updatedMessage += `\n\nCustomer Name: ${customerName}`;
       }
-  
+
       // ✅ Append sample query if needed
-      if (includeSampleQuery && !updatedMessage.includes(`\n\nThis is a Sample Query`)) {
+      if (
+        includeSampleQuery &&
+        !updatedMessage.includes(`\n\nThis is a Sample Query`)
+      ) {
         updatedMessage += `\n\nThis is a Sample Query`;
       }
-  
+
       setMessage(updatedMessage);
     } catch (error) {
       console.error("Error including decoded message:", error);
       toast.error("Failed to include decoded message.");
     }
   };
-  
 
-  const message_decoder = async (originalMessage: string, ticket: any, includeDecodedMessage: boolean) => {
+  const message_decoder = async (
+    originalMessage: string,
+    ticket: any,
+    includeDecodedMessage: boolean
+  ) => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/template/vendor_message_template`,
@@ -298,18 +364,21 @@ const Step3: React.FC<Step3Props> = ({
             customerMessage: originalMessage,
             ticket_number: ticket.ticket_number,
             asked_details:
-              ticket.steps["Step 2 : Message Decoded"]?.latest?.decoded_messages,
+              ticket.steps["Step 2 : Message Decoded"]?.latest
+                ?.decoded_messages,
             asked_details_required: includeDecodedMessage,
           }),
         }
       );
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error response:", errorData);
-        throw new Error(`Failed to generate vendor message template: ${response.statusText}`);
+        throw new Error(
+          `Failed to generate vendor message template: ${response.statusText}`
+        );
       }
-  
+
       const data = await response.json();
       return data.message;
     } catch (error) {
@@ -317,24 +386,33 @@ const Step3: React.FC<Step3Props> = ({
       return "";
     }
   };
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const newMessage = e.target.value;
     setMessage(newMessage);
-    setIncludeCustomerName(newMessage.includes(`Customer Name: ${customerName}`));
-    setIncludeSampleQuery(newMessage.includes('This is a Sample Query'));
-  
+    setIncludeCustomerName(
+      newMessage.includes(`Customer Name: ${customerName}`)
+    );
+    setIncludeSampleQuery(newMessage.includes("This is a Sample Query"));
+
     // Use a timeout to debounce the message decoding check
     setTimeout(async () => {
       try {
-        const decodedTemplate = await message_decoder(originalMessage, ticket, true);
+        const decodedTemplate = await message_decoder(
+          originalMessage,
+          ticket,
+          true
+        );
         setIncludeDecodedMessage(newMessage === decodedTemplate);
       } catch (error) {
         console.error("Error checking decoded message state:", error);
       }
     }, 300); // Debounce interval
   };
-  
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -342,7 +420,9 @@ const Step3: React.FC<Step3Props> = ({
         <>
           <div className="py-1 mb-4">
             <h1 className="text-xl font-bold">Customer Message</h1>
-            <div>{ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}</div>
+            <div>
+              {ticket.steps["Step 1 : Customer Message Received"]?.latest?.text}
+            </div>
           </div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">
@@ -354,9 +434,9 @@ const Step3: React.FC<Step3Props> = ({
                 onChange={(e) => handleVersionChange(e.target.value)}
                 className="border rounded px-2 py-1 text-sm"
               >
-                {allVersions.map(({version, time}) => (
+                {allVersions.map(({ version, time }) => (
                   <option key={version} value={version}>
-                    {version === 'latest' ? 'Latest Version' : formatTime(time)}
+                    {version === "latest" ? "Latest Version" : formatTime(time)}
                   </option>
                 ))}
               </select>
@@ -375,29 +455,22 @@ const Step3: React.FC<Step3Props> = ({
           <div className="flex flex-wrap gap-4 mb-4 mt-4">
             <Button
               onClick={handleSave}
-              className={`font-bold py-2 px-4 rounded ${isCurrentStep
-                ? "bg-blue-500 hover:bg-blue-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              className={`font-bold py-2 px-4 rounded ${
+                isCurrentStep
+                  ? "bg-blue-500 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
               disabled={!isCurrentStep}
             >
               Save
             </Button>
-            <Button
-              onClick={toggleSampleQuery}
-              className={`font-bold py-2 px-4 rounded ${isCurrentStep
-                ? "bg-blue-500 hover:bg-blue-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              disabled={!isCurrentStep}
-            >
-              {includeSampleQuery ? "Remove Sample Query" : "Add Sample Query"}
-            </Button>
+
             <Button
               onClick={toggleCustomerName}
-              className={`font-bold py-2 px-4 rounded ${isCurrentStep
-                ? "bg-green-500 hover:bg-green-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              className={`font-bold py-2 px-4 rounded ${
+                isCurrentStep
+                  ? "bg-green-500 hover:bg-green-700 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
               disabled={!isCurrentStep}
             >
@@ -418,7 +491,24 @@ const Step3: React.FC<Step3Props> = ({
                 ? "Remove Decoded Message from Template"
                 : "Include Decoded Message in Template"}
             </Button>
+            {/* 🚀 Push this one to the right */}
+            <div className="ml-auto">
+              <Button
+                onClick={toggleSampleQuery}
+                className={`font-bold py-2 px-4 rounded ${
+                  isCurrentStep
+                    ? "bg-blue-500 hover:bg-blue-700 text-white"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                disabled={!isCurrentStep}
+              >
+                {includeSampleQuery
+                  ? "Remove Sample Query"
+                  : "Add Sample Query"}
+              </Button>
+            </div>
           </div>
+
           <Button
             onClick={handleNextStep}
             className={`mt-4 font-bold py-2 px-4 rounded ${

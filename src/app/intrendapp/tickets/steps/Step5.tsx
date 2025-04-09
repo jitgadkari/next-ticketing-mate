@@ -55,7 +55,7 @@ interface Step5Props {
     customer_name: string;
     current_step: string;
     steps: Record<string, any>;
-    created_data: string;
+    created_date: string;
     updated_date: string;
   };
   step: string;
@@ -143,8 +143,8 @@ const Step5: React.FC<Step5Props> = ({
 
   const handleNext = async () => {
     console.log("Handling next for Step 5", messages);
+    await handleSave();
     const vendorDecodedMessages: any[] = [];
-
     for (const [vendorId, message] of Object.entries(messages)) {
       console.log("Processing vendor message:", message);
 
@@ -451,6 +451,7 @@ const Step5: React.FC<Step5Props> = ({
     console.log("Updated vendor messages:", updatedVendorMessages);
     // Update state with the latest vendor messages
     setMessages(updatedVendorMessages);
+    toast.success("Vendor messages refreshed successfully");
   };
 
   return (
@@ -480,12 +481,14 @@ const Step5: React.FC<Step5Props> = ({
             </select>
           )}
         </div>
-        <Button
-          onClick={sendReminderToAllRemainingVendors}
-          className="bg-gray-500 hover:bg-green-800 text-white font-bold  px-2 rounded"
-        >
-          Remind all
-        </Button>
+        {isCurrentStep && Object.keys(messages).filter(vendorId => !messages[vendorId].response_message).length > 1 && (
+          <Button
+            onClick={sendReminderToAllRemainingVendors}
+            className="bg-gray-500 hover:bg-green-800 text-white font-bold  px-2 rounded"
+          >
+            Remind all
+          </Button>
+        )}
       </div>
       {Object.entries(messages).map(([vendor_id, message]) => (
         <div key={vendor_id} className="mb-4">

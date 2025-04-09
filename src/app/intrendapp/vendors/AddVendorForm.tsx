@@ -30,27 +30,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
     email: '',
     phone: '',
     code:'',
-    // fabric_type: [],
-    // width: [],
-    // content: [],
-    // type: [],
-    // certifications: [],
-    // approvals: [],
-    // weave: [],
-    // weave_type: [],
-    // designs: [],
-    // people: [],
-    // payment_terms: [],
-    // delivery_destination: '',
-    // delivery_terms: [],
-    // factory_location: '',
     state: '',
-    // gst_number: '',
-    // pan_number: '',
-    // group: '',
-    // address: '',
-    // remarks: '',
-    // additional_info: '',
     country:''
   });
 
@@ -86,6 +66,7 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
 
     if (!formData.name || !formData.email || !formData.phone || !formData.code || !formData.state) {
       setError('Please fill in all required fields.');
+      toast.error('Please fill in all required fields.');
       return;
     }
 
@@ -106,38 +87,21 @@ const AddVendorForm: React.FC<AddVendorFormProps> = ({ onAdd }) => {
           email: '',
           phone: '',
           code:'',
-          // fabric_type: [],
-          // width: [],
-          // content: [],
-          // type: [],
-          // certifications: [],
-          // approvals: [],
-          // weave: [],
-          // weave_type: [],
-          // designs: [],
-          // people: [],
-          // payment_terms: [],
-          // delivery_destination: '',
-          // delivery_terms: [],
-          // factory_location: '',
           state: '',
-          // gst_number: '',
-          // pan_number: '',
-          // group: '',
-          // address: '',
-          // remarks: '',
-          // additional_info: '',
           country:''
         });
-        toast.success("Vendor added successfully")
+        toast.success("Vendor added successfully");
       } else {
         const errorData = await response.json();
         console.error('Failed to add vendor', errorData);
+        console.error('Failed to add vendor', errorData.details.message);
         setError('Failed to add vendor. Please try again.');
+        toast.error(errorData.details.message);
       }
     } catch (error) {
       console.error('Error adding vendor:', error);
       setError('An unexpected error occurred. Please try again.');
+      toast.error('An unexpected error occurred. Please try again.');
     }
   };
 

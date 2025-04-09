@@ -24,6 +24,7 @@ interface Ticket {
     name: string;
     response: string;
   }[];
+  message_sent?: { email: boolean; whatsapp: boolean };
 }
 
 interface TicketListProps {
@@ -71,7 +72,6 @@ export default function TicketsMobileList({
     end_date: "",
 
     sort_order: false,
-
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -81,7 +81,7 @@ export default function TicketsMobileList({
   const [userRole, setUserRole] = useState<
     "admin" | "superuser" | "general_user"
   >("general_user");
-  
+
   const [pageInfo, setPageInfo] = useState({
     total_tickets: null,
     current_page: null,
@@ -114,32 +114,34 @@ export default function TicketsMobileList({
         end_date: filterState.end_date || "",
 
         sort_order: filterState.sort_order ? "asc" : "desc",
-
       });
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_ENDPOINT_URL
+          `${
+            process.env.NEXT_PUBLIC_ENDPOINT_URL
           }/api/tickets?${queryParams.toString()}`
         );
         const data = await response.json();
         // console.log("Raw ticket data:", data.tickets);
         const parsedTickets = data.tickets.map((ticket: any) => {
           // Check if ticket has reached Step 5
-          const hasReachedStep5 = 
+          const hasReachedStep5 =
             ticket.current_step === "Step 5 : Messages from Vendors" ||
             ticket.current_step === "Step 6 : Vendor Message Decoded" ||
             ticket.current_step === "Step 7 : Customer Message Template" ||
             ticket.current_step === "Step 8 : Customer Response" ||
             ticket.current_step === "Step 9: Final Status";
-          
-          const vendorResponses = hasReachedStep5 && 
+
+          const vendorResponses =
+            hasReachedStep5 &&
             ticket.steps["Step 5 : Messages from Vendors"]?.latest?.vendors
-              ? Object.entries(ticket.steps["Step 5 : Messages from Vendors"].latest.vendors)
-                  .map(([_, vendor]: [string, any]) => ({
-                    name: vendor.name,
-                    response: vendor.response_message?.trim() || "Yet to reply"
-                  }))
+              ? Object.entries(
+                  ticket.steps["Step 5 : Messages from Vendors"].latest.vendors
+                ).map(([_, vendor]: [string, any]) => ({
+                  name: vendor.name,
+                  response: vendor.response_message?.trim() || "Yet to reply",
+                }))
               : [];
 
           return {
@@ -149,11 +151,14 @@ export default function TicketsMobileList({
             current_step: ticket.current_step,
             created_date: ticket.created_date,
             updated_date: ticket.updated_date,
-            customer_message: ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
+            customer_message:
+              ticket.steps["Step 1 : Customer Message Received"]?.latest.text ||
+              "",
             status: ticket.steps["Step 9: Final Status"]?.status || "open",
-            final_decision: ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
-            vendor_responses: vendorResponses
-          }
+            final_decision:
+              ticket.steps["Step 9: Final Status"]?.final_decision || "pending",
+            vendor_responses: vendorResponses,
+          };
         });
         setAllTickets(parsedTickets);
         setPageInfo({
@@ -248,7 +253,6 @@ export default function TicketsMobileList({
       ...prev,
       offset: Math.max(prev.offset - prev.limit, 0),
     }));
-
   };
 
   const handleNext = () => {
@@ -293,7 +297,6 @@ export default function TicketsMobileList({
               end_date: "",
 
               sort_order: false,
-
             }))
           }
         >
@@ -412,8 +415,9 @@ export default function TicketsMobileList({
               ))}
             </select> */}
             <div
-              className={`z-10 ${!filterState.showCustomerDropDown && "hidden"
-                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
+              className={`z-10 ${
+                !filterState.showCustomerDropDown && "hidden"
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 max-h-48 overflow-y-auto dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {customers.map((customer) => (
@@ -465,8 +469,9 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${!filterState.showStatusDropDown && "hidden"
-                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${
+                !filterState.showStatusDropDown && "hidden"
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -528,8 +533,9 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${!filterState.showDecisionDropDown && "hidden"
-                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${
+                !filterState.showDecisionDropDown && "hidden"
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 <li
@@ -588,8 +594,9 @@ export default function TicketsMobileList({
             </div>
 
             <div
-              className={`z-10 ${!filterState.showStepDropDown && "hidden"
-                } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
+              className={`z-10 ${
+                !filterState.showStepDropDown && "hidden"
+              } bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700`}
             >
               <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
                 {stepsOrder.map((step, index) => {
@@ -613,7 +620,6 @@ export default function TicketsMobileList({
             </div>
           </div>
           <div className="mb-4">
-
             <div className="flex items-center ">
               <button
                 onClick={() =>
@@ -626,7 +632,6 @@ export default function TicketsMobileList({
               >
                 Sort By Date
               </button>
-
             </div>
           </div>
 
@@ -716,22 +721,84 @@ export default function TicketsMobileList({
             </div>
 
             <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Current Step:</span>
-                <span>{ticket.current_step}</span>
+              <div
+                className="text-sm text-gray-800 "
+                title={ticket.customer_message}
+              >
+                {ticket.customer_message}
               </div>
             </div>
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <span className="font-semibold mr-2">Customer Message:</span>
-                {ticket.customer_message ? (
-                  <span className="line-clamp-2">{ticket.customer_message}</span>
+            {/* Combined Section: Step / Vendor / Customer */}
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mt-2 space-y-2">
+              {/* Current Step */}
+              <div>
+                <span className="font-semibold text-gray-700 block mb-1">
+                  Current Step:
+                </span>
+                <span className="inline-block bg-red-500 text-white text-xs px-2 py-1 rounded">
+                  {ticket.current_step}
+                </span>
+              </div>
+
+              {/* Vendor Replies */}
+              <div>
+                <span className="font-semibold text-blue-700 block mb-1">
+                  Vendor Replies:
+                </span>
+                {ticket.vendor_responses &&
+                ticket.vendor_responses.length > 0 ? (
+                  ticket.vendor_responses.map((vendor, index) => (
+                    <div key={index} className="text-sm text-gray-800">
+                      <span className="font-medium text-blue-800">
+                        {vendor.name}:
+                      </span>{" "}
+                      {vendor.response}
+                    </div>
+                  ))
                 ) : (
-                  <span className="text-gray-400">No message available</span>
+                  <span className="italic text-gray-400">No replies</span>
+                )}
+              </div>
+
+              {/* Customer Message */}
+              <div className="bg-green-50 border border-green-100 rounded-lg p-2 w-fit max-w-[95%]">
+                <span className="font-semibold text-green-700 block mb-1">
+                  Customer:
+                </span>
+                {ticket.customer_message ? (
+                  <>
+                    <span
+                      className={`mt-1 inline-block text-xs px-2 py-1 rounded ${
+                        ticket.message_sent?.email ||
+                        ticket.message_sent?.whatsapp
+                          ? "bg-green-200 text-green-800"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {ticket.message_sent?.email ||
+                      ticket.message_sent?.whatsapp
+                        ? `Step 7 Sent via ${
+                            ticket.message_sent.email &&
+                            ticket.message_sent.whatsapp
+                              ? "Email & WhatsApp"
+                              : ticket.message_sent.email
+                              ? "Email"
+                              : "WhatsApp"
+                          }`
+                        : "Step 7 Not Sent"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-gray-400 italic">No message</span>
+                    <span className="block mt-1 text-xs px-2 py-1 rounded bg-gray-200 text-gray-600">
+                      Step 7 Not Sent
+                    </span>
+                  </>
                 )}
               </div>
             </div>
-            
+
             {/*<div className="flex justify-between items-center">
               <div className="flex">
                 <span className="font-semibold mr-2">Updated Date:</span>
@@ -747,26 +814,28 @@ export default function TicketsMobileList({
                 </span>
               </div>
             </div> */}
-
+            {/* 
             {ticket.vendor_responses && ticket.vendor_responses.length > 0 && (
               <div className="space-y-2">
                 <span className="font-semibold">Vendor Replies:</span>
                 {ticket.vendor_responses.map((response, index) => (
                   <div key={index} className="pl-4 border-l-2 border-gray-200">
                     <div className="font-medium">{response.name}:</div>
-                    <div className="text-sm text-gray-600">{response.response}</div>
+                    <div className="text-sm text-gray-600">
+                      {response.response}
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-            
+            )} */}
+
             <div className="flex justify-end space-x-4">
               <Link href={`tickets/${ticket.id}`} passHref>
                 <span className="text-blue-500 hover:text-blue-700">
                   <FaEye />
                 </span>
               </Link>
-              {userRole === 'admin' && (
+              {userRole === "admin" && (
                 <FaTrash
                   onClick={() => setDeleteTicketId(ticket.id)}
                   className="text-red-500 cursor-pointer hover:text-red-700"
@@ -778,7 +847,6 @@ export default function TicketsMobileList({
                 title="Soft Delete"
               />
             </div>
-
           </div>
         </div>
       ))}

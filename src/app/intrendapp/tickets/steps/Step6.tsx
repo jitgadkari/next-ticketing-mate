@@ -17,7 +17,7 @@ interface Step6Props {
     customer_name: string;
     current_step: string;
     steps: Record<string, any>;
-    created_data: string;
+    created_date: string;
     updated_date: string;
   };
 }
@@ -384,7 +384,8 @@ const Step6: React.FC<Step6Props> = ({
           vendor_delivery_info: formattedVendorInfo,
           ticket_number: ticket.ticket_number,
           send_vendor_name: true,
-          customer_message_required: true
+          customer_message_required: true,
+          created_date: ticket.created_date,
       };
 
       console.log("Generating template with payload:", requestPayload);
@@ -407,10 +408,19 @@ const Step6: React.FC<Step6Props> = ({
 
       const data = await response.json();
       // The template is in data.message for this API
-      const clientMessageTemplate = data.message;
+      const clientMessageTemplate = data.message + `\n\nMessage Created: ${new Date(ticket.created_date).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })}`;
+;
       console.log("Generated template:", clientMessageTemplate);
-
+;
       // First update Step 6 with selected messages
+;
       const step6Response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
@@ -499,7 +509,7 @@ const Step6: React.FC<Step6Props> = ({
       </div>
 
       <div className="flex justify-end items-center gap-4 mb-4">
-        {isEditing ? (
+        {isEditing && isCurrentStep ? (
           <>
             <button
               onClick={handleCancel}
@@ -516,6 +526,7 @@ const Step6: React.FC<Step6Props> = ({
             </button>
           </>
         ) : (
+          isCurrentStep &&
           <button
             onClick={handleEditSaveToggle}
             className="flex items-center gap-2 text-blue-600 hover:text-blue-800"

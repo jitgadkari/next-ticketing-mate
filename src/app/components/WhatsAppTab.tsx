@@ -13,17 +13,22 @@ interface WhatsAppState {
 
 export default function WhatsAppTab() {
   const [isLoading, setIsLoading] = useState(true);
-  // const [isRestarting, setIsRestarting] = useState(false);
   const [state, setState] = useState<WhatsAppState>({
     status: 'disconnected',
     qrCode: null,
   });
 
   const checkStatus = async () => {
+    console.log("🔄 [checkStatus] Checking WhatsApp status...");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/status`, { cache: 'no-store' });
+      const url = `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/status`;
+      console.log("🌐 Fetching status from:", url);
+      const res = await fetch(url, { cache: 'no-store' });
+
       if (!res.ok) throw new Error('Status check failed');
+
       const data = await res.json();
+      console.log("✅ [checkStatus] Response data:", data);
 
       let normalizedStatus: WhatsAppStatus = 'disconnected';
       if (data.status === 'connected') normalizedStatus = 'active';
@@ -33,13 +38,17 @@ export default function WhatsAppTab() {
       const newState: WhatsAppState = { status: normalizedStatus, qrCode: null };
 
       if (normalizedStatus === 'qr') {
-        const qrRes = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/qr`);
+        const qrUrl = `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/qr`;
+        console.log("📲 Fetching QR code from:", qrUrl);
+        const qrRes = await fetch(qrUrl);
         const qrData = await qrRes.json();
+        console.log("✅ [QR] QR Response:", qrData);
         if (qrData.qr) newState.qrCode = qrData.qr;
       }
 
       setState(prev => {
         if (prev.status !== newState.status) {
+          console.log("🔁 State change from", prev.status, "→", newState.status);
           if (newState.status === 'active') toast.success('WhatsApp Connected!');
           else if (newState.status === 'qr') toast('Scan QR code to connect', { icon: '📱' });
           else if (newState.status === 'disconnected') toast.error('WhatsApp Disconnected');
@@ -47,7 +56,7 @@ export default function WhatsAppTab() {
         return newState;
       });
     } catch (err) {
-      console.error("❌ Status check error:", err);
+      console.error("❌ [checkStatus] Error:", err);
       setState({ status: 'disconnected', qrCode: null });
     } finally {
       setIsLoading(false);
@@ -55,57 +64,67 @@ export default function WhatsAppTab() {
   };
 
   const handleInit = async () => {
+    console.log("⚙️ [handleInit] Initializing WhatsApp client...");
     try {
       setIsLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/init`, { method: 'POST' });
+      const url = `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/init`;
+      console.log("🌐 Sending init request to:", url);
+
+      const res = await fetch(url, { method: 'POST' });
       const data = await res.json();
+      console.log(res)
+      console.log("✅ [handleInit] Response:", data);
+      console.log("✅ [handleInit] Response:", data.message);
       if (res.ok) {
-        toast.success('WhatsApp client initializing...');
-        setTimeout(() => checkStatus(), 3000);
+        if (data.success){
+          console.log(res.ok)
+          console.log("✅ [handleInit] Success:", data.message);
+          toast.success(data.message);
+          setTimeout(() => checkStatus(), 3000);
+
+        } else {
+          console.log("❌ [handleInit] Error:", data.message);
+          toast.error(data.message);
+          setTimeout(() => checkStatus(), 3000);
+        }
       } else {
-        throw new Error(data.message || 'Init failed');
+        console.log("❌ [handleInit] Error:", data.message);
+        toast.error("Failed to connect, Please Retry!");
+        setTimeout(() => checkStatus(), 3000);
       }
     } catch (err) {
+      console.error("❌ [handleInit] Error:", err);
       toast.error('Failed to initialize client');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
+    console.log("🚪 [handleLogout] Logging out...");
     try {
       setIsLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/logout`, { method: 'POST' });
+      const url = `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/logout`;
+      console.log("🌐 Sending logout request to:", url);
+
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      console.log("✅ [handleLogout] Response:", data);
+
       if (!res.ok) throw new Error('Logout failed');
+
       toast.success('Logged out successfully');
       setState({ status: 'disconnected', qrCode: null });
     } catch (err) {
+      console.error("❌ [handleLogout] Error:", err);
       toast.error('Failed to logout');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // const handleRestartServer = async () => {
-  //   try {
-  //     setIsRestarting(true);
-  //     setIsLoading(true);
-  //     const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/restart`, { method: 'POST' });
-  //     if (!res.ok) throw new Error('Restart failed');
-  //     toast.success('Client restarting...');
-  //     setTimeout(() => checkStatus(), 4000);
-  //   } catch (err) {
-  //     toast.error('Restart failed');
-  //     console.error(err);
-  //   } finally {
-  //     setIsRestarting(false);
-  //     setIsLoading(false);
-  //   }
-  // };
-
   useEffect(() => {
+    console.log("🚀 [useEffect] Component mounted. Checking status...");
     checkStatus();
   }, []);
 
@@ -115,6 +134,13 @@ export default function WhatsAppTab() {
         <IoLogoWhatsapp className="text-3xl text-green-600" />
         <h2 className="text-2xl font-semibold text-black">WhatsApp Connection</h2>
       </div>
+
+      <button
+        onClick={checkStatus}
+        className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+      >
+        Refresh Status
+      </button>
 
       <div className="w-full max-w-md">
         {isLoading ? (
@@ -147,13 +173,6 @@ export default function WhatsAppTab() {
               >
                 Logout
               </button>
-              {/* <button
-                onClick={handleRestartServer}
-                disabled={isRestarting}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Restart
-              </button> */}
             </div>
           </div>
         )}

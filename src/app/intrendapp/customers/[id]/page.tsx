@@ -119,7 +119,9 @@ const CustomerDetailsPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [whatsappGroups, setWhatsappGroups] = useState<{ id: string; name: string }[]>([]);
+  const [whatsappGroups, setWhatsappGroups] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   useEffect(() => {
     if (id) {
@@ -140,7 +142,8 @@ const CustomerDetailsPage: React.FC = () => {
       console.log("[CustomerDetails] Customer data received:", data.customer);
       setCustomer(data.customer);
       // Here we read the attribute values from customer.attributes
-      const latestAttributes = data.customer.attributes?.latest?.attributes || {};
+      const latestAttributes =
+        data.customer.attributes?.latest?.attributes || {};
       setSelectedAttributes({
         fabric_type: latestAttributes.type || [],
         certifications: latestAttributes.certifications || [],
@@ -178,7 +181,7 @@ const CustomerDetailsPage: React.FC = () => {
         certifications: attrs.certifications || [],
         delivery_terms: attrs.delivery_terms || [],
         approvals: attrs.approvals || [],
-        payment_terms: attrs.payment_terms || []
+        payment_terms: attrs.payment_terms || [],
       };
 
       setDefaultAttributes(defaultAttrs);
@@ -198,7 +201,7 @@ const CustomerDetailsPage: React.FC = () => {
         certifications: [],
         delivery_terms: [],
         approvals: [],
-        payment_terms: []
+        payment_terms: [],
       });
     }
   };
@@ -221,13 +224,15 @@ const CustomerDetailsPage: React.FC = () => {
 
   const fetchWhatsappGroups = async () => {
     try {
-      const response = await fetch("http://localhost:5001/api/integrations/latest");
+      const response = await fetch(
+        "http://localhost:5001/api/integrations/latest"
+      );
       if (response.ok) {
         const data: IntegrationResponse = await response.json();
         const groups = data.latest?.integrations?.whatsapp?.groups || [];
-        const formattedGroups = groups.map(group => ({
-          id: group.id || group.group_id || '',
-          name: group.name || group.group_name || 'Unnamed Group'
+        const formattedGroups = groups.map((group) => ({
+          id: group.id || group.group_id || "",
+          name: group.name || group.group_name || "Unnamed Group",
         }));
         setWhatsappGroups(formattedGroups);
       }
@@ -256,10 +261,10 @@ const CustomerDetailsPage: React.FC = () => {
 
   const handleWhatsappGroupsChange = (selected: Option[]) => {
     if (customer) {
-      const selectedGroups = selected.map(option => JSON.parse(option.value));
+      const selectedGroups = selected.map((option) => JSON.parse(option.value));
       setCustomer({
         ...customer,
-        whatsapp_groups: selectedGroups
+        whatsapp_groups: selectedGroups,
       });
     }
   };
@@ -286,11 +291,11 @@ const CustomerDetailsPage: React.FC = () => {
                 certifications: selectedAttributes.certifications,
                 approvals: selectedAttributes.approvals,
                 delivery_terms: selectedAttributes.delivery_terms,
-                payment_terms: selectedAttributes.payment_terms
+                payment_terms: selectedAttributes.payment_terms,
               },
               timestamp: new Date().toISOString(),
-              version_note: `Updated attributes on ${new Date().toLocaleString()}`
-            }
+              version_note: `Updated attributes on ${new Date().toLocaleString()}`,
+            },
           },
         };
         console.log("[CustomerDetails] Submitting update:", update_dict);
@@ -334,9 +339,10 @@ const CustomerDetailsPage: React.FC = () => {
   if (!customer || !defaultAttributes || !unlinkedPeople)
     return <div className="p-4">Loading...</div>;
 
-
   // Build options for attributes. Merging default options with any currently selected values.
-  const attributeOptions = (attribute: keyof typeof selectedAttributes): Option[] => {
+  const attributeOptions = (
+    attribute: keyof typeof selectedAttributes
+  ): Option[] => {
     const defaultOpts =
       (defaultAttributes?.[attribute as keyof Attributes] as string[]) || [];
     const customerValues = selectedAttributes[attribute];
@@ -349,7 +355,12 @@ const CustomerDetailsPage: React.FC = () => {
       }
 
       // Handle object values like { id, name }
-      if (typeof value === "object" && value !== null && "id" in value && "name" in value) {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "id" in value &&
+        "name" in value
+      ) {
         return {
           label: value.name,
           value: JSON.stringify(value),
@@ -366,13 +377,15 @@ const CustomerDetailsPage: React.FC = () => {
 
   const allCustomerPeopleOptions = Array.from(
     new Map(
-      [...unlinkedPeople, ...selectedAttributes.customer_people_list].map((person: any) => [
-        person.id,
-        {
-          label: `${person.name}`,
-          value: JSON.stringify({ id: person.id, name: person.name })
-        }
-      ])
+      [...unlinkedPeople, ...selectedAttributes.customer_people_list].map(
+        (person: any) => [
+          person.id,
+          {
+            label: `${person.name}`,
+            value: JSON.stringify({ id: person.id, name: person.name }),
+          },
+        ]
+      )
     ).values()
   );
 
@@ -427,6 +440,14 @@ const CustomerDetailsPage: React.FC = () => {
         onChange={handleInputChange}
       />
       <Input
+        label="PAN Number"
+        type="text"
+        name="pan_number"
+        value={customer.pan_number || ""}
+        onChange={handleInputChange}
+      />
+
+      <Input
         label="Delivery Destination"
         type="text"
         name="delivery_destination"
@@ -458,66 +479,132 @@ const CustomerDetailsPage: React.FC = () => {
         <label className="text-gray-700">Status</label>
         <h1 className="font-bold text-lg">{customer.status}</h1>
       </div>
-      {/*
-        Render MultiSelect for attributes (excluding customer_people_list)
-      */}
-      {(Object.entries(selectedAttributes) as [keyof typeof selectedAttributes, any][]).map(([key, values]) => {
+      {/* Render chips and dropdowns for each attribute */}
+      {(
+        Object.entries(selectedAttributes) as [
+          keyof typeof selectedAttributes,
+          any
+        ][]
+      ).map(([key, values]) => {
         if (key !== "customer_people_list") {
           return (
             <div key={key}>
               <label className="block text-gray-700">
                 {key.replace("_", " ").charAt(0).toUpperCase() + key.slice(1)}
               </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <MultiSelect
-                  options={attributeOptions(key)}
-                  value={(values as string[]).map((value: string) => ({
-                    label: value,
-                    value,
-                  }))}
-                  onChange={(selected: Option[]) =>
-                    handleMultiSelectChange(key, selected)
-                  }
-                  labelledBy={`Select ${key.replace("_", " ")}`}
-                />
-              </div>
+              {values.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {values.map((val: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-sm text-blue-800"
+                    >
+                      {val}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = values.filter(
+                            (item: string) => item !== val
+                          );
+                          setSelectedAttributes((prev) => ({
+                            ...prev,
+                            [key]: updated,
+                          }));
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <MultiSelect
+                options={attributeOptions(key)}
+                value={(values as string[]).map((value: string) => ({
+                  label: value,
+                  value,
+                }))}
+                onChange={(selected: Option[]) =>
+                  handleMultiSelectChange(key, selected)
+                }
+                labelledBy={`Select ${key.replace("_", " ")}`}
+              />
             </div>
           );
         }
         return null;
       })}
-      {/*
-        Render a dedicated MultiSelect for Customer People
-      */}
-      <div>
-        <label className="block text-gray-700">Select Customer People</label>
-        <MultiSelect
-          options={allCustomerPeopleOptions}
-          value={selectedAttributes.customer_people_list.map((person) => ({
-            label: person.name,
-            value: JSON.stringify({ id: person.id, name: person.name }),
-          }))}
-          onChange={(selected: Option[]) => {
-            const people = selected.map((option) => JSON.parse(option.value));
-            setSelectedAttributes((prev) => ({
-              ...prev,
-              customer_people_list: people,
-            }));
-          }}
-          labelledBy="Select Customer People"
-        />
-
-      </div>
+      {/* Customer People Chips */}
+    <div>
+      <label className="block text-gray-700">Select Customer People</label>
+      {selectedAttributes.customer_people_list.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedAttributes.customer_people_list.map((person, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-sm text-blue-800"
+            >
+              {person.name}
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = selectedAttributes.customer_people_list.filter((p) => p.id !== person.id);
+                  setSelectedAttributes((prev) => ({ ...prev, customer_people_list: updated }));
+                }}
+                className="text-blue-500 hover:text-blue-700"
+              >
+                ❌
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <MultiSelect
+        options={allCustomerPeopleOptions}
+        value={selectedAttributes.customer_people_list.map((person) => ({
+          label: person.name,
+          value: JSON.stringify({ id: person.id, name: person.name }),
+        }))}
+        onChange={(selected: Option[]) => {
+          const people = selected.map((option) => JSON.parse(option.value));
+          setSelectedAttributes((prev) => ({ ...prev, customer_people_list: people }));
+        }}
+        labelledBy="Select Customer People"
+      />
+    </div>
       <div>
         <label className="block text-gray-700">WhatsApp Groups</label>
+        {customer.whatsapp_groups && customer.whatsapp_groups.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {customer.whatsapp_groups.map((group, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-sm text-green-800"
+            >
+              {group.name}
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedGroups = customer.whatsapp_groups!.filter((g) => g.id !== group.id);
+                  setCustomer((prev) => (prev ? { ...prev, whatsapp_groups: updatedGroups } : null));
+                }}
+                className="text-green-600 hover:text-green-800"
+              >
+                ❌
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
         <MultiSelect
-          options={whatsappGroups.map(group => ({
+          options={whatsappGroups.map((group) => ({
             label: group.name,
-            value: JSON.stringify(group)
+            value: JSON.stringify(group),
           }))}
-          value={(customer.whatsapp_groups || []).map(group => ({
+          value={(customer.whatsapp_groups || []).map((group) => ({
             label: group.name,
-            value: JSON.stringify(group)
+            value: JSON.stringify(group),
           }))}
           onChange={handleWhatsappGroupsChange}
           labelledBy="Select WhatsApp Groups"
@@ -580,7 +667,7 @@ const CustomerDetailsPage: React.FC = () => {
         <p>
           <strong>Additional Info:</strong>{" "}
           {typeof customer.additional_info === "object" &&
-            Object.keys(customer.additional_info).length > 0
+          Object.keys(customer.additional_info).length > 0
             ? JSON.stringify(customer.additional_info)
             : "None"}
         </p>
@@ -588,12 +675,14 @@ const CustomerDetailsPage: React.FC = () => {
           <strong>Attributes:</strong>{" "}
           {customer.attributes?.latest?.attributes ? (
             <ul>
-              {Object.entries(customer.attributes.latest.attributes).map(([key, value]) => (
-                <li key={key}>
-                  <strong>{key}:</strong>{" "}
-                  {Array.isArray(value) ? value.join(", ") : String(value)}
-                </li>
-              ))}
+              {Object.entries(customer.attributes.latest.attributes).map(
+                ([key, value]) => (
+                  <li key={key}>
+                    <strong>{key}:</strong>{" "}
+                    {Array.isArray(value) ? value.join(", ") : String(value)}
+                  </li>
+                )
+              )}
             </ul>
           ) : (
             "None"
@@ -602,7 +691,7 @@ const CustomerDetailsPage: React.FC = () => {
         <p>
           <strong>Customer People:</strong>{" "}
           {customer.customer_people_list &&
-            customer.customer_people_list.length > 0 ? (
+          customer.customer_people_list.length > 0 ? (
             <ul>
               {customer.customer_people_list.map(
                 (person: any, index: number) => (

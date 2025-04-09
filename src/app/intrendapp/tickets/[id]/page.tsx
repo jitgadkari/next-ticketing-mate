@@ -21,7 +21,7 @@ interface Ticket {
   customer_name: string;
   current_step: string;
   steps: Record<string, any>;
-  created_data: string;
+  created_date: string;
   updated_date: string;
   from_number:string;
   customer_id:string;
@@ -66,10 +66,16 @@ const TicketDetailsPage = () => {
   };
   console.log(activeStep)
   const listOfStepsWhereRefreshIsntAllowed = [
-    "Step 1 : Customer Message Received",
+    ""
+    // "Step 1 : Customer Message Received",
+    // "Step 2 : Message Decoded",
+    // "Step 3 : Message Template for vendors",
+    // "Step 4 : Vendor Selection",
     // "Step 5 : Messages from Vendors",
-    "Step 6 : Vendor Message Decoded",
-    "Step 7 : Customer Message Template",
+    // "Step 6 : Vendor Message Decoded",
+    // "Step 7 : Customer Message Template",
+    // "Step 8 : Customer Response",
+    // "Step 9 : Final Status",
   ];
   const handleRefresh = async (step: string) => {
     const confirmed = window.confirm(

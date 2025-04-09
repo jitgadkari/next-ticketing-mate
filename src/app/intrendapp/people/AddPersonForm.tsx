@@ -113,9 +113,11 @@ const AddPersonForm: React.FC<AddPersonFormProps> = ({ onAdd }) => {
       } else {
         const errorData = await response.json();
         console.error('Failed to add person', errorData);
+        toast.error(errorData.details?.message || 'Failed to add person. Please try again.');
       }
     } catch (error) {
       console.error('Error adding person:', error);
+      toast.error('Network error while adding person. Please try again.');
     }
   };
 
