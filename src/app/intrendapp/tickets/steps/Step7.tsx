@@ -77,7 +77,7 @@ const Step7: React.FC<Step7Props> = ({
   });
   const [includeVendorName, setIncludeVendorName] = useState(true);
   const [includeCustomerMessage, setIncludeCustomerMessage] = useState(true);
-  const [selectedContact, setSelectedContact] = useState<{id: string; name: string} | null>(null);
+  const [selectedContact, setSelectedContact] = useState<{ id: string; name: string } | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   interface CustomerPerson {
     id: string;
@@ -188,15 +188,15 @@ const Step7: React.FC<Step7Props> = ({
     });
 
     const formattedVendorInfo = Object.entries(decoded_messages).reduce(
-      (acc: Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>, 
-       [vendorId, vendorData]) => {
+      (acc: Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>,
+        [vendorId, vendorData]) => {
         // Extract message types (Bulk, Sample, etc) from the decoded_response
         const messageTypes = vendorData.decoded_response?.message?.message || {};
         console.log('Message types:', messageTypes);
         // Format each message type with its rate and schedule details
         acc[vendorData.vendor_name] = Object.entries(messageTypes).reduce(
-          (typeAcc: Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>, 
-           [type, details]: [string, any]) => {
+          (typeAcc: Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>,
+            [type, details]: [string, any]) => {
             typeAcc[type] = {
               rate: details.rate || {},
               schedule: details.schedule || {}
@@ -209,7 +209,7 @@ const Step7: React.FC<Step7Props> = ({
       },
       {} as Record<string, Record<string, { rate: Record<string, any>; schedule: Record<string, any> }>>
     );
-    
+
     console.log('Formatted vendor info:', formattedVendorInfo);
 
     const requestPayload = {
@@ -258,7 +258,7 @@ const Step7: React.FC<Step7Props> = ({
   const toggleIncludeVendorName = async () => {
     const newIncludeVendorName = !includeVendorName;
     console.log('Toggling vendor name:', { current: includeVendorName, new: newIncludeVendorName });
-    
+
     try {
       const newTemplate = await generateMessageTemplate(
         ticket.steps["Step 6 : Vendor Message Decoded"]?.latest?.decoded_messages || {},
@@ -268,7 +268,7 @@ const Step7: React.FC<Step7Props> = ({
         ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
         ticket.created_date
       );
-      
+
       setTemplate(newTemplate);
       setIncludeVendorName(newIncludeVendorName);
     } catch (error) {
@@ -290,7 +290,7 @@ const Step7: React.FC<Step7Props> = ({
         ticket.steps["Step 1 : Customer Message Received"]?.latest.text || "",
         ticket.created_date
       );
-      
+
       setTemplate(newTemplate);
       setIncludeCustomerMessage(newIncludeCustomerMessage);
     } catch (error) {
@@ -326,7 +326,7 @@ const Step7: React.FC<Step7Props> = ({
         });
         setPeopleOptions(customer.people || []);
         // No need for groupOptions since we'll use whatsapp_groups directly
-        setGroupOptions({}); 
+        setGroupOptions({});
       } else {
         // Set default empty values if no data
         setCustomerData({
@@ -397,9 +397,9 @@ const Step7: React.FC<Step7Props> = ({
         step_number: ticket.current_step,
         updated_date: currentTime
       };
-  
+
       console.log("Request Payload:", JSON.stringify(payload, null, 2));
-  
+
       console.log("Moving to next step...");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_next_step?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
@@ -411,11 +411,11 @@ const Step7: React.FC<Step7Props> = ({
           body: JSON.stringify(payload),
         }
       );
-  
+
       const responseData = await response.json();
       console.log("Response Status:", response.status);
       console.log("Response Body:", JSON.stringify(responseData, null, 2));
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update step");
@@ -434,22 +434,55 @@ const Step7: React.FC<Step7Props> = ({
       setLoading(false);
     }
   };
-  
+
+
+  // const handleUpdate = async (updatedTemplate: string) => {
+  //   try {
+  //     const currentVendorData =
+  //       ticket.steps[ticket.current_step]?.latest || {};
+
+  //     const updatedMessageSent = {
+  //       whatsapp: currentVendorData.message_sent?.whatsapp || false,
+  //       email: currentVendorData.message_sent?.email || false,
+  //     };
+
+  //     await fetch(
+  //       `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
+  //       {
+  //         method: "PUT",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           ticket_id: ticket.id,
+  //           step_info: {
+  //             customer_message_template: updatedTemplate,
+  //             message_sent: updatedMessageSent,
+  //           },
+  //           step_number: ticket.current_step,
+  //         }),
+  //       }
+  //     );
+  //     await fetchTicket(ticket.id);
+  //     toast.success("Template updated successfully");
+  //   } catch (error) {
+  //     console.error("Error updating Step 7:", error);
+  //     toast.error("Failed to update template");
+  //   }
+  // };
 
   const handleUpdate = async (updatedTemplate: string) => {
     try {
-      // Get current message sent status from ticket or use defaults
-      const currentMessageSent = {
-        whatsapp: false,
-        email: false
+      const currentStepData = ticket.steps?.[ticket.current_step]?.latest || {};
+      const existingMessageSent = currentStepData.message_sent || {};
+  
+      const safeMessagesSent = messagesSent || {};
+  
+      const updatedMessageSent = {
+        email: safeMessagesSent.email ?? existingMessageSent.email ?? false,
+        whatsapp: safeMessagesSent.whatsapp ?? existingMessageSent.whatsapp ?? false,
       };
-
-      // Only update if messagesSent exists
-      if (messagesSent) {
-        currentMessageSent.whatsapp = messagesSent.whatsapp || false;
-        currentMessageSent.email = messagesSent.email || false;
-      }
-
+  
       await fetch(
         `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/tickets/update_step/specific?userId=a8ccba22-4c4e-41d8-bc2c-bfb7e28720ea&userAgent=user-test`,
         {
@@ -461,23 +494,27 @@ const Step7: React.FC<Step7Props> = ({
             ticket_id: ticket.id,
             step_info: {
               customer_message_template: updatedTemplate,
-              message_sent: currentMessageSent
+              message_sent: updatedMessageSent,
             },
-            step_number: ticket.current_step
+            step_number: ticket.current_step,
           }),
         }
       );
-      fetchTicket(ticket.id);
+  
+      await fetchTicket(ticket.id);
       toast.success("Template updated successfully");
     } catch (error) {
       console.error("Error updating Step 7:", error);
       toast.error("Failed to update template");
     }
   };
+  
+  
+
 
   const handleSave = async () => {
     await handleUpdate(template);
-    console.log("Template saved successfully:",template);
+    console.log("Template saved successfully:", template);
   };
 
 
@@ -534,7 +571,7 @@ const Step7: React.FC<Step7Props> = ({
 
         const data = await response.json();
         console.log("WhatsApp message response:", data);
-        
+
         if (data.success) {
           setSendingStatus("WhatsApp message sent successfully");
           toast.success("WhatsApp message sent successfully");
@@ -542,6 +579,7 @@ const Step7: React.FC<Step7Props> = ({
             ...prev,
             whatsapp: true,
           }));
+          
         } else {
           throw new Error(data.message || "Failed to send WhatsApp message");
         }
@@ -576,7 +614,7 @@ const Step7: React.FC<Step7Props> = ({
 
         const data = await response.json();
         console.log("WhatsApp message response:", data);
-        
+
         if (data.success) {
           setSendingStatus("WhatsApp message sent successfully");
           toast.success("WhatsApp message sent successfully");
@@ -594,7 +632,7 @@ const Step7: React.FC<Step7Props> = ({
           toast.error("No customer email found");
           return;
         }
-      
+
         const sendEmailResponse = await fetch(
           `${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/email/send-email`,
           {
@@ -609,14 +647,14 @@ const Step7: React.FC<Step7Props> = ({
             }),
           }
         );
-      
+
         if (!sendEmailResponse.ok) {
           throw new Error(`Failed to send email: ${sendEmailResponse.statusText}`);
         }
-      
+
         const sendEmailData = await sendEmailResponse.json();
         console.log("Email API Response:", sendEmailData);
-      
+
         setSendingStatus("Email sent successfully");
         toast.success("Email sent successfully");
         setMessagesSent((prev) => ({
@@ -643,7 +681,7 @@ const Step7: React.FC<Step7Props> = ({
         );
         const data = await response.json();
         console.log("Person data:", data);
-        
+
         // Access the person object from the response
         const personData = data.person;
         console.log("Person data:", personData);
@@ -708,12 +746,12 @@ const Step7: React.FC<Step7Props> = ({
         {/* Top row - Template Controls */}
         <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
           <Button
-          disabled={!isCurrentStep}
+            disabled={!isCurrentStep}
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md flex items-center gap-2 transition-all"
           >
             {/* <span className="material-icons-outlined text-sm">save</span> */}
-            Save 
+            Save
           </Button>
           <div className="flex gap-3">
             {/* <Button
@@ -724,7 +762,7 @@ const Step7: React.FC<Step7Props> = ({
               {includeCustomerMessage ? "Hide Customer Message" : "Show Customer Message"}
             </Button> */}
             <Button
-            disabled={!isCurrentStep}
+              disabled={!isCurrentStep}
               onClick={toggleIncludeVendorName}
               className="border-2 bg-blue-600  text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-md transition-all"
             >
@@ -766,7 +804,7 @@ const Step7: React.FC<Step7Props> = ({
             className={`font-medium py-2.5 px-6 rounded-md flex items-center gap-2 transition-all ${isCurrentStep
               ? "bg-blue-600 hover:bg-blue-700 text-white"
               : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+              }`}
             disabled={!isCurrentStep}
           >
             Next
@@ -951,7 +989,7 @@ const Step7: React.FC<Step7Props> = ({
                       customer_response_received: false,
                       customer_message_received: "",
                       customer_response_received_time: "",
-                    time: new Date().toISOString(),
+                      time: new Date().toISOString(),
                     },
                     step_number: ticket.current_step,
                   };

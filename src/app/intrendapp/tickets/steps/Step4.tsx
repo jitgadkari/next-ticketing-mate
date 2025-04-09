@@ -991,19 +991,18 @@ const Step4: React.FC<Step4Props> = ({
       results.forEach((vendor) => {
         if (!vendor.vendor_id) return;
 
+        const existingVendor =
+          ticket.steps[ticket.current_step]?.latest?.vendors?.[
+            vendor.vendor_id
+          ] || {};
+
         vendorsObject[vendor.vendor_id] = {
           name: vendor.name,
           vendor_id: vendor.vendor_id,
           message_temp: vendor.message_temp || "",
           message_sent: {
-            email:
-              typeof vendor.message_sent === "object"
-                ? vendor.message_sent.email
-                : false,
-            whatsapp:
-              typeof vendor.message_sent === "object"
-                ? vendor.message_sent.whatsapp
-                : vendor.message_sent,
+            email: existingVendor.message_sent?.email || false, // Preserve previous email
+            whatsapp: true, // Mark WhatsApp as sent
           },
         };
       });
@@ -1048,7 +1047,7 @@ const Step4: React.FC<Step4Props> = ({
             vendor_id: vendor?.id || "",
             name: vendor?.name || option.value,
             message_temp: "",
-            message_sent: { whatsapp: false, email: false },
+            message_sent: { email: false, whatsapp: false },
           });
           continue;
         }
@@ -1073,7 +1072,11 @@ const Step4: React.FC<Step4Props> = ({
               }),
             }
           );
-
+          if (response.ok) {
+            console.log(
+              `✅ [handleSendEmail] Email sent successfully to ${vendor.name}`
+            );
+          }
           if (!response.ok) {
             throw new Error(`Email failed to ${vendor.name}`);
           }
@@ -1158,19 +1161,18 @@ const Step4: React.FC<Step4Props> = ({
       results.forEach((vendor) => {
         if (!vendor.vendor_id) return;
 
+        const existingVendor =
+          ticket.steps[ticket.current_step]?.latest?.vendors?.[
+            vendor.vendor_id
+          ] || {};
+
         vendorsObject[vendor.vendor_id] = {
           name: vendor.name,
           vendor_id: vendor.vendor_id,
           message_temp: vendor.message_temp || "",
           message_sent: {
-            whatsapp:
-              typeof vendor.message_sent === "object"
-                ? vendor.message_sent.whatsapp
-                : false,
-            email:
-              typeof vendor.message_sent === "object"
-                ? vendor.message_sent.email
-                : vendor.message_sent,
+            whatsapp: existingVendor.message_sent?.whatsapp || false, // Preserve previous WhatsApp status
+            email: true, // Mark email as sent
           },
         };
       });

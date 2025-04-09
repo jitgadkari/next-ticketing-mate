@@ -228,7 +228,8 @@ const PersonDetailsPage: React.FC = () => {
       } else {
         const errorData = await response.json();
         console.error("Failed to update person", errorData);
-        toast.error("Failed to update person");
+        console.error("Failed to update person", errorData.error.details.phone);
+        toast.error(errorData.error.details.phone);
       }
     } catch (error) {
       console.error("Error updating person:", error);

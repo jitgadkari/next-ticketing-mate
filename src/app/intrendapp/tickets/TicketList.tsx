@@ -174,6 +174,8 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
 
           return {
             id: ticket.id,
+            message_sent: ticket.steps["Step 7 : Customer Message Template"]
+            ?.latest?.message_sent || { email: false, whatsapp: false },
             ticket_number: ticket.ticket_number,
             customer_name: ticket.customer_name,
             current_step: ticket.current_step,
@@ -189,7 +191,7 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
               "pending",
           };
         });
-
+        
         setAllTickets(parsedTickets);
         setPageInfo({
           total_tickets: data.total_tickets,
