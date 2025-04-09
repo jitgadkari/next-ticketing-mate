@@ -53,21 +53,19 @@ export default function WhatsAppTab() {
       setIsLoading(false);
     }
   };
-  
+
   const handleInit = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/init`, {
-        method: 'POST',
-      });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_ENDPOINT_URL}/api/whatsapp/init`, { method: 'POST' });
+      console.log("response",res)
       const data = await res.json();
-  
-      if (res.ok && data.success) {
-        toast.success(data.message || 'WhatsApp client initializing...');
+      console.log("data",data)
+      if (res.ok) {
+        toast.success('WhatsApp client initializing...');
         setTimeout(() => checkStatus(), 3000);
       } else {
-        toast.error(data.error || 'Unauthorized access or init failed');
-        console.error("Initialization error:", data);
+        throw new Error(data.message || 'Init failed');
       }
     } catch (err) {
       toast.error('Failed to initialize client');
@@ -76,7 +74,7 @@ export default function WhatsAppTab() {
       setIsLoading(false);
     }
   };
-  
+
   const handleLogout = async () => {
     try {
       setIsLoading(true);

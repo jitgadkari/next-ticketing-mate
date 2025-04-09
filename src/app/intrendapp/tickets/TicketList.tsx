@@ -425,30 +425,24 @@ const TicketList: React.FC<TicketListProps> = ({ refreshList, getOffset }) => {
             </span>
             {ticket.customer_message ? (
               <>
+                <span className="font-semibold text-green-700">Status:</span>
                 <span
-                  className={`mt-1 inline-block text-xs px-2 py-1 rounded ${
-                    ticket.message_sent?.email || ticket.message_sent?.whatsapp
+                  className={`ml-2 text-xs px-2 py-1 rounded ${
+                    ticket.message_sent?.whatsapp
                       ? "bg-green-200 text-green-800"
                       : "bg-gray-200 text-gray-600"
                   }`}
                 >
-                  {ticket.message_sent?.email || ticket.message_sent?.whatsapp
-                    ? `Step 7 Sent via ${
-                        ticket.message_sent.email &&
-                        ticket.message_sent.whatsapp
-                          ? "Email & WhatsApp"
-                          : ticket.message_sent.email
-                          ? "Email"
-                          : "WhatsApp"
-                      }`
-                    : "Step 7 Not Sent"}
+                  {ticket.message_sent?.whatsapp
+                    ? "✓ WhatsApp Sent"
+                    : "✗ WhatsApp Not Sent"}
                 </span>
               </>
             ) : (
               <>
                 <span className="text-gray-400 italic">No message</span>
                 <span className="block mt-1 text-xs px-2 py-1 rounded bg-gray-200 text-gray-600">
-                  Step 7 Not Sent
+                  WhatsApp Not Sent
                 </span>
               </>
             )}
